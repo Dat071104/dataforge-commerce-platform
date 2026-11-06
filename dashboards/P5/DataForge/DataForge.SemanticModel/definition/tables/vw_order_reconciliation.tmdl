@@ -1,0 +1,95 @@
+table vw_order_reconciliation
+	lineageTag: 64faada0-c9fc-4781-b32c-3bd7c15dc980
+
+	/// Successful collected payments minus expected delivered-sales proxy by order; order-date context.
+	measure 'Collection Variance' = SUM('vw_order_reconciliation'[collection_variance])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: d8746463-737e-4f70-9bb3-01bd7bcab42b
+
+	/// Makes distinct event-time semantics visible.
+	measure 'Finance Date Note' = "Payments: payment date; refunds: return date; variance: order date."
+		displayFolder: Report Notes
+		lineageTag: 4e6940e8-2dbf-453a-b3d1-edbc882fc1aa
+
+	column order_id
+		dataType: string
+		isKey
+		lineageTag: b78c8933-e79f-4398-a7f1-724023c2cb17
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column order_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ac49ca79-c87c-4323-8de3-e1d9a987766e
+		summarizeBy: none
+		sourceColumn: order_date_key
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 9fb56840-078c-4535-a2e7-57fd838cf074
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column ordered_net_value
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 271e3e59-8b10-4dfe-82aa-a62547eb5ccb
+		summarizeBy: sum
+		sourceColumn: ordered_net_value
+
+	column expected_collection_proxy
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 75a826ec-4c18-40c9-8bfd-172ca615e264
+		summarizeBy: sum
+		sourceColumn: expected_collection_proxy
+
+	column collected
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: d1ecf31c-1e39-4c34-b110-107837d0027d
+		summarizeBy: sum
+		sourceColumn: collected
+
+	column completed_refunds
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: e419c33e-cbb8-40a7-99e8-0f3570f21dba
+		summarizeBy: sum
+		sourceColumn: completed_refunds
+
+	column collection_variance
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 86cdeb22-5e0b-40cd-b0c9-cc01139a48a0
+		summarizeBy: sum
+		sourceColumn: collection_variance
+
+	partition vw_order_reconciliation = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "vw_order_reconciliation", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"order_id", type text},
+				            {"order_date_key", Int64.Type},
+				            {"geography_key", Int64.Type},
+				            {"ordered_net_value", Currency.Type},
+				            {"expected_collection_proxy", Currency.Type},
+				            {"collected", Currency.Type},
+				            {"completed_refunds", Currency.Type},
+				            {"collection_variance", Currency.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

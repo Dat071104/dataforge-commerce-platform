@@ -1,0 +1,73 @@
+table dim_date
+	lineageTag: 854e78a8-237d-49a8-9fc2-ad8ea5d454d6
+	dataCategory: Time
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: fbd4085f-d850-4c13-8ecd-8df47d481f6e
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column calendar_date
+		dataType: dateTime
+		isKey
+		formatString: yyyy-mm-dd
+		lineageTag: 46838fe2-7e60-42b9-af5a-5e5188b3e2c7
+		summarizeBy: none
+		sourceColumn: calendar_date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: bc467045-1c04-4df6-bd62-9c31e828e091
+		summarizeBy: none
+		sourceColumn: year
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: 9e45c0cd-cade-440d-bedc-23b3e2cdd954
+		summarizeBy: none
+		sourceColumn: month
+
+	column month_start
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: 17d01ad3-4a4c-46bd-bad8-296465638888
+		summarizeBy: none
+		sourceColumn: month_start
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 2b78bfc2-57a5-4e41-8389-83eece1e46a2
+		summarizeBy: none
+		sourceColumn: quarter
+
+	partition dim_date = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "dim_date", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"date_key", Int64.Type},
+				            {"calendar_date", type date},
+				            {"year", Int64.Type},
+				            {"month", Int64.Type},
+				            {"month_start", type date},
+				            {"quarter", Int64.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

@@ -1,0 +1,75 @@
+table fct_weather_daily
+	lineageTag: 1a144ae6-e6f0-4f65-bcf5-63668f4b80fb
+
+	/// Province-level daily rainfall average.
+	measure 'Average Daily Rainfall (mm)' = AVERAGE('fct_weather_daily'[precipitation_mm])
+		formatString: 0.0 "mm"
+		displayFolder: Weather
+		lineageTag: f8d15c04-24e0-4420-82f7-eafc828cc9e0
+
+	/// Source label from the Gold weather fact.
+	measure 'Weather Source' = SELECTEDVALUE('fct_weather_daily'[source], "Multiple sources")
+		displayFolder: Weather
+		lineageTag: 3cdaeb39-9bd9-4ad8-a7c6-d2b2a1d6e1ae
+
+	/// Provenance and interpretation reminder.
+	measure 'Weather Interpretation Note' = "Weather is synthetic and province-level; association with shipment lateness is not causal."
+		displayFolder: Report Notes
+		lineageTag: 1b55987b-1013-4ed8-9d60-86984fe8e087
+
+	column date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: bad9a9a2-8cd3-4587-995d-9899e9a207d7
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 36d50daf-738a-4080-86d0-81c5d3801cc6
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column precipitation_mm
+		dataType: decimal
+		formatString: 0.000
+		lineageTag: 6b2ac0a6-f680-4757-b58a-d364fee69a3f
+		summarizeBy: average
+		sourceColumn: precipitation_mm
+
+	column temp_max_c
+		dataType: decimal
+		formatString: 0.00
+		lineageTag: 6901a8f3-9f71-4f46-8ce7-7bc3ecd01809
+		summarizeBy: average
+		sourceColumn: temp_max_c
+
+	column source
+		dataType: string
+		lineageTag: cd845572-9b67-4caf-a62a-27a8ae21c86d
+		summarizeBy: none
+		sourceColumn: source
+
+	partition fct_weather_daily = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "fct_weather_daily", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"date_key", Int64.Type},
+				            {"geography_key", Int64.Type},
+				            {"precipitation_mm", Currency.Type},
+				            {"temp_max_c", Currency.Type},
+				            {"source", type text}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

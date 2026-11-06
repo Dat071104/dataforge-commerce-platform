@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "32136d1358963e906619",
+  "position": {
+    "x": 20,
+    "y": 160,
+    "z": 5000,
+    "width": 210,
+    "height": 75,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_order_item"
+                    }
+                  },
+                  "Property": "Fulfilled Sales Proxy"
+                }
+              },
+              "queryRef": "fct_order_item.Fulfilled Sales Proxy",
+              "nativeQueryRef": "Fulfilled Sales Proxy",
+              "displayName": "Sales Proxy"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

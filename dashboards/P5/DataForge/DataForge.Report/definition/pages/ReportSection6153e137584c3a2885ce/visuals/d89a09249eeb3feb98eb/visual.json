@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "d89a09249eeb3feb98eb",
+  "position": {
+    "x": 20,
+    "y": 255,
+    "z": 9000,
+    "width": 380,
+    "height": 210,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_shipment"
+                    }
+                  },
+                  "Property": "carrier"
+                }
+              },
+              "queryRef": "fct_shipment.carrier",
+              "nativeQueryRef": "carrier",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_shipment"
+                    }
+                  },
+                  "Property": "P90 Transit Days"
+                }
+              },
+              "queryRef": "fct_shipment.P90 Transit Days",
+              "nativeQueryRef": "P90 Transit Days"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'P90 Transit Days by Carrier'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

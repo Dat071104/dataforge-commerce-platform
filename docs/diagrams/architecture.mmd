@@ -1,0 +1,34 @@
+flowchart LR
+  subgraph Sources[Sources]
+    CSV[Synthetic commerce CSVs\nseeded and reproducible]
+    API[Optional Open-Meteo Historical API\nexplicit request + provenance]
+  end
+
+  subgraph Bronze[Bronze]
+    Validate[Typed validation\nreject + quarantine]
+    Parquet[Content-addressed Parquet\nchecksums + manifests]
+  end
+
+  subgraph Warehouse[PostgreSQL 16]
+    Raw[raw schema\nsource snapshots + audit]
+    Dims[dw dimensions\nDate / Customer SCD2 / Product / Geography]
+    Facts[dw facts\nOrder item / Payment / Return / Shipment / Inventory / Weather]
+    Analytics[analytics views + 10 SQL analyses\nreconciliation and performance controls]
+  end
+
+  subgraph Reporting[Portfolio reporting]
+    Export[Consistent Gold snapshot export\nCSV + optional Excel workbook]
+    PBI[Power BI Desktop\nImport model + 3 report pages]
+  end
+
+  CSV --> Validate --> Parquet --> Raw
+  API --> Validate
+  Raw --> Dims --> Facts --> Analytics
+  Analytics --> Export --> PBI
+
+  classDef source fill:#edf4ff,stroke:#4b78a8,color:#13263b
+  classDef store fill:#eaf7ef,stroke:#418455,color:#193824
+  classDef report fill:#fff4df,stroke:#b77b15,color:#4a3410
+  class CSV,API source
+  class Parquet,Raw,Dims,Facts,Analytics store
+  class Export,PBI report

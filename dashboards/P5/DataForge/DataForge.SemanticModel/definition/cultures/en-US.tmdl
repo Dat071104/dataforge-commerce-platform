@@ -1,0 +1,399 @@
+cultureInfo en-US
+
+	linguisticMetadata =
+			{
+			  "Version": "2.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "fct_order_item.gross_margin_proxy": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Gross Margin Proxy"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Gross Margin Proxy (VND)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.fulfilled_sales_proxy": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Fulfilled Sales Proxy"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Sales Proxy": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.average_order_value": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Average Order Value"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Avg Order M VND": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.demo_data_notice": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Demo Data Notice"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Notice": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.delivered_orders": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Delivered Orders"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Delivered Orders": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.margin_proxy_": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Margin Proxy %"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Margin Proxy": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.return_line_rate_date_rule": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Return Line Rate Date Rule"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Date role notes": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_order_item.return_line_rate": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_order_item",
+			          "ConceptualProperty": "Return Line Rate"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Return Line Rate (%)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_payment.collected_payments": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_payment",
+			          "ConceptualProperty": "Collected Payments"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Collections (VND)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        },
+			        {
+			          "Collected (VND)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_payment.split_payment_orders": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_payment",
+			          "ConceptualProperty": "Split Payment Orders"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Split-Payment Orders": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "vw_order_reconciliation.finance_date_note": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "vw_order_reconciliation",
+			          "ConceptualProperty": "Finance Date Note"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Finance date roles": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "vw_order_reconciliation.collection_variance": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "vw_order_reconciliation",
+			          "ConceptualProperty": "Collection Variance"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Collection Variance (VND)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_return.completed_refunds": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_return",
+			          "ConceptualProperty": "Completed Refunds"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Completed Refunds (VND)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_weather_daily.weather_interpretation_note": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_weather_daily",
+			          "ConceptualProperty": "Weather Interpretation Note"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Synthetic weather | descriptive, not causal": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_weather_daily.weather_source": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_weather_daily",
+			          "ConceptualProperty": "Weather Source"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Weather Source": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_shipment.p90_transit_days": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_shipment",
+			          "ConceptualProperty": "P90 Transit Days"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "P90 Transit": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_shipment.late_shipment__by_delivery_date": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_shipment",
+			          "ConceptualProperty": "Late Shipment % by Delivery Date"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Late Ship (%)": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "fct_payment.payment_event_count": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "fct_payment",
+			          "ConceptualProperty": "Payment Event Count"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Payment Events": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    }
+			  }
+			}
+		contentType: json
+

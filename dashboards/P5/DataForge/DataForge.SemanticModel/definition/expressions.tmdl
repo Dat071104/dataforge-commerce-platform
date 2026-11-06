@@ -1,0 +1,8 @@
+expression GoldWorkbookPath = "__DATAFORGE_LOCAL_WORKBOOK_PATH__" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 18b1be8f-7932-40a1-ac15-724653c15b37
+
+	annotation PBI_ResultType = Text
+
+expression GoldWorkbook = Excel.Workbook(File.Contents(GoldWorkbookPath), null, true)
+	lineageTag: 899afb8b-5902-4ea2-b95c-adf787bfdbb6
+

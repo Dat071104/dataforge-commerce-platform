@@ -1,0 +1,11 @@
+{
+  "orders": 3000,
+  "order_items": 6001,
+  "payment_events": 2865,
+  "delivered_orders": 2564,
+  "fulfilled_sales_proxy_vnd": "5030565500.00",
+  "fulfilled_cogs_proxy_vnd": "2946637500",
+  "collected_vnd": "5030565500",
+  "completed_refunds_vnd": "135428000",
+  "collection_variance_vnd": "0.00"
+}

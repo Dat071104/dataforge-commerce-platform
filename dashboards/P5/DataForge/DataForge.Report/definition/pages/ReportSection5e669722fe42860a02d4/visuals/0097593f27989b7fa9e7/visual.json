@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "0097593f27989b7fa9e7",
+  "position": {
+    "x": 20,
+    "y": 100,
+    "z": 4000,
+    "width": 250,
+    "height": 85,
+    "tabOrder": 4000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_payment"
+                    }
+                  },
+                  "Property": "Collected Payments"
+                }
+              },
+              "queryRef": "fct_payment.Collected Payments",
+              "nativeQueryRef": "Collected Payments",
+              "displayName": "Collections (VND)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

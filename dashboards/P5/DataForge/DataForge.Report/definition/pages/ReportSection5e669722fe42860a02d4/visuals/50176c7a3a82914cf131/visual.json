@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "50176c7a3a82914cf131",
+  "position": {
+    "x": 425,
+    "y": 20,
+    "z": 3000,
+    "width": 835,
+    "height": 64,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "Finance Date Note"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.Finance Date Note",
+              "nativeQueryRef": "Finance Date Note",
+              "displayName": "Finance date roles"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

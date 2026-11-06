@@ -1,0 +1,50 @@
+table dim_geography
+	lineageTag: 1371e680-1559-484c-b087-c96faaf6b7b5
+
+	column geography_key
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: 5fedffa2-9a37-485f-94c7-37acf2f5a8d8
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column province_id
+		dataType: string
+		isHidden
+		lineageTag: 6ac89d7d-430c-4597-893c-15a0df13a273
+		summarizeBy: none
+		sourceColumn: province_id
+
+	column province
+		dataType: string
+		lineageTag: d2a3774b-e25f-421d-b59c-2776efb03077
+		summarizeBy: none
+		sourceColumn: province
+
+	column region
+		dataType: string
+		lineageTag: 092aaf00-1697-4b82-bb2e-38d6432ea680
+		summarizeBy: none
+		sourceColumn: region
+
+	partition dim_geography = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "dim_geography", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"geography_key", Int64.Type},
+				            {"province_id", type text},
+				            {"province", type text},
+				            {"region", type text}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

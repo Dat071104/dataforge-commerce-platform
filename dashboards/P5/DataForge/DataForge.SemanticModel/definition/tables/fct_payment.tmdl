@@ -1,0 +1,100 @@
+table fct_payment
+	lineageTag: 542b47ba-ed96-4873-ad4c-d9c2dd457832
+
+	/// Successful payment events by payment date.
+	measure 'Collected Payments' = SUM('fct_payment'[collected_amount])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 4a8c188e-5076-4840-9eb6-ecf7d92eb9ef
+
+	/// Payment-event count; split payments remain separate events.
+	measure 'Payment Event Count' = DISTINCTCOUNT('fct_payment'[payment_id])
+		formatString: #,##0
+		displayFolder: Payment Events
+		lineageTag: 53b788f1-d240-4271-9e3f-62e09ce82d4c
+
+	/// Orders with more than one payment event in the current context.
+	measure 'Split Payment Orders' = COUNTROWS(FILTER(VALUES('fct_payment'[order_id]), [Payment Event Count] > 1))
+		formatString: #,##0
+		displayFolder: Orders
+		lineageTag: f7904632-a6c1-4e32-bd3f-ade4446bb8a1
+
+	column payment_id
+		dataType: string
+		isHidden
+		isKey
+		lineageTag: ae7fa576-e11b-4bba-aec8-7d01f1a3a799
+		summarizeBy: none
+		sourceColumn: payment_id
+
+	column order_id
+		dataType: string
+		lineageTag: 076d4c66-d2bc-4105-a237-55565b190e7c
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 05e30952-6a32-4bf8-a380-88fb25dee567
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column payment_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: a300795d-aac8-47c5-a4c1-f31aa1bd7614
+		summarizeBy: none
+		sourceColumn: payment_date_key
+
+	column method
+		dataType: string
+		lineageTag: 3e225584-46a8-47a0-911f-433551d08b27
+		summarizeBy: none
+		sourceColumn: method
+
+	column status
+		dataType: string
+		lineageTag: 4decc2ae-5878-4cad-86b8-747b68ba527e
+		summarizeBy: none
+		sourceColumn: status
+
+	column amount
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: de7c72c0-4998-4e38-96db-c6ce4fd4e0b6
+		summarizeBy: sum
+		sourceColumn: amount
+
+	column collected_amount
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 7395b37c-1ef1-4263-b15b-6468bcff440d
+		summarizeBy: sum
+		sourceColumn: collected_amount
+
+	partition fct_payment = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "fct_payment", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"payment_id", type text},
+				            {"order_id", type text},
+				            {"geography_key", Int64.Type},
+				            {"payment_date_key", Int64.Type},
+				            {"method", type text},
+				            {"status", type text},
+				            {"amount", Currency.Type},
+				            {"collected_amount", Currency.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

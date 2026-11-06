@@ -1,0 +1,9 @@
+role South_Region_Viewer
+	modelPermission: read
+
+	tablePermission dim_geography = 'dim_geography'[region] = "South"
+
+	tablePermission dim_customer = 'dim_customer'[customer_region] = "South"
+
+	annotation PBI_Id = 0f9207a1a230409da8919a3b4d1ac301
+

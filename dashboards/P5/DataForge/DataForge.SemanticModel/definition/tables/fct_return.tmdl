@@ -1,0 +1,89 @@
+table fct_return
+	lineageTag: a205a3ca-9a81-4dff-ac86-a0d79e06f45c
+
+	/// Completed refunds by return date.
+	measure 'Completed Refunds' = SUM('fct_return'[completed_refund])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 7b535c32-420f-4f05-9de7-00977bbdb2d6
+
+	column return_id
+		dataType: string
+		isHidden
+		isKey
+		lineageTag: 4e03c7e9-c7ea-46ee-aff8-d8b5c6a1b9d9
+		summarizeBy: none
+		sourceColumn: return_id
+
+	column order_id
+		dataType: string
+		lineageTag: 9c0c0cb5-9e31-45b1-ab2a-ed29a283e963
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column order_item_id
+		dataType: string
+		isHidden
+		lineageTag: 5cc61216-2c03-440a-b1fe-0c5c2b66006f
+		summarizeBy: none
+		sourceColumn: order_item_id
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6dfc7560-8d70-444f-8536-ddd36bc3328d
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column return_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 549d1db6-fe6a-4218-b0ef-5e0f114bee86
+		summarizeBy: none
+		sourceColumn: return_date_key
+
+	column status
+		dataType: string
+		lineageTag: 54e9dde5-61bc-473d-b0ab-18f189de7bae
+		summarizeBy: none
+		sourceColumn: status
+
+	column refund_amount
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 0cd2246e-c910-45ca-9d0f-9320a8650db2
+		summarizeBy: sum
+		sourceColumn: refund_amount
+
+	column completed_refund
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: c7c1abce-2a84-42f3-beb4-e697b79884c4
+		summarizeBy: sum
+		sourceColumn: completed_refund
+
+	partition fct_return = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "fct_return", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"return_id", type text},
+				            {"order_id", type text},
+				            {"order_item_id", type text},
+				            {"geography_key", Int64.Type},
+				            {"return_date_key", Int64.Type},
+				            {"status", type text},
+				            {"refund_amount", Currency.Type},
+				            {"completed_refund", Currency.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

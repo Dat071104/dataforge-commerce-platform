@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "36e2b9428aaa5fb83292",
+  "position": {
+    "x": 940,
+    "y": 100,
+    "z": 7000,
+    "width": 320,
+    "height": 85,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_payment"
+                    }
+                  },
+                  "Property": "Split Payment Orders"
+                }
+              },
+              "queryRef": "fct_payment.Split Payment Orders",
+              "nativeQueryRef": "Split Payment Orders",
+              "displayName": "Split-Payment Orders"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

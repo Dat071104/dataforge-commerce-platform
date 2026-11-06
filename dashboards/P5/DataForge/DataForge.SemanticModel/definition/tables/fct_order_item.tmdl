@@ -1,0 +1,234 @@
+table fct_order_item
+	lineageTag: 91976ec0-fe04-4e47-9f06-05603fbaa319
+
+	/// Delivered net item value; an analytics proxy, not recognized revenue.
+	measure 'Fulfilled Sales Proxy' = SUM('fct_order_item'[fulfilled_sales_proxy])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 66cbe638-6ed8-42fa-897b-61efbfadb8a3
+
+	/// Gross item value across all order statuses.
+	measure 'Gross Ordered Value' = SUM('fct_order_item'[gross_item_value])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: f0bb407b-312f-4394-a786-f99b5a1b7514
+
+	/// Net item value across all order statuses; not revenue.
+	measure 'Net Ordered Value' = SUM('fct_order_item'[net_order_value])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 47b27212-9624-4396-be7b-7eb06d700e23
+
+	/// Distinct delivered orders within item-fact filter context.
+	measure 'Delivered Orders' = CALCULATE(DISTINCTCOUNT('fct_order_item'[order_id]), 'fct_order_item'[order_status] = "delivered")
+		formatString: #,##0
+		displayFolder: Orders
+		lineageTag: e1d94c4d-b86f-41c3-b379-20df1fccf5f2
+
+	/// Unrounded fulfilled sales proxy per delivered order; model format is whole VND, Executive card overrides to millions with two decimals.
+	measure 'Average Order Value' = DIVIDE([Fulfilled Sales Proxy], [Delivered Orders])
+		formatString: #,##0
+		displayFolder: Currency (VND)
+		lineageTag: 44b643d1-5262-45b7-ad81-ba94a03fbba2
+
+	/// Product COGS proxy on delivered lines.
+	measure 'Fulfilled COGS Proxy' = SUM('fct_order_item'[fulfilled_cogs_proxy])
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 283c1dcb-f4b1-476f-a0d3-5863bce0c7f9
+
+	/// Sales proxy less COGS proxy; excludes tax, shipping and overhead.
+	measure 'Gross Margin Proxy' = [Fulfilled Sales Proxy] - [Fulfilled COGS Proxy]
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: cf2d6490-3636-4f02-b867-b89bf546330f
+
+	/// Gross margin proxy divided by fulfilled sales proxy.
+	measure 'Margin Proxy %' = DIVIDE([Gross Margin Proxy], [Fulfilled Sales Proxy])
+		formatString: 0.0%
+		displayFolder: Percentages
+		lineageTag: 9a65359c-08d8-4c14-b017-ca55d0febe77
+
+	/// Previous month fulfilled sales proxy by order date.
+	measure 'Previous Month Sales' = CALCULATE([Fulfilled Sales Proxy], DATEADD('dim_date'[calendar_date], -1, MONTH))
+		formatString: #,##0.00
+		displayFolder: Currency (VND)
+		lineageTag: 006c56b9-04f0-46bf-8fcb-b92b715bf832
+
+	/// Month-over-month change in fulfilled sales proxy.
+	measure 'MoM Sales Growth %' = DIVIDE([Fulfilled Sales Proxy] - [Previous Month Sales], [Previous Month Sales])
+		formatString: 0.0%
+		displayFolder: Percentages
+		lineageTag: b549ecf2-0f81-4069-93fa-61110f53942b
+
+	/// Visible source and metric caveat.
+	measure 'Demo Data Notice' = "DEMO ONLY • Currency VND • sales proxy is not recognized revenue."
+		displayFolder: Report Notes
+		lineageTag: 9f8b142a-53ed-40e8-bc6d-cce2e8e435fd
+
+	/// Explains the deliberate omission of the inventory fact.
+	measure 'Inventory Scope Note' = "Global inventory is excluded from this regional RLS model because it has no geography key."
+		displayFolder: Report Notes
+		lineageTag: 7b8c73d1-498d-4344-b7d8-ea8a2d51f715
+
+	/// Distinct delivered item-line denominator.
+	measure 'Delivered Item Lines' = CALCULATE(DISTINCTCOUNT('fct_order_item'[order_item_id]), 'fct_order_item'[order_status] = "delivered")
+		formatString: #,##0
+		displayFolder: Return Rate
+		lineageTag: a2f56c19-e148-4df1-b716-ca6e7ec8e110
+
+	/// Completed return events eventually associated with selected delivered item IDs; ignores return-date filtering.
+	measure 'Returned Delivered Item Lines (Eventual)' = VAR DeliveredItemIDs = CALCULATETABLE(VALUES('fct_order_item'[order_item_id]), 'fct_order_item'[order_status] = "delivered") RETURN CALCULATE(DISTINCTCOUNT('fct_return'[order_item_id]), REMOVEFILTERS('dim_date'), 'fct_return'[status] = "completed", TREATAS(DeliveredItemIDs, 'fct_return'[order_item_id]))
+		formatString: #,##0
+		displayFolder: Return Rate
+		lineageTag: 0beb2bea-b6d7-4c3e-9bb6-ea5293343a00
+
+	/// Unique delivered item lines with at least one completed return divided by delivered item lines; not a unit-return rate.
+	measure 'Return Line Rate' = DIVIDE([Returned Delivered Item Lines (Eventual)], [Delivered Item Lines])
+		formatString: 0.0%
+		displayFolder: Return Rate
+		lineageTag: 1abcc492-8067-4e99-9f1f-e9c72b2eed71
+
+	/// Makes the report date-role rules visible.
+	measure 'Return Line Rate Date Rule' = "Late/P90: delivery date; weather: observation date; completed returns by order date; no return-date filter."
+		displayFolder: Report Notes
+		lineageTag: 556c0fb6-c0f6-4ec5-84c8-a2b7d4214d56
+
+	column order_item_id
+		dataType: string
+		isHidden
+		isKey
+		lineageTag: 64eb3211-678b-4c39-8ab7-6c32f95fe174
+		summarizeBy: none
+		sourceColumn: order_item_id
+
+	column order_id
+		dataType: string
+		lineageTag: fc20567e-63a5-4cad-8b0d-d65398de2a30
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column order_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: caa2437c-ae84-4f20-a2b9-ac81c41f5ef9
+		summarizeBy: none
+		sourceColumn: order_date_key
+
+	column customer_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 367ab9a7-d061-43d5-9084-151270d1e5f3
+		summarizeBy: none
+		sourceColumn: customer_key
+
+	column product_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: f1efbca8-99ff-498a-b1b9-58d62bad4b38
+		summarizeBy: none
+		sourceColumn: product_key
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ec59772e-bd25-4478-8f9c-bb97d7516bd5
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column order_status
+		dataType: string
+		lineageTag: e1238583-36d0-4a2f-be53-11a066b054f4
+		summarizeBy: none
+		sourceColumn: order_status
+
+	column quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: 4cdaf839-3aba-4427-8273-75e5c2eb6b04
+		summarizeBy: sum
+		sourceColumn: quantity
+
+	column unit_price
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: d09581fe-0e29-4d09-a043-c3f2f813a202
+		summarizeBy: sum
+		sourceColumn: unit_price
+
+	column discount_pct
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: 4afa11f5-6772-478c-9f7c-37382c72f29e
+		summarizeBy: average
+		sourceColumn: discount_pct
+
+	column gross_item_value
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: eae8789a-f749-4ee6-990d-78e80a4feb8f
+		summarizeBy: sum
+		sourceColumn: gross_item_value
+
+	column discount_value
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: ecb8cfa8-0281-4826-a6e9-ac77cfd09e6f
+		summarizeBy: sum
+		sourceColumn: discount_value
+
+	column net_order_value
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: d861a5d5-5470-49d6-8793-2ded82f48969
+		summarizeBy: sum
+		sourceColumn: net_order_value
+
+	column fulfilled_sales_proxy
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 4c372200-ea85-4adc-8ac3-29b07eb6c29e
+		summarizeBy: sum
+		sourceColumn: fulfilled_sales_proxy
+
+	column fulfilled_cogs_proxy
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 749dec6e-a949-4d37-9de2-97d2f03bc580
+		summarizeBy: sum
+		sourceColumn: fulfilled_cogs_proxy
+
+	partition fct_order_item = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "fct_order_item", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"order_item_id", type text},
+				            {"order_id", type text},
+				            {"order_date_key", Int64.Type},
+				            {"customer_key", Int64.Type},
+				            {"product_key", Int64.Type},
+				            {"geography_key", Int64.Type},
+				            {"order_status", type text},
+				            {"quantity", Int64.Type},
+				            {"unit_price", Currency.Type},
+				            {"discount_pct", Currency.Type},
+				            {"gross_item_value", Currency.Type},
+				            {"discount_value", Currency.Type},
+				            {"net_order_value", Currency.Type},
+				            {"fulfilled_sales_proxy", Currency.Type},
+				            {"fulfilled_cogs_proxy", Currency.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

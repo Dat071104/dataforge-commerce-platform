@@ -1,0 +1,126 @@
+table fct_shipment
+	lineageTag: 4c8e87e7-aa02-4b27-b4c6-e0e97c05723e
+
+	/// Delivered shipments with a known transit duration.
+	measure 'Total Delivered Shipments' = CALCULATE(COUNTROWS('fct_shipment'), FILTER('fct_shipment', 'fct_shipment'[status] = "delivered" && NOT(ISBLANK('fct_shipment'[transit_days]))))
+		formatString: #,##0
+		displayFolder: Shipments
+		lineageTag: e2171e7c-be1a-44f0-90b1-aa85c06c84d2
+
+	/// Delivered shipments over the demo three-day threshold.
+	measure 'Late Delivered Shipments' = CALCULATE([Total Delivered Shipments], 'fct_shipment'[late_over_3_days] = TRUE())
+		formatString: #,##0
+		displayFolder: Shipments
+		lineageTag: f583d1b8-dd8a-4fff-b630-617b53e79816
+
+	/// Late shipment rate under the active ship-date role.
+	measure 'Late Shipment %' = DIVIDE([Late Delivered Shipments], [Total Delivered Shipments])
+		formatString: 0.0%
+		displayFolder: Percentages
+		lineageTag: e8f3759f-265b-4df0-bca5-79fa8fde7dd8
+
+	/// Late shipment rate using the inactive delivery-date role.
+	measure 'Late Shipment % by Delivery Date' = CALCULATE([Late Shipment %], USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+		formatString: 0.0%
+		displayFolder: Percentages
+		lineageTag: af245450-6f4b-4822-8dbc-c608f2e316be
+
+	/// Inclusive 90th percentile for delivered shipments with known duration, by delivery date.
+	measure 'P90 Transit Days' = CALCULATE(PERCENTILEX.INC(FILTER('fct_shipment', 'fct_shipment'[status] = "delivered" && NOT(ISBLANK('fct_shipment'[transit_days]))), 'fct_shipment'[transit_days], 0.9), USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+		formatString: 0.0 "days"
+		displayFolder: Transit
+		lineageTag: ad80c792-8f2e-4f33-a5ef-c685ce3dcfac
+
+	/// Delivered shipment count under the inactive delivery-date role.
+	measure 'Delivered By Delivery Date' = CALCULATE([Total Delivered Shipments], USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+		formatString: #,##0
+		displayFolder: Shipments
+		lineageTag: b6839d1f-b1fb-4da0-a366-1816fdb59b00
+
+	column shipment_id
+		dataType: string
+		isHidden
+		isKey
+		lineageTag: 8372cc35-1ab0-4461-99c7-36fe1c2ccff2
+		summarizeBy: none
+		sourceColumn: shipment_id
+
+	column order_id
+		dataType: string
+		lineageTag: eee30ad2-1488-46b7-9e42-94ac07bb2d12
+		summarizeBy: none
+		sourceColumn: order_id
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2f32793b-25a9-424f-b548-ac8f324f5cec
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column ship_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2710c5a1-c9fe-4e27-ad7f-f8f008edb07a
+		summarizeBy: none
+		sourceColumn: ship_date_key
+
+	column delivery_date_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5f7745fd-877a-47c2-b1c0-1904fe7c2e4c
+		summarizeBy: none
+		sourceColumn: delivery_date_key
+
+	column carrier
+		dataType: string
+		lineageTag: 8bd1cc13-37d6-4d92-a55f-057095fd0895
+		summarizeBy: none
+		sourceColumn: carrier
+
+	column status
+		dataType: string
+		lineageTag: 7be6bfc1-3dee-42f1-9566-349add7ce3b7
+		summarizeBy: none
+		sourceColumn: status
+
+	column transit_days
+		dataType: int64
+		formatString: 0
+		lineageTag: 23112634-6098-47fe-8fe5-ccade11c283e
+		summarizeBy: average
+		sourceColumn: transit_days
+
+	column late_over_3_days
+		dataType: boolean
+		lineageTag: b61dfb58-1e34-4183-b7af-782fb29f5e90
+		summarizeBy: none
+		sourceColumn: late_over_3_days
+
+	partition fct_shipment = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "fct_shipment", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"shipment_id", type text},
+				            {"order_id", type text},
+				            {"geography_key", Int64.Type},
+				            {"ship_date_key", Int64.Type},
+				            {"delivery_date_key", Int64.Type},
+				            {"carrier", type text},
+				            {"status", type text},
+				            {"transit_days", Int64.Type},
+				            {"late_over_3_days", type logical}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

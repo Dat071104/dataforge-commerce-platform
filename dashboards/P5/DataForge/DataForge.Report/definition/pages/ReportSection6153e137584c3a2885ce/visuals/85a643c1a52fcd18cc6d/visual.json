@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "85a643c1a52fcd18cc6d",
+  "position": {
+    "x": 640,
+    "y": 485,
+    "z": 13000,
+    "width": 620,
+    "height": 225,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_geography"
+                    }
+                  },
+                  "Property": "province"
+                }
+              },
+              "queryRef": "dim_geography.province",
+              "nativeQueryRef": "province",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_weather_daily"
+                    }
+                  },
+                  "Property": "Average Daily Rainfall (mm)"
+                }
+              },
+              "queryRef": "fct_weather_daily.Average Daily Rainfall (mm)",
+              "nativeQueryRef": "Average Daily Rainfall (mm)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Average Rainfall by Province'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

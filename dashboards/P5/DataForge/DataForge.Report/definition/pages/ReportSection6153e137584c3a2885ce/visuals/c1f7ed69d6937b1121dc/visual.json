@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "c1f7ed69d6937b1121dc",
+  "position": {
+    "x": 425,
+    "y": 90,
+    "z": 4000,
+    "width": 175,
+    "height": 64,
+    "tabOrder": 4000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_shipment"
+                    }
+                  },
+                  "Property": "Late Shipment % by Delivery Date"
+                }
+              },
+              "queryRef": "fct_shipment.Late Shipment % by Delivery Date",
+              "nativeQueryRef": "Late Shipment % by Delivery Date",
+              "displayName": "Late Ship (%)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

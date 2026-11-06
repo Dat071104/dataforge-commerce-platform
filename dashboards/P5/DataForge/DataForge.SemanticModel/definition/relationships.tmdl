@@ -1,0 +1,61 @@
+relationship 41663d36-ee0c-5a70-92a4-b435ee78b45a
+	fromColumn: fct_order_item.order_date_key
+	toColumn: dim_date.date_key
+
+relationship fb3839e2-dbd1-562e-a9aa-896d22c110e8
+	fromColumn: fct_order_item.customer_key
+	toColumn: dim_customer.customer_key
+
+relationship 3c9240d1-aeab-5f23-b1f0-63bd324ff797
+	fromColumn: fct_order_item.product_key
+	toColumn: dim_product.product_key
+
+relationship a096a5ff-7f10-5536-a2c9-5b86f705a4ec
+	fromColumn: fct_order_item.geography_key
+	toColumn: dim_geography.geography_key
+
+relationship e249c447-b0c3-56aa-a328-6eb35618c334
+	fromColumn: fct_payment.payment_date_key
+	toColumn: dim_date.date_key
+
+relationship 8adc651d-ec8c-5540-a4c6-a753a79816ad
+	fromColumn: fct_payment.geography_key
+	toColumn: dim_geography.geography_key
+
+relationship 90edd8c0-7799-5583-84e2-85fd52533f4f
+	fromColumn: fct_return.return_date_key
+	toColumn: dim_date.date_key
+
+relationship 192a55e6-f08b-5c5f-b95b-935d468eb3db
+	fromColumn: fct_return.geography_key
+	toColumn: dim_geography.geography_key
+
+relationship 9edc8962-b24e-5a2f-b419-10df5c7293d2
+	fromColumn: fct_shipment.ship_date_key
+	toColumn: dim_date.date_key
+
+relationship 964680d2-811e-54ca-ac37-6699067f3fa3
+	isActive: false
+	fromColumn: fct_shipment.delivery_date_key
+	toColumn: dim_date.date_key
+
+relationship d114ec90-fcfc-5bde-9a86-611a1ca870fc
+	fromColumn: fct_shipment.geography_key
+	toColumn: dim_geography.geography_key
+
+relationship 44caebc3-6a6d-5e7c-9db9-f114db3dee3e
+	fromColumn: fct_weather_daily.date_key
+	toColumn: dim_date.date_key
+
+relationship fd07bb29-9a5a-57e9-9416-a7c77ae40a3f
+	fromColumn: fct_weather_daily.geography_key
+	toColumn: dim_geography.geography_key
+
+relationship 6dd84fe1-c4db-56c8-a765-b469c9765be8
+	fromColumn: vw_order_reconciliation.order_date_key
+	toColumn: dim_date.date_key
+
+relationship 8b7239e9-8977-5bf7-81d3-4148a2e3a355
+	fromColumn: vw_order_reconciliation.geography_key
+	toColumn: dim_geography.geography_key
+

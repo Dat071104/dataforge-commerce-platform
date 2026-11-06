@@ -1,0 +1,65 @@
+table dim_product
+	lineageTag: 892c342e-b44b-4ca4-8b60-5ed8dfe18b29
+
+	column product_key
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: e07f4a94-1627-4434-91b8-6d0518bfcfde
+		summarizeBy: none
+		sourceColumn: product_key
+
+	column product_id
+		dataType: string
+		lineageTag: aa864660-6b2a-42fa-8490-61f2908a32d3
+		summarizeBy: none
+		sourceColumn: product_id
+
+	column category
+		dataType: string
+		lineageTag: 8554b531-6240-450c-bce2-4107ec329006
+		summarizeBy: none
+		sourceColumn: category
+
+	column subcategory
+		dataType: string
+		lineageTag: 07ee9903-2d4f-4c8e-8c06-50edcb94c8b8
+		summarizeBy: none
+		sourceColumn: subcategory
+
+	column base_price
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: e29fa34e-6c44-49b2-a700-7f7c67e2a9ca
+		summarizeBy: sum
+		sourceColumn: base_price
+
+	column unit_cogs
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 305fb268-76c1-4cef-894c-f51eca81e0ec
+		summarizeBy: sum
+		sourceColumn: unit_cogs
+
+	partition dim_product = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "dim_product", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"product_key", Int64.Type},
+				            {"product_id", type text},
+				            {"category", type text},
+				            {"subcategory", type text},
+				            {"base_price", Currency.Type},
+				            {"unit_cogs", Currency.Type}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

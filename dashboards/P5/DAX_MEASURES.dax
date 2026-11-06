@@ -1,0 +1,95 @@
+// Manual reference. The PBIP TMDL model includes these measures.
+
+// fct_order_item: Delivered net item value; an analytics proxy, not recognized revenue.
+Fulfilled Sales Proxy = SUM('fct_order_item'[fulfilled_sales_proxy])
+
+// fct_order_item: Gross item value across all order statuses.
+Gross Ordered Value = SUM('fct_order_item'[gross_item_value])
+
+// fct_order_item: Net item value across all order statuses; not revenue.
+Net Ordered Value = SUM('fct_order_item'[net_order_value])
+
+// fct_order_item: Distinct delivered orders within item-fact filter context.
+Delivered Orders = CALCULATE(DISTINCTCOUNT('fct_order_item'[order_id]), 'fct_order_item'[order_status] = "delivered")
+
+// fct_order_item: Distinct delivered item-line denominator.
+Delivered Item Lines = CALCULATE(DISTINCTCOUNT('fct_order_item'[order_item_id]), 'fct_order_item'[order_status] = "delivered")
+
+// fct_order_item: Completed return events eventually associated with selected delivered item IDs; ignores return-date filtering.
+Returned Delivered Item Lines (Eventual) = VAR DeliveredItemIDs = CALCULATETABLE(VALUES('fct_order_item'[order_item_id]), 'fct_order_item'[order_status] = "delivered") RETURN CALCULATE(DISTINCTCOUNT('fct_return'[order_item_id]), REMOVEFILTERS('dim_date'), 'fct_return'[status] = "completed", TREATAS(DeliveredItemIDs, 'fct_return'[order_item_id]))
+
+// fct_order_item: Unique delivered item lines with at least one completed return divided by delivered item lines; not a unit-return rate.
+Return Line Rate = DIVIDE([Returned Delivered Item Lines (Eventual)], [Delivered Item Lines])
+
+// fct_order_item: Makes the return-rate event-time rule visible.
+Return Line Rate Date Rule = "Late/P90: delivery date; weather: observation date; returns: order-date cohort, completed returns; no return-date filter."
+
+// fct_order_item: Unrounded fulfilled sales proxy per delivered order; model format is whole VND, Executive card overrides to millions with two decimals.
+Average Order Value = DIVIDE([Fulfilled Sales Proxy], [Delivered Orders])
+
+// fct_order_item: Product COGS proxy on delivered lines.
+Fulfilled COGS Proxy = SUM('fct_order_item'[fulfilled_cogs_proxy])
+
+// fct_order_item: Sales proxy less COGS proxy; excludes tax, shipping and overhead.
+Gross Margin Proxy = [Fulfilled Sales Proxy] - [Fulfilled COGS Proxy]
+
+// fct_order_item: Gross margin proxy divided by fulfilled sales proxy.
+Margin Proxy % = DIVIDE([Gross Margin Proxy], [Fulfilled Sales Proxy])
+
+// fct_order_item: Previous month fulfilled sales proxy by order date.
+Previous Month Sales = CALCULATE([Fulfilled Sales Proxy], DATEADD('dim_date'[calendar_date], -1, MONTH))
+
+// fct_order_item: Month-over-month change in fulfilled sales proxy.
+MoM Sales Growth % = DIVIDE([Fulfilled Sales Proxy] - [Previous Month Sales], [Previous Month Sales])
+
+// fct_order_item: Visible source and metric caveat.
+Demo Data Notice = "SYNTHETIC DEMO • Fulfilled Sales Proxy; not recognized revenue."
+
+// fct_order_item: Explains the deliberate omission of the inventory fact.
+Inventory Scope Note = "Global inventory is excluded from this regional RLS model because it has no geography key."
+
+// fct_payment: Successful payment events by payment date.
+Collected Payments = SUM('fct_payment'[collected_amount])
+
+// fct_payment: Payment-event count; split payments remain separate events.
+Payment Event Count = DISTINCTCOUNT('fct_payment'[payment_id])
+
+// fct_payment: Orders with more than one payment event in the current context.
+Split Payment Orders = COUNTROWS(FILTER(VALUES('fct_payment'[order_id]), [Payment Event Count] > 1))
+
+// fct_return: Completed refunds by return date.
+Completed Refunds = SUM('fct_return'[completed_refund])
+
+// vw_order_reconciliation: Successful collected payments minus expected delivered-sales proxy by order; order-date context.
+Collection Variance = SUM('vw_order_reconciliation'[collection_variance])
+
+// vw_order_reconciliation: Makes distinct event-time semantics visible.
+Finance Date Note = "Payments: payment date; refunds: return date; variance: order date."
+
+// fct_shipment: Delivered shipments with a known transit duration.
+Total Delivered Shipments = CALCULATE(COUNTROWS('fct_shipment'), FILTER('fct_shipment', 'fct_shipment'[status] = "delivered" && NOT(ISBLANK('fct_shipment'[transit_days]))))
+
+// fct_shipment: Delivered shipments over the demo three-day threshold.
+Late Delivered Shipments = CALCULATE([Total Delivered Shipments], 'fct_shipment'[late_over_3_days] = TRUE())
+
+// fct_shipment: Late shipment rate under the active ship-date role.
+Late Shipment % = DIVIDE([Late Delivered Shipments], [Total Delivered Shipments])
+
+// fct_shipment: Late shipment rate using the inactive delivery-date role.
+Late Shipment % by Delivery Date = CALCULATE([Late Shipment %], USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+
+// fct_shipment: Inclusive 90th percentile for delivered shipments with known duration, by delivery date.
+P90 Transit Days = CALCULATE(PERCENTILEX.INC(FILTER('fct_shipment', 'fct_shipment'[status] = "delivered" && NOT(ISBLANK('fct_shipment'[transit_days]))), 'fct_shipment'[transit_days], 0.9), USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+
+// fct_shipment: Delivered shipment count under the inactive delivery-date role.
+Delivered By Delivery Date = CALCULATE([Total Delivered Shipments], USERELATIONSHIP('dim_date'[date_key], 'fct_shipment'[delivery_date_key]))
+
+// fct_weather_daily: Province-level daily rainfall average.
+Average Daily Rainfall (mm) = AVERAGE('fct_weather_daily'[precipitation_mm])
+
+// fct_weather_daily: Source label from the Gold weather fact.
+Weather Source = SELECTEDVALUE('fct_weather_daily'[source], "Multiple sources")
+
+// fct_weather_daily: Provenance and interpretation reminder.
+Weather Interpretation Note = "Weather is synthetic and province-level; association with shipment lateness is not causal."
+

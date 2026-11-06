@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "d75952cb40f0661da3d6",
+  "position": {
+    "x": 720,
+    "y": 205,
+    "z": 9000,
+    "height": 470,
+    "width": 540,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_payment"
+                    }
+                  },
+                  "Property": "order_id"
+                }
+              },
+              "queryRef": "fct_payment.order_id",
+              "nativeQueryRef": "order_id",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_payment"
+                    }
+                  },
+                  "Property": "Payment Event Count"
+                }
+              },
+              "queryRef": "fct_payment.Payment Event Count",
+              "nativeQueryRef": "Payment Event Count",
+              "active": true,
+              "displayName": "Payment Events"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_payment"
+                    }
+                  },
+                  "Property": "Collected Payments"
+                }
+              },
+              "queryRef": "fct_payment.Collected Payments",
+              "nativeQueryRef": "Collected Payments",
+              "active": true,
+              "displayName": "Collected (VND)"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Payment events grouped by order'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "c3e499f3cfe180fe9d71",
+  "position": {
+    "x": 610,
+    "y": 100,
+    "z": 6000,
+    "width": 320,
+    "height": 85,
+    "tabOrder": 6000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "Collection Variance"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.Collection Variance",
+              "nativeQueryRef": "Collection Variance",
+              "displayName": "Collection Variance (VND)"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 372,
+        "y": 418.39999389648438
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 100.6990348707036,
+            "y": 302.05652851048922
+          },
+          "nodeIndex": "dim_customer",
+          "size": {
+            "height": 296,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 883.70152373900726,
+            "y": 608.77034579778046
+          },
+          "nodeIndex": "dim_date",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 745.90211955687835,
+            "y": -50
+          },
+          "nodeIndex": "dim_geography",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50,
+            "y": 654.54818710801578
+          },
+          "nodeIndex": "dim_product",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 390.62368683721343,
+            "y": 531.93386386790985
+          },
+          "nodeIndex": "fct_order_item",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 655.787633968188,
+            "y": 179.24437217352761
+          },
+          "nodeIndex": "fct_payment",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 664.41554830093708,
+            "y": 889.17309671924068
+          },
+          "nodeIndex": "fct_return",
+          "size": {
+            "height": 296,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 973.33248333898371,
+            "y": 943.89997758098934
+          },
+          "nodeIndex": "fct_shipment",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1263.1847601066825,
+            "y": 652.92101117262064
+          },
+          "nodeIndex": "fct_weather_daily",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1173.5793878104039,
+            "y": 295.99635390673393
+          },
+          "nodeIndex": "vw_order_reconciliation",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

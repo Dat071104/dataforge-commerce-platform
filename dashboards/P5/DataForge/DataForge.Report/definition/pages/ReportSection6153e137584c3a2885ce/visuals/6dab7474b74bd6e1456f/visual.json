@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "6dab7474b74bd6e1456f",
+  "position": {
+    "x": 20,
+    "y": 10,
+    "z": 1000,
+    "width": 1240,
+    "height": 75,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_weather_daily"
+                    }
+                  },
+                  "Property": "Weather Interpretation Note"
+                }
+              },
+              "queryRef": "fct_weather_daily.Weather Interpretation Note",
+              "nativeQueryRef": "Weather Interpretation Note",
+              "displayName": "Synthetic weather | descriptive, not causal"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

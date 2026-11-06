@@ -1,0 +1,54 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "7ad99a54cb61030d40fd",
+  "position": {
+    "x": 610,
+    "y": 90,
+    "z": 5000,
+    "width": 155,
+    "height": 64,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "cardVisual",
+    "query": {
+      "queryState": {
+        "Data": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fct_shipment"
+                    }
+                  },
+                  "Property": "P90 Transit Days"
+                }
+              },
+              "queryRef": "fct_shipment.P90 Transit Days",
+              "nativeQueryRef": "P90 Transit Days",
+              "displayName": "P90 Transit"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

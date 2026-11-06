@@ -1,0 +1,30 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["dim_customer","dim_date","dim_geography","dim_product","fct_order_item","fct_payment","fct_return","fct_shipment","fct_weather_daily","vw_order_reconciliation","GoldWorkbookPath","GoldWorkbook"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table dim_customer
+ref table dim_date
+ref table dim_geography
+ref table dim_product
+ref table fct_order_item
+ref table fct_payment
+ref table fct_return
+ref table fct_shipment
+ref table fct_weather_daily
+ref table vw_order_reconciliation
+ref table DateTableTemplate_23ede713-ef80-4124-9ca4-6890a7cacdc4
+
+ref role South_Region_Viewer
+
+ref cultureInfo en-US
+

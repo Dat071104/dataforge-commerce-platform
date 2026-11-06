@@ -1,0 +1,106 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.9.0/schema.json",
+  "name": "c9839bd94b0a6483940b",
+  "position": {
+    "x": 20,
+    "y": 205,
+    "z": 8000,
+    "width": 680,
+    "height": 470,
+    "tabOrder": 8000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "order_id"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.order_id",
+              "nativeQueryRef": "order_id",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "expected_collection_proxy"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.expected_collection_proxy",
+              "nativeQueryRef": "expected_collection_proxy",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "collected"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.collected",
+              "nativeQueryRef": "collected",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "vw_order_reconciliation"
+                    }
+                  },
+                  "Property": "collection_variance"
+                }
+              },
+              "queryRef": "vw_order_reconciliation.collection_variance",
+              "nativeQueryRef": "collection_variance",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Order-level reconciliation (order-date context)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

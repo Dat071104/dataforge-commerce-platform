@@ -1,0 +1,99 @@
+table dim_customer
+	lineageTag: b671ae89-73f2-4ae8-aace-db9caa3120f0
+
+	column customer_key
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: 5b3e853c-67fa-4261-b2d1-dbaf56837a04
+		summarizeBy: none
+		sourceColumn: customer_key
+
+	column customer_id
+		dataType: string
+		lineageTag: 14b619c8-095f-474d-b0b7-483674ad1c03
+		summarizeBy: none
+		sourceColumn: customer_id
+
+	column segment
+		dataType: string
+		lineageTag: 360a3bbe-22b0-4ed2-9ddc-aa44c3a8eb04
+		summarizeBy: none
+		sourceColumn: segment
+
+	column valid_from
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: 3eeb7365-a8c9-42a6-b7a8-07597f4de9fc
+		summarizeBy: none
+		sourceColumn: valid_from
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column valid_to
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: ecfdcdbf-5742-4b2d-983b-2a3d7c748d09
+		summarizeBy: none
+		sourceColumn: valid_to
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column is_current
+		dataType: boolean
+		isHidden
+		lineageTag: f0d551ff-c805-4799-80b7-1f089252b419
+		summarizeBy: none
+		sourceColumn: is_current
+
+	column signup_date
+		dataType: dateTime
+		isHidden
+		formatString: yyyy-mm-dd
+		lineageTag: 5a9b5b15-dd5e-45ca-9727-370072e9570c
+		summarizeBy: none
+		sourceColumn: signup_date
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column geography_key
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 76b76404-29c3-426e-a7a3-bd62d16642e8
+		summarizeBy: none
+		sourceColumn: geography_key
+
+	column customer_region
+		dataType: string
+		lineageTag: c76dd953-6fe3-4e63-982c-62f70c4466e9
+		summarizeBy: none
+		sourceColumn: customer_region
+
+	partition dim_customer = m
+		mode: import
+		source =
+				let
+				    Sheet = GoldWorkbook{[Item = "dim_customer", Kind = "Sheet"]}[Data],
+				    PromotedHeaders = Table.PromoteHeaders(Sheet, [PromoteAllScalars = true]),
+				    TypedColumns = Table.TransformColumnTypes(
+				        PromotedHeaders,
+				        {
+				            {"customer_key", Int64.Type},
+				            {"customer_id", type text},
+				            {"segment", type text},
+				            {"valid_from", type date},
+				            {"valid_to", type date},
+				            {"is_current", type logical},
+				            {"signup_date", type date},
+				            {"geography_key", Int64.Type},
+				            {"customer_region", type text}
+				        },
+				        "en-US"
+				    )
+				in
+				    TypedColumns
+

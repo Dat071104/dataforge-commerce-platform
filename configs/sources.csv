@@ -1,0 +1,12 @@
+source,primary_key,required_columns
+geography,province_id,province_id|province|region
+customers,customer_id,customer_id|signup_date|province_id|segment
+customer_segments,customer_id|valid_from,customer_id|segment|valid_from|valid_to
+products,product_id,product_id|category|subcategory|base_price|unit_cogs
+orders,order_id,order_id|customer_id|order_date|province_id|status
+order_items,order_item_id,order_item_id|order_id|product_id|quantity|unit_price|discount_pct
+payments,payment_id,payment_id|order_id|payment_date|amount|status|method
+shipments,shipment_id,shipment_id|order_id|ship_date|delivery_date|status|carrier
+returns,return_id,return_id|order_item_id|return_date|refund_amount|status
+inventory,snapshot_date|product_id,snapshot_date|product_id|quantity_in_stock|reorder_point
+weather_daily,province_id|observation_date,province_id|observation_date|precipitation_mm|temp_max_c|source

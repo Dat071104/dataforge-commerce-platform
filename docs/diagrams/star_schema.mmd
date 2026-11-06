@@ -1,0 +1,98 @@
+erDiagram
+  dim_date ||--o{ fct_order_item : order_date_active
+  dim_customer ||--o{ fct_order_item : customer_version_active
+  dim_product ||--o{ fct_order_item : product_active
+  dim_geography ||--o{ fct_order_item : order_geography_active
+
+  dim_date ||--o{ fct_payment : payment_date_active
+  dim_geography ||--o{ fct_payment : order_geography_active
+  dim_date ||--o{ fct_return : return_date_active
+  dim_geography ||--o{ fct_return : order_geography_active
+
+  dim_date ||--o{ fct_shipment : ship_date_active
+  dim_date |o..o{ fct_shipment : delivery_date_inactive
+  dim_geography ||--o{ fct_shipment : order_geography_active
+
+  dim_date ||--o{ fct_inventory_snapshot : snapshot_date_active
+  dim_product ||--o{ fct_inventory_snapshot : product_active
+  dim_date ||--o{ fct_weather_daily : observation_date_active
+  dim_geography ||--o{ fct_weather_daily : province_active
+
+  dim_date ||--o{ vw_order_reconciliation : order_date
+  dim_geography ||--o{ vw_order_reconciliation : order_geography
+
+  dim_date {
+    int date_key PK
+    date calendar_date
+  }
+  dim_customer {
+    int customer_key PK
+    text customer_id
+    date valid_from
+    date valid_to
+    boolean is_current
+  }
+  dim_product {
+    int product_key PK
+    text product_id
+    text category
+    text subcategory
+  }
+  dim_geography {
+    int geography_key PK
+    text province_id
+    text region
+  }
+  fct_order_item {
+    text order_item_id PK
+    text order_id
+    int order_date_key FK
+    int customer_key FK
+    int product_key FK
+    int geography_key FK
+    numeric net_order_value
+    numeric fulfilled_sales_proxy
+  }
+  fct_payment {
+    text payment_id PK
+    text order_id
+    int payment_date_key FK
+    int geography_key FK
+    numeric amount
+    numeric collected_amount
+  }
+  fct_return {
+    text return_id PK
+    text order_item_id
+    int return_date_key FK
+    int geography_key FK
+    numeric refund_amount
+  }
+  fct_shipment {
+    text shipment_id PK
+    text order_id
+    int ship_date_key FK
+    int delivery_date_key FK
+    int geography_key FK
+    int transit_days
+  }
+  fct_inventory_snapshot {
+    int snapshot_date_key PK, FK
+    int product_key PK, FK
+    int quantity_in_stock
+    int reorder_point
+  }
+  fct_weather_daily {
+    int date_key PK, FK
+    int geography_key PK, FK
+    numeric precipitation_mm
+    numeric temp_max_c
+  }
+  vw_order_reconciliation {
+    text order_id PK
+    int order_date_key FK
+    int geography_key FK
+    numeric collected
+    numeric completed_refunds
+    numeric collection_variance
+  }
