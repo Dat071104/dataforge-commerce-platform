@@ -624,7 +624,16 @@ def test_invalid_scd2_snapshots_roll_back_before_raw_commit(monkeypatch, tmp_pat
         baseline_hashes = {}
         with psycopg.connect(test_url) as con:
             with con.cursor() as cur:
-                cur.execute("SELECT source, sha256 FROM audit.load_runs")
+                # A source can have multiple audit rows. Select the same
+                # deterministic latest-row ordering used by the rollback
+                # assertion below instead of relying on scan order.
+                cur.execute(
+                    """
+                    SELECT DISTINCT ON (source) source, sha256
+                    FROM audit.load_runs
+                    ORDER BY source, loaded_at DESC, run_id DESC
+                    """
+                )
                 baseline_hashes = dict(cur.fetchall())
                 cur.execute("SELECT count(*) FROM raw.customer_segments")
                 baseline_segment_count = cur.fetchone()[0]
