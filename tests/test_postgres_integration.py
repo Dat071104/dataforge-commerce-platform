@@ -621,34 +621,33 @@ def test_invalid_scd2_snapshots_roll_back_before_raw_commit(monkeypatch, tmp_pat
 
         baseline_customers = pd.read_csv(src / "customers.csv", dtype="string")
         baseline_segments = pd.read_csv(src / "customer_segments.csv", dtype="string")
-        baseline_hashes = {}
         with psycopg.connect(test_url) as con:
             with con.cursor() as cur:
-                # A source can have multiple audit rows. Select the same
-                # deterministic latest-row ordering used by the rollback
-                # assertion below instead of relying on scan order.
-                cur.execute(
-                    """
-                    SELECT DISTINCT ON (source) source, sha256
-                    FROM audit.load_runs
-                    ORDER BY source, loaded_at DESC, run_id DESC
-                    """
-                )
-                baseline_hashes = dict(cur.fetchall())
                 cur.execute("SELECT count(*) FROM raw.customer_segments")
                 baseline_segment_count = cur.fetchone()[0]
 
         def assert_failed_snapshot(source_name, attempted_manifest, expected_check):
+            # Compare the complete audit-row set around the failed load. A
+            # timestamp/run-id ordering is not a reliable way to identify the
+            # latest row when multiple rows share transaction timestamps.
+            with psycopg.connect(test_url) as con:
+                with con.cursor() as cur:
+                    cur.execute(
+                        "SELECT run_id, sha256 FROM audit.load_runs WHERE source = %s",
+                        (source_name,),
+                    )
+                    audit_rows_before = set(cur.fetchall())
             with pytest.raises(ValueError, match=expected_check):
                 database.load()
             with psycopg.connect(test_url) as con:
                 with con.cursor() as cur:
                     cur.execute("SELECT count(*) FROM raw.customer_segments")
                     assert cur.fetchone()[0] == baseline_segment_count
-                    cur.execute("SELECT sha256 FROM audit.load_runs WHERE source = %s "
-                                "ORDER BY loaded_at DESC, run_id DESC LIMIT 1",
-                                (source_name,))
-                    assert cur.fetchone()[0] == baseline_hashes[source_name]
+                    cur.execute(
+                        "SELECT run_id, sha256 FROM audit.load_runs WHERE source = %s",
+                        (source_name,),
+                    )
+                    assert set(cur.fetchall()) == audit_rows_before
                     cur.execute("SELECT count(*) FROM audit.load_runs WHERE source = %s "
                                 "AND sha256 = %s", (source_name, attempted_manifest["source_sha256"]))
                     assert cur.fetchone()[0] == 0
