@@ -46,7 +46,7 @@ db_check.json
 *.log
 *.parquet
 *.xlsx
-build/
+/build/
 dist/
 .tox/
 
