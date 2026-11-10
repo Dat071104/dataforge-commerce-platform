@@ -1,0 +1,25 @@
+# P7.1 Week-4 risk register
+
+**Active target:** `dataforge-p7-lab-d0f725` (`955038620072`). Foundation and data smoke are live. The usage-based [cost receipt](cloud_cost_receipt.md) is complete; billing settlement remains unverified and the independent controller returned CLOUD_GO_WEEK4.
+
+| ID | Risk | Current control / evidence | Remaining action |
+|---|---|---|---|
+| R01 | Wrong SDK identity or quota project could affect another target | Isolated SDK root is selected by the session helper from `target.json`; new project and workspace were used for the applied plan | Recheck the project/config before future cloud operations; never reuse another workspace/state |
+| R02 | Free Trial linkage does not guarantee every operation is covered or free | Project is linked to the existing active Free Trial; no billing upgrade was made | Review actual usage and current price estimate; do not treat the trial or target as a cap |
+| R03 | USD 10 is an operational target, not a hard spending cap | Query bytes are bounded; staging tables expire; no recurring compute was deployed | Actual query usage is 587,202,560 billed bytes; conservative task estimate below USD 0.02; settlement unknown. Stop future operations if projected usage exceeds target |
+| R04 | Mentor may not accept GCP for an Azure/Fabric checkpoint | Equivalence mapping describes functional analogies and non-equivalences | Confirm mentor acceptance before claiming syllabus completion |
+| R05 | Region or residency may not suit future data | Bucket metadata reports `US-CENTRAL1`; all datasets and adapter target are `us-central1`; synthetic smoke passed in the same region | Keep the deployment synthetic. Reassess residency before moving Vietnamese or personal data |
+| R06 | Parquet fields are physically strings and typed casts can fail on schema/value changes | All 11 first-pass raw/typed checks and 11 replay checks passed; row counts, hashes, schemas, keys, and values were reconciled | Re-run contracts and reconciliation for any changed source or schema |
+| R07 | Manifest hashes are integrity checks, not signatures | Active manifest validation, synthetic-only policy, byte hashes, and generation checks | Restrict writers; add signed manifests only if the threat model requires them |
+| R08 | A privileged actor could delete/recreate an object or a future URI could resolve to a different generation | Uploads use generation-match zero; receipts verify bytes, SHA-256, CRC32C, generation, and post-load generation; public access is blocked | No locked retention policy is enabled. Review retention/soft-delete before cleanup or real-data use |
+| R09 | Upload, raw load, cast, and reconciliation are not a single transaction | Batch tables carry provenance; matching reruns reuse verified outputs; all 11 current reruns pass | No live injected-failure drill has been performed. Inspect incomplete tables/jobs before retrying |
+| R10 | BigQuery Data Editor can update/delete staging tables | Grant is limited to `staging`, with seven-day table expiry; runtime Gold access returned HTTP 403 | Revisit a custom role only if the lab workload grows |
+| R11 | Local Terraform state can be lost or disclosed | Fresh target-named workspace, state/plan ignore rules, no state reuse, and post-apply no-drift receipt | Keep local state private; review a remote backend before team use |
+| R12 | Bucket metadata role permits broader metadata/list access than an object-only read | `roles/storage.bucketViewer` is scoped to the one Bronze bucket and supports the adapter's location check | Reassess if the adapter no longer needs metadata or a narrower supported grant is available |
+| R13 | A legacy service exists in the earlier shared-project inventory | Active DataForge deployment moved to a new isolated project; earlier SaigonBite resources were not changed | Review the old inventory separately only if that project becomes in-scope again |
+| R14 | Earlier shared-project inventory did not cover every possible service/API | It is historical evidence for a superseded project target; the active new project has its own live foundation inventory | Do not infer that the historical inventory describes the new project |
+| R15 | Hosted CI/release status is separate from cloud deployment | Terraform apply and live receipts do not imply a GitHub PR or merge | Root owns release/CI follow-up; require actual PR CI before merge |
+| R16 | A caller could target a bucket owned by another project | Adapter checks expected project number against live bucket metadata before upload; current target project, bucket, and dataset matched | Keep target values sourced from `target.json` and preserve the live ownership check |
+| R17 | Token Creator lets an operator act with runtime service-account permissions | Grant is scoped to the `dataforge-runtime` service-account resource; no service-account key exists | Keep only the verified operator; remove through a reviewed plan when reproducible Week-5 identity checks no longer need it |
+
+The final cost receipt and independent controller review must close before any P7.1 final verdict. This risk register does not assign `CLOUD_GO`.

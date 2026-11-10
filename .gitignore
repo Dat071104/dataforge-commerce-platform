@@ -50,6 +50,22 @@ db_check.json
 dist/
 .tox/
 
+# Terraform local state, provider cache, plans, and credentials
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.d/
+*.tfplan
+crash.log
+*.tfvars
+!*.tfvars.example
+*.auto.tfvars
+!*.auto.tfvars.example
+**/application_default_credentials.json
+
+# Private local authentication troubleshooting; publish only sanitized cloud evidence.
+/docs/cloud/auth_diagnosis_2026-11-09.md
+
 # Historical screenshots are retained locally; only the curated v1.0-local
 # report captures are published.
 /docs/screenshots/*

@@ -1,0 +1,58 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "bucket": "dataforge-p7-lab-d0f725-bronze",
+  "bucket_location": "US-CENTRAL1",
+  "uniform_access": true,
+  "public_access_prevention": "enforced",
+  "public_iam_members": false,
+  "runtime_service_account": "dataforge-runtime@dataforge-p7-lab-d0f725.iam.gserviceaccount.com",
+  "runtime_bucket_roles": [
+    "roles/storage.bucketViewer",
+    "roles/storage.objectViewer"
+  ],
+  "runtime_project_roles": [
+    "roles/bigquery.jobUser",
+    "roles/serviceusage.serviceUsageConsumer"
+  ],
+  "datasets": [
+    {
+      "id": "dataforge-p7-lab-d0f725:staging",
+      "location": "us-central1",
+      "default_table_expiration_ms": "604800000",
+      "runtime_access": [
+        "WRITER"
+      ]
+    },
+    {
+      "id": "dataforge-p7-lab-d0f725:silver",
+      "location": "us-central1",
+      "default_table_expiration_ms": null,
+      "runtime_access": []
+    },
+    {
+      "id": "dataforge-p7-lab-d0f725:gold",
+      "location": "us-central1",
+      "default_table_expiration_ms": null,
+      "runtime_access": []
+    }
+  ],
+  "enabled_apis": [
+    "analyticshub.googleapis.com",
+    "bigquery.googleapis.com",
+    "bigqueryconnection.googleapis.com",
+    "bigquerydatapolicy.googleapis.com",
+    "bigquerydatatransfer.googleapis.com",
+    "bigquerymigration.googleapis.com",
+    "bigqueryreservation.googleapis.com",
+    "bigquerystorage.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+    "dataform.googleapis.com",
+    "dataplex.googleapis.com",
+    "iam.googleapis.com",
+    "iamcredentials.googleapis.com",
+    "serviceusage.googleapis.com",
+    "storage.googleapis.com"
+  ],
+  "resource_location_iam_checks": "PASS"
+}

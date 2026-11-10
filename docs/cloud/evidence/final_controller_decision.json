@@ -1,0 +1,124 @@
+{
+  "decision": "CLOUD_GO_WEEK4",
+  "control_label": "GO",
+  "release_ready": true,
+  "release_ready_scope": "Commit, push, and PR are authorized; merge requires passing hosted CI on the exact PR head.",
+  "reviewed_target": {
+    "project_id": "dataforge-p7-lab-d0f725",
+    "project_number": "955038620072",
+    "region": "us-central1",
+    "bucket": "dataforge-p7-lab-d0f725-bronze",
+    "terraform_workspace": "p7-dataforge-p7-lab-d0f725"
+  },
+  "acceptance": [
+    {
+      "gate": "isolated_target_and_scope",
+      "status": "PASS"
+    },
+    {
+      "gate": "reviewed_terraform_plan_and_apply",
+      "status": "PASS",
+      "creates": 11,
+      "updates": 0,
+      "deletes": 0,
+      "plan_sha256": "4ED9CD3876E0F282253BD4C9A6E9199DCB7343C27A3790CF3BE121F786F88B40"
+    },
+    {
+      "gate": "private_regional_foundation_and_iam",
+      "status": "PASS"
+    },
+    {
+      "gate": "synthetic_first_pass_transfers_and_exact_reconciliation",
+      "status": "PASS",
+      "source_count": 11,
+      "rows_across_distinct_grains": 16259
+    },
+    {
+      "gate": "safe_reruns",
+      "status": "PASS",
+      "rerun_count": 11
+    },
+    {
+      "gate": "runtime_positive_and_negative_iam",
+      "status": "PASS"
+    },
+    {
+      "gate": "terraform_drift",
+      "status": "PASS",
+      "exit_code": 0,
+      "no_changes": true,
+      "managed_resources": 11
+    },
+    {
+      "gate": "local_regression_and_quality",
+      "status": "PASS_RECORDED_NOT_RERUN_BY_CONTROLLER",
+      "pytest_passed": 127,
+      "pytest_duration_seconds": 25.95
+    },
+    {
+      "gate": "usage_and_operational_cost_target",
+      "status": "PASS_FOR_MEASURED_USAGE_AND_ESTIMATE",
+      "completed_jobs": 89,
+      "query_bytes_billed": 587202560,
+      "query_list_price_usd_before_free_tiers_and_credits": "0.003338",
+      "conservative_task_estimate_usd_less_than": "0.02",
+      "target_usd": 10,
+      "hard_cap": false
+    },
+    {
+      "gate": "settled_project_bill",
+      "status": "UNVERIFIED",
+      "settled_charge_usd": null,
+      "project_billing_row_posted": false
+    },
+    {
+      "gate": "publication_hygiene",
+      "status": "PASS_WITH_LIMIT",
+      "dedicated_secret_scanner_available": false
+    },
+    {
+      "gate": "mentor_acceptance_for_azure_fabric_substitution",
+      "status": "UNVERIFIED_SEPARATE"
+    },
+    {
+      "gate": "hosted_pr_ci",
+      "status": "UNVERIFIED_NOT_RUN",
+      "required_before_merge": true
+    }
+  ],
+  "findings": {
+    "critical": [],
+    "major": [],
+    "minor": [
+      {
+        "id": "M1",
+        "finding": "Settled billing has not posted; measured usage and conservative task estimate are below the operational target, but settled charges remain unknown, not zero.",
+        "owner": "project/billing owner"
+      },
+      {
+        "id": "M2",
+        "finding": "The verified operator retains Token Creator on the single runtime service account; the binding is scoped and documented but permits use of runtime permissions.",
+        "owner": "project/IAM owner"
+      },
+      {
+        "id": "M3",
+        "finding": "Some README and current cloud status text still says the controller is pending; synchronize those status-only references before public release.",
+        "owner": "root release integrator"
+      }
+    ]
+  },
+  "historical_failed_check": {
+    "command": "RUN_POSTGRES_TESTS=1 .venv/Scripts/python.exe -m pytest -q -o faulthandler_timeout=60 tests dashboards/P5/tests",
+    "result": "Initial attempt had six PostgreSQL connection timeouts while Docker was stopped. After restoring the existing environment without volume changes, the recorded final rerun passed 127 tests in 25.95 seconds with exit 0. Private trace was not read."
+  },
+  "controller_review": {
+    "worker_reports_reviewed": 4,
+    "implementation_hash_entries_verified": 14,
+    "transfer_receipts_cross_checked": 11,
+    "rerun_receipts_cross_checked": 11,
+    "hash_or_receipt_pair_discrepancies": 0,
+    "cloud_calls_made": false,
+    "credentials_private_state_plans_or_raw_sensitive_logs_read": false
+  },
+  "next_gate": "Commit/push/open PR are permitted under prior user authorization. Require passing hosted CI on the exact PR head before merge. Mentor acceptance, settled billing, and Week-5/7 work remain separate."
+}

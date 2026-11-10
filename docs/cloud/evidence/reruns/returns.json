@@ -1,0 +1,88 @@
+{
+  "source": "returns",
+  "target_project_number": "955038620072",
+  "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_sha256": "76b5c1c31bfa47e12555e7736588cf9ce0742f6fb810571d7ba051c059440c54",
+  "parquet_sha256": "fb241a0ef933bf296e2a51fdd840b88b802a6b210737c69962afa2982b76ed40",
+  "row_count": 139,
+  "gcs_uri": "gs://dataforge-p7-lab-d0f725-bronze/bronze/source=returns/sha256=fb241a0ef933bf296e2a51fdd840b88b802a6b210737c69962afa2982b76ed40/part-000.parquet",
+  "gcs_generation": 1794241385123209,
+  "gcs_size_bytes": 6532,
+  "gcs_crc32c": "U2XJMA==",
+  "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/source=returns/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+  "manifest_sha256": "ca4288545a9f328fd2e051d21393f5f3c6bf2da200b304023d76048fbd3792dc",
+  "manifest_generation": 1794241387770764,
+  "manifest_size_bytes": 1272,
+  "manifest_crc32c": "TUATPg==",
+  "bucket_location": "US-CENTRAL1",
+  "dataset_location": "us-central1",
+  "bigquery": {
+    "raw_table": "dataforge-p7-lab-d0f725.staging.returns_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+    "typed_table": "dataforge-p7-lab-d0f725.staging.returns_1b8ab9513d624bbcba6692a6ea0818f6",
+    "load_job_id": "dataforge_load_returns_1b8ab9513d624bbcba6692a6ea0818f6_0478b7cb0101",
+    "cast_job_id": "dataforge_cast_returns_1b8ab9513d624bbcba6692a6ea0818f6_cae5d7ebb2ec",
+    "metrics_job_id": "dataforge_verify_returns_1b8ab9513d624bbcba6692a6ea0818f6_5fb7d24942ff",
+    "row_count": 139,
+    "filtered_row_count": 1,
+    "null_counts": {},
+    "schema": [
+      {
+        "name": "return_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "order_item_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "return_date",
+        "bq_type": "DATE",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "refund_amount",
+        "bq_type": "NUMERIC",
+        "nullable": false,
+        "precision": 18,
+        "scale": 2
+      },
+      {
+        "name": "status",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      }
+    ],
+    "raw_reconciliation_job_id": "dataforge_rawreconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_4a38fcae51cc",
+    "raw_value_sha256": "7e603d7ac213d32550894e9b113acd4543db66cdc8acbace04f327217ca2d5b6",
+    "raw_values_match": true,
+    "raw_reconciliation_bytes_processed": 0,
+    "raw_reconciliation_bytes_billed": 0,
+    "reconciliation_job_id": "dataforge_reconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_e33dc1bc8380",
+    "source_value_sha256": "ad01dcf5816a5d08cc46dd8f38f452ed0dbc765b21601efde66f8a7e5880de4e",
+    "bigquery_value_sha256": "ad01dcf5816a5d08cc46dd8f38f452ed0dbc765b21601efde66f8a7e5880de4e",
+    "exact_values_match": true,
+    "load_reused": true,
+    "cast_reused": true,
+    "cast_bytes_processed": null,
+    "cast_bytes_billed": null,
+    "metrics_bytes_processed": 0,
+    "metrics_bytes_billed": 0,
+    "reconciliation_bytes_processed": 0,
+    "reconciliation_bytes_billed": 0,
+    "maximum_bytes_billed": 268435456,
+    "request_retry_deadline_seconds": 60,
+    "api_request_timeout_seconds": 60,
+    "job_wait_timeout_seconds": 300
+  }
+}

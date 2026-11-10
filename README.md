@@ -1,203 +1,163 @@
-# DataForge — Local Commerce Analytics (v1.0-local)
+# DataForge — Synthetic Commerce Analytics
 
-**Current local acceptance: GO LOCAL (P6.2).** DataForge combines Intern Data Engineer Mini-projects 1 and 2 into a reproducible, synthetic-first Order-to-Cash analytics portfolio.
+**Local acceptance: GO LOCAL** (v1.0-local / P6.2).
+**GCP Week 4: CLOUD_GO_WEEK4 — independent final controller accepted.**
 
-**CSV → contract validation → content-addressed Parquet → PostgreSQL raw/audit → Kimball dimensions and facts → 10 SQL analyses → Power BI Desktop.** Optional weather retrieval is an explicit API action; the default fixture uses synthetic weather.
+DataForge is an educational, synthetic-first order-to-cash analytics portfolio. It preserves the accepted local ingestion, PostgreSQL, Kimball, SQL, and Power BI baseline while adding a bounded GCP learning path. It is not a production service or accounting system.
 
-The business problem is to reconcile commerce orders, item lines, payment events, returns, shipments and weather without joining unrelated facts at the wrong grain. The project demonstrates data contracts, reproducible local ingestion, dimensional modeling, event-date semantics and report-level validation. It is an educational reference, not a production service or accounting system.
+## Current status
+
+- **Local:** accepted P6.2 GO LOCAL baseline; see the release record for evidence.
+- **GCP target:** project `dataforge-p7-lab-d0f725` (number `955038620072`), region `us-central1`, private bucket `dataforge-p7-lab-d0f725-bronze`.
+- **Week 4:** Terraform apply completed (11 creates, 0 updates, 0 destroys). All 11 synthetic source batches passed first-pass GCS integrity and BigQuery raw/typed schema, key, and value checks: 16,259 rows and 235,910 Parquet bytes.
+- **Reruns:** all 11 source receipts passed. Every replay preserved GCS and manifest generations, reused completed load/cast jobs, and matched exact raw and typed values.
+- **Live IAM:** the runtime service account read the source object and queried eight unique geography keys. Anonymous object access and runtime Gold listing returned HTTP 403; positive/negative IAM checks passed, and no static service-account key was created.
+- **Final gate:** the independent controller returned [CLOUD_GO_WEEK4](docs/cloud/controller_verdict.md); hosted CI must pass before merge.
+- **Syllabus:** GCP remains a functional mapping. Mentor approval is pending; GCP work does not automatically satisfy an Azure-specific checkpoint.
+- **Legacy services:** any superseded-project inventory is read-only and documented separately.
 
 ## Architecture
 
-```mermaid
+~~~mermaid
 flowchart LR
-    A[Seeded synthetic CSV sources] --> B[Schema and quality validation]
-    B --> C[Content-addressed Parquet Bronze]
-    C --> D[PostgreSQL raw snapshots and audit]
-    D --> E[Kimball dimensions, SCD2 and facts]
-    E --> F[Analytics views and 10 SQL analyses]
-    F --> G[Consistent Gold snapshot export]
-    G --> H[Power BI Desktop PBIP/PBIR]
-    W[Optional explicit Open-Meteo request] --> B
-```
+  subgraph Local["Accepted local baseline"]
+    A[Synthetic CSV] --> B[Contracts and validation]
+    B --> C[Immutable Parquet and manifest]
+    C --> D[PostgreSQL raw and audit]
+    D --> E[Kimball marts and SQL]
+    E --> F[Power BI Desktop]
+  end
+  subgraph Cloud["Week 4 deployed — verification complete"]
+    C -->|11 batches; object integrity verified| G["Private GCS Bronze<br/>dataforge-p7-lab-d0f725-bronze"]
+    G -->|generation and hash verified| H["BigQuery raw staging<br/>11 sources"]
+    H -->|typed schema, keys, and values verified| I["BigQuery typed staging<br/>us-central1"]
+    I -. Week 5 .-> J[Silver MERGE]
+    J -. Week 7 .-> K[dbt BigQuery Gold]
+  end
+  T[Terraform and least-privilege IAM] -->|apply: 11 creates| G
+  T --> H
+~~~
 
-The fuller architecture and grain register are in [`docs/architecture.md`](docs/architecture.md); the relationship diagram is [`docs/diagrams/star_schema.mmd`](docs/diagrams/star_schema.mmd).
+The verified cloud path ends at typed BigQuery staging. All 11 source replays preserved object generations and matched exact values. The independent controller accepted Week 4 as CLOUD_GO_WEEK4. PostgreSQL stays on the developer machine; a cloud job cannot reach a laptop’s loopback address.
 
-## Tech stack
+## Local quickstart
 
-- Python 3.11, pandas, PyArrow and psycopg
-- Parquet snapshots with SHA-256 integrity and source manifests
-- PostgreSQL 16, SQL, Kimball dimensions/facts and SCD2 customer history
-- Docker Compose for local PostgreSQL
-- Power BI Desktop Import model with PBIP/PBIR/TMDL, DAX and demonstration RLS
-- GitHub Actions configuration for Python 3.11/PostgreSQL 16 CI
+Requirements: Windows, Python 3.11, and Docker Desktop.
 
-`v1.0-local` is the repository portfolio release label; the Python package is not published to PyPI.
-
-## Mini-project 1 — Ingestion and Parquet
-
-The deterministic generator creates 11 fictional commerce source tables (3,000 orders by default). CSV contracts validate columns, types, keys and business ranges. Ingestion records source and Parquet hashes, writes content-addressed Bronze files and atomically promotes a complete active manifest. Changed sources load into PostgreSQL as complete snapshots with audit deltas; invalid or corrupted inputs fail closed. Optional Open-Meteo retrieval is explicit and separately provenance-checked.
-
-## Mini-project 2 — Kimball warehouse, SQL and Power BI
-
-The PostgreSQL warehouse preserves distinct fact grains for order items, payments, returns, shipments, inventory snapshots and weather. Dimensions include date, geography, product and customer SCD2. Ten analysis queries cover monthly sales, cohorts, deliveries, returns, inventory risk and order-level payment reconciliation. The Power BI model contains 10 synthetic Gold tables, 15 single-direction relationships, delivery-date measures and the `South_Region_Viewer` demo role. Inventory is excluded from regional RLS because the source fact has no geography key.
-
-## Setup
-
-Requirements: Git, Python 3.11, Docker Desktop and Power BI Desktop. Clone the public repository, then run these commands from PowerShell:
-
-```powershell
-git clone https://github.com/Dat071104/dataforge-commerce-platform.git
-Set-Location .\dataforge-commerce-platform
+~~~powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-# Set a unique local-only password in .env. Keep it private.
+# Set a private local password in .env.
 .\scripts\bootstrap_windows.ps1
-# Bootstrap installs the dev and Power BI export extras under the Python 3.11 lock.
 docker compose up -d --wait
-```
-
-Compose binds PostgreSQL to `127.0.0.1:5433` only. The `.env` file is ignored by Git.
-
-## End-to-end demo
-
-```powershell
 .\scripts\demo_windows.ps1
 .\.venv\Scripts\dataforge.exe reference-metrics
-```
+~~~
 
-The script generates 3,000 orders with seed 42, validates 11 CSV sources, writes content-addressed Parquet snapshots, loads PostgreSQL, builds Gold marts, verifies synthetic checks and five financial controls, runs all ten SQL analyses, then repeats ingest/load/build to check safe reruns. `generate` refuses to overwrite a non-synthetic, externally sourced, or hash-mismatched source folder. To run a single analysis:
+The demo creates deterministic synthetic data, validates source contracts, writes Parquet, loads PostgreSQL, builds marts, checks financial controls, and verifies safe reruns. It does not need cloud credentials.
 
-```powershell
-Get-ChildItem .\sql\analysis\q*.sql | Sort-Object Name | ForEach-Object {
-  .\.venv\Scripts\dataforge.exe query $_.BaseName
-}
-```
+## Cloud preflight and smoke
 
-The independent CSV `Decimal` oracle exactly matched PostgreSQL for fulfilled-sales proxy, fulfilled COGS proxy, successful collections, completed refunds and collection variance. These are synthetic analytics metrics; fulfilled sales proxy is not accounting-recognized revenue.
+Cloud preflight and dry-run are local-only. Dot-source the helper to select the shared isolated gcloud/ADC root; it reads the canonical target metadata and starts no login flow.
 
-## Power BI Desktop report
+~~~powershell
+.\.venv\Scripts\python.exe -m dataforge.cli cloud-preflight --source geography
 
-The editable project is [`dashboards/P5/DataForge/DataForge.pbip`](dashboards/P5/DataForge/DataForge.pbip). It has three pages: Executive Sales, Finance & Reconciliation, and Operations & Weather. The semantic model has 10 synthetic Gold tables, 15 one-way relationships, an inactive delivery-date role, explicit measures and the `South_Region_Viewer` demo role. Inventory is excluded because the source fact has no geography key. The PBIP ships with an unconfigured `GoldWorkbookPath` sentinel; configure it to the regenerated local Gold workbook before opening or refreshing.
+. .\scripts\enter_dataforge_cloud.ps1
+$target = Get-Content -Raw .\docs\cloud\target.json | ConvertFrom-Json
+$config = $target.configuration
+$project = $target.project_id
+$activeProject = gcloud --configuration=$config config get-value core/project
+if ($activeProject -ne $project) { throw "Unexpected active project: $activeProject" }
 
-### Verified dashboard screenshots
-
-These are the three current-source P6.2 Desktop captures; they show synthetic demonstration data.
-
-| Executive Sales | Finance & Reconciliation | Operations & Weather |
-|---|---|---|
-| <img src="docs/screenshots/v1.0-local/executive_sales_current_source.jpg" alt="Executive Sales" width="320"> | <img src="docs/screenshots/v1.0-local/finance_reconciliation_current_source.jpg" alt="Finance and Reconciliation" width="320"> | <img src="docs/screenshots/v1.0-local/operations_weather_current_source.jpg" alt="Operations and Weather" width="320"> |
-
-Before refreshing the report, regenerate the local Gold workbook snapshot and configure the explicit local path:
-
-```powershell
-.\.venv\Scripts\python.exe .\scripts\export_powerbi_gold.py --excel
-.\.venv\Scripts\python.exe .\dashboards\P5\configure_workbook_path.py `
-  --project .\dashboards\P5\DataForge\DataForge.pbip `
-  --workbook .\data\powerbi_gold_export\DataForgeGold.xlsx `
+.\.venv\Scripts\python.exe -m dataforge.cli cloud-transfer `
+  --source geography `
+  --project $project `
+  --bucket $target.bucket `
+  --dataset staging `
+  --region $target.region `
+  --bucket-location $target.region `
+  --dataset-location $target.region `
   --dry-run
-.\.venv\Scripts\python.exe .\dashboards\P5\configure_workbook_path.py `
-  --project .\dashboards\P5\DataForge\DataForge.pbip `
-  --workbook .\data\powerbi_gold_export\DataForgeGold.xlsx `
-  --backup-dir .\.local\path_backups
-.\.venv\Scripts\python.exe .\dashboards\P5\validate_source_pack.py `
-  --project .\dashboards\P5\DataForge\DataForge.pbip `
-  --workbook .\data\powerbi_gold_export\DataForgeGold.xlsx
-```
+~~~
 
-The helper checks the synthetic classification, workbook SHA-256, sheet names and row counts before making a backup and updating the TMDL path. The PBIP source ships with an unconfigured sentinel, not a personal absolute path. After the preflight and validator pass, open the PBIP in Desktop and choose **Refresh**. If the workspace moves, rerun the helper with the moved PBIP and workbook paths. See [`dashboards/POWER_BI_GUIDE.md`](dashboards/POWER_BI_GUIDE.md). The linked `docs/screenshots/v1.0-local/` images are the current P6.2 acceptance captures.
+After checking the reviewed infrastructure, IAM, location, and cost receipts, install the optional GCP clients and run the bounded geography example:
 
-## Validation
+~~~powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[gcp]"
+.\.venv\Scripts\python.exe -m dataforge.cli cloud-transfer `
+  --source geography `
+  --project $project `
+  --expected-project-number $target.project_number `
+  --bucket $target.bucket `
+  --dataset staging `
+  --region $target.region `
+  --execute
+~~~
 
-```powershell
+The execute flag writes remote objects and tables. The same-source replay is verified as a no-op for the completed geography batch; receipts for all 11 source replays are available under docs/cloud/evidence/reruns. See the [cloud runbook](docs/cloud/runbook.md).
+
+## Azure/Fabric to GCP concept map
+
+| Azure or Fabric concept | Closest GCP concept | Difference or current status |
+|---|---|---|
+| Subscription and resource group | Organization/folder/project hierarchy | This lab uses one active project; GCP has no exact resource-group equivalent. |
+| Entra ID and Azure RBAC | Google identity and Cloud IAM | Runtime IAM has live positive/negative verification; policy semantics differ. |
+| ADLS Gen2 | Cloud Storage | Private GCS bucket deployed and source objects verified; object and filesystem behavior differ. |
+| OneLake | Cloud Storage plus BigQuery | Separate services, not a unified cross-engine lake. |
+| Fabric Lakehouse | Cloud Storage plus BigLake/BigQuery interoperability | No equivalent transaction layer is deployed; native BigQuery staging is not Delta/Iceberg. |
+| Fabric Warehouse | BigQuery | Raw and typed staging are verified; no Gold warehouse model is claimed. |
+| Data Factory | Workflows plus Cloud Run Jobs; Scheduler if needed | Future orchestration work; no job or schedule is running. |
+| Spark Notebook | Local PySpark or Managed Service for Apache Spark | Week 6 plan; no Spark execution is claimed. |
+| Key Vault | Secret Manager | Not configured for this phase. |
+| Terraform with Azure provider / Bicep | Terraform with Google provider | Terraform apply completed; provider resources and behavior differ. |
+
+These are nearest learning analogies, not product equivalence. See the [full syllabus mapping](docs/cloud/syllabus_mapping.md); mentor approval is still required for any Azure-specific assessment.
+
+## Data, security, and cost controls
+
+- All included commerce data is synthetic. Order items, payments, returns, shipments, inventory snapshots, and weather observations keep separate fact grains.
+- Fulfilled sales is a synthetic proxy, not recognized revenue. Collections, refunds, and shipment measures use their own event definitions.
+- The verified transfer uses immutable manifests, create-only GCS generation preconditions, SHA-256 checks, typed staging, and independent row/schema/value reconciliation.
+- BigQuery query limits are 256 MiB billed; staging tables expire after seven days. Terraform state uses an isolated, project-named local workspace.
+- Runtime access is scoped: required object reads and queries pass; anonymous GCS access and Gold listing are denied. No static service-account keys are stored in the repository.
+- The Week 4 operational cost target is USD 10. It is not a hard cap or spending guarantee; check observed usage before and after cloud operations.
+- No Cloud Run Job, dbt model, incremental CDC pipeline, managed Spark cluster, recurring schedule, or cloud BI publication is claimed as running.
+
+## Free Trial and cost notice
+
+A Cloud Console observation on 2026-11-09 showed an active Free Trial with displayed expiry on 2027-01-21. Trial credits, service eligibility, and charges are temporary and account-dependent; this notice does not guarantee free usage or cap spend. Personal credit balances, billing-account identifiers, authentication records, and browser screenshots are not published.
+
+## Local validation
+
+~~~powershell
 $env:RUN_POSTGRES_TESTS = "0"
 .\.venv\Scripts\python.exe -m pytest -q tests dashboards/P5/tests
-$env:RUN_POSTGRES_TESTS = "1"
-.\.venv\Scripts\python.exe -m pytest -q -o faulthandler_timeout=60 tests dashboards/P5/tests
-Remove-Item Env:RUN_POSTGRES_TESTS
 .\.venv\Scripts\ruff.exe check src tests scripts dashboards/P5
 .\.venv\Scripts\python.exe -m compileall -q src tests scripts dashboards/P5
 .\.venv\Scripts\python.exe -m pip check
-```
+~~~
 
-The PostgreSQL integration suite uses isolated uniquely named temporary databases. Current local verification and the P6.2 GO LOCAL decision are summarized in [`docs/releases/v1.0-local.md`](docs/releases/v1.0-local.md). Full internal phase logs are retained locally and excluded from the portfolio bundle. GitHub Actions runs these gates on push and pull request; check the Actions tab for actual remote status.
+PostgreSQL integration tests are enabled separately with RUN_POSTGRES_TESTS=1 and use isolated temporary databases. See the [v1.0-local release record](docs/releases/v1.0-local.md) and [cloud phase summary](docs/cloud/phase_summary.md) for recorded evidence and open gates.
 
-## Data and metric boundaries
+## Weeks 5–7 roadmap
 
-- Commerce fixtures are fictional and deterministic, not actual retailer transactions.
-- The optional Open-Meteo Historical API call is explicitly requested; the free API is for non-commercial use and requires CC BY 4.0 attribution. Review current [terms](https://open-meteo.com/en/terms) and [licence conditions](https://open-meteo.com/en/licence) before reuse or distribution.
-- The [IVin Datathon repository](https://github.com/vin-datathon-2026/round1) had no visible license or reuse terms in its reviewed root/README; its CSVs were not downloaded or integrated.
-- Facts retain separate grains. Payments, returns, shipments and item lines must be aggregated independently before reconciliation. Weather/shipment association is descriptive, not causal.
-- Raw loading is changed-hash complete-snapshot merge; facts are rebuilt on each `db-build`. This is not CDC or a production service-level guarantee.
-- Legacy manifests without a Parquet-byte digest fail closed. Run full `dataforge ingest` to validate the CSV and safely migrate only matching legacy Parquet artifacts before `db-load`.
-- Open-Meteo source files must agree with the marker and complete provenance sidecar. Failed date coverage or stale provenance is rejected before a new active ingest run is promoted.
+- **Week 5 — Incremental batch:** a finite Cloud Run Job, journal-backed changes, BigQuery Silver MERGE, replay/recovery tests, and parity checks.
+- **Week 6 — Spark:** local PySpark with a licensed public fixture, explain plans, and measured benchmarks. Managed Spark is optional and needs a separate cost decision.
+- **Week 7 — Orchestration and modeling:** dbt-bigquery tests/lineage, manual Workflows end-to-end, Cloud Scheduler only after manual recovery passes, and a local Airflow reference DAG.
 
-### KPI definitions
-
-| KPI | Definition and reporting caveat | Unit |
-|---|---|---|
-| Fulfilled Sales Proxy | Net value of delivered order lines; **not** recognized revenue. | VND |
-| Fulfilled COGS Proxy | Quantity × product unit cost on delivered lines. | VND |
-| Gross Margin Proxy | Fulfilled sales proxy − fulfilled COGS proxy; excludes shipping, tax and overhead. | VND |
-| Average Order Value | Fulfilled sales proxy ÷ distinct delivered orders in the current item-fact filter context. | VND |
-| Collections / Completed Refunds | Successful payment events by payment date / completed return refunds by return date; keep event dates separate. | VND |
-| Collection Variance | Successful collections less fulfilled-sales proxy, summed at one row per order under order-date context. | VND |
-| Return Line Rate | Delivered item lines with at least one completed return ÷ delivered item lines; an order-date cohort rate, not a unit-return rate. | % |
-| Late Shipment Rate / P90 Transit | Delivered shipments over the hypothetical 3-day threshold / inclusive 90th percentile of delivered non-null transit days, using delivery-date context. | % / days |
-
-See [`docs/metric_contract.md`](docs/metric_contract.md) for full definitions and exclusions. These synthetic-demo metrics are not accountant-approved.
-
-## Repository structure
-
-```text
-src/dataforge/                 ingestion, validation, warehouse and CLI modules
-configs/                        source contracts
-sql/schema, sql/build, sql/analysis, sql/checks
-scripts/                        Windows workflow, export, controls and benchmark
-tests/                          unit and isolated PostgreSQL integration tests
-dashboards/P5/                  PBIP/PBIR/TMDL, path configurator and validator
-.agents/skills/dataforge-*      focused reusable project workflows
-.github/workflows/ci.yml        GitHub Actions CI configuration
-docs/                           architecture, contracts, operations and release evidence
-```
-
-Generated source CSVs, Parquet snapshots, manifests, Gold workbook exports, Power BI caches, local credentials and Codex run history are intentionally excluded.
+Each phase must earn its own evidence. No always-on VM, Cloud SQL, GKE, Composer, or recurring paid job is part of the current foundation.
 
 ## Documentation
 
-- [Architecture and grain register](docs/architecture.md) and [Mermaid diagrams](docs/diagrams/)
-- [Data dictionary](docs/data_dictionary.md), [business requirements](docs/business_requirements.md), and [metric contract](docs/metric_contract.md)
-- [Data quality and reconciliation](docs/data_quality_and_reconciliation.md), [SQL catalog](docs/query_catalog.md), and [performance benchmark](docs/performance_benchmark.md)
-- [Windows runbook and recovery](docs/operations_runbook.md), [source provenance](docs/source_provenance.md), and [syllabus coverage](docs/SYLLABUS_COVERAGE.md)
-- [v1.0-local release evidence](docs/releases/v1.0-local.md)
-
-## Status boundaries and roadmap
-
-### IMPLEMENTED AND VERIFIED LOCALLY
-
-- Python ingestion and contracts, Parquet Bronze, PostgreSQL raw/Gold, 10 SQL analyses, financial controls and reproducible synthetic fixtures.
-- Power BI PBIP/PBIR/TMDL source, three rendered report pages, DAX/SQL controls, demonstration South RLS and local workbook relocation checks.
-- Docker Compose and GitHub Actions CI configuration are included. CI is not a deployment pipeline; see Actions for the actual remote run result.
-
-### PLANNED FOR GCP — not deployed or tested
-
-| Future/analogous platform concept | Possible GCP direction |
-|---|---|
-| Azure Data Lake Storage | Google Cloud Storage |
-| Fabric Warehouse | BigQuery |
-| Batch execution | Cloud Run Jobs |
-| Scheduling | Cloud Scheduler / Workflows when needed |
-| dbt | dbt-bigquery |
-| Azure Key Vault | Secret Manager |
-| Azure RBAC / Entra authorization | Google Cloud IAM |
-| Infrastructure as Code | Terraform |
-
-The current implementation remains local Python, Parquet and PostgreSQL. These are functional mappings, not exact product equivalents. No Cloud Run, BigQuery, GCS, dbt-bigquery, Terraform or other GCP resources have been deployed or tested. No paid cloud resource or Power BI Service report is part of this release.
-
-### UNVERIFIED / FUTURE WORK
-
-- Production security/authorization, service-level objectives, CDC, incremental fact builds and real retailer/accounting semantics.
-- Official Microsoft PBIR schema validation and a Desktop UI reopen from the relocated PBIP were not performed.
-- Real external commerce data remains blocked until its license, schema and provenance are independently verified. Synthetic metrics must not be presented as observed sales or recognized revenue.
-
-## License and development note
-
-Original DataForge source and documentation are licensed under the [MIT License](LICENSE). Third-party dependencies retain their own licenses; no third-party dataset or live Open-Meteo response is included. Parts of the implementation and documentation were developed with AI assistance; the maintainer reviewed and verified the local results and is responsible for the published content. The Python package is not published to PyPI.
+- [Local architecture and grain register](docs/architecture.md)
+- [Metric contract](docs/metric_contract.md)
+- [P6.2 local release evidence](docs/releases/v1.0-local.md)
+- [Cloud target metadata](docs/cloud/target.json)
+- [Cloud phase summary](docs/cloud/phase_summary.md)
+- [Week 4 acceptance matrix](docs/cloud/week4_acceptance.md)
+- [Week 4 first-pass transfer receipts](docs/cloud/evidence/transfers/)
+- [Week 4 safe-rerun receipts](docs/cloud/evidence/reruns/)
+- [Live IAM verification](docs/cloud/evidence/iam_live_verification.json)
+- [Terraform and IAM design](docs/cloud/iam_matrix.md)
+- [Cloud runbook and safe cleanup](docs/cloud/runbook.md)
+- [Detailed Azure/Fabric syllabus mapping](docs/cloud/syllabus_mapping.md)
