@@ -2,8 +2,8 @@
 
 **Engineering verification date:** 2026-11-10 (Asia/Bangkok)<br>
 **Target:** `dataforge-p7-lab-d0f725` / `955038620072`, `us-central1`<br>
-**Branch:** `feature/p7-week5-incremental`<br>
-**Release verdict:** `CLOUD_GO_WEEK5` from the one independent final controller review. Exact-head hosted CI remains pending.
+**Implementation head:** `4c081dae0becd4895aefec469aa337436acafb9b` on `feature/p7-week5-incremental`<br>
+**Release verdict:** `CLOUD_GO_WEEK5`; PR #2 merged as `cfbfd55933e22c24e37969a88516fd9ceadfe40d` after exact-head hosted CI and main-branch CI passed.
 
 ## Delivered
 
@@ -24,4 +24,4 @@
 
 ## Release gate
 
-The independent controller returned `CLOUD_GO_WEEK5`. The feature-branch push and PR are authorized; hosted CI must pass on the exact PR head and there must be no blocking review finding before merge. The merge and main-branch CI/synchronization are not yet complete.
+The independent controller returned `CLOUD_GO_WEEK5`. PR [#2](https://github.com/Dat071104/dataforge-commerce-platform/pull/2) merged implementation head `4c081dae0becd4895aefec469aa337436acafb9b` as merge commit `cfbfd55933e22c24e37969a88516fd9ceadfe40d`. Exact-head pull-request workflow run `42784438912` passed, push workflow run `42784430106` passed, and main-branch workflow run `42785391818` passed. The local `main` branch is synchronized to the merge commit. No blocking review findings were present.
