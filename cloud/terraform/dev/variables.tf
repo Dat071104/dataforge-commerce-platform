@@ -63,3 +63,24 @@ variable "staging_table_expiration_ms" {
     error_message = "Staging table expiration must be at least one hour."
   }
 }
+
+variable "week5_container_image" {
+  description = "Digest-pinned Week-5 processor image in the approved Artifact Registry repository. Update only after building and pushing a reviewed image."
+  type        = string
+  default     = "us-central1-docker.pkg.dev/dataforge-p7-lab-d0f725/dataforge-week5/processor@sha256:e94fe5c6a54a76568ad5760c45be4791c17aa7b4f43029aae6f081219fb1ecea"
+  nullable    = false
+
+  validation {
+    condition = can(regex(
+      "^${var.region}-docker\\.pkg\\.dev/${var.project_id}/dataforge-week5/processor(:[A-Za-z0-9_.-]{1,128}|@sha256:[0-9a-f]{64})$",
+      var.week5_container_image
+    ))
+    error_message = "week5_container_image must be the Week-5 processor tag or sha256 digest in this project and region."
+  }
+}
+
+variable "week5_job_enabled" {
+  description = "Whether to create the finite Week-5 job. Disable only for the first additive apply that creates APIs and its image repository before the immutable image is pushed."
+  type        = bool
+  default     = true
+}

@@ -1,0 +1,194 @@
+{
+  "base_total_amount_decimal": "10499500.00",
+  "bigquery_job_count": 7,
+  "bigquery_jobs": [
+    {
+      "bytes_billed": null,
+      "bytes_processed": null,
+      "elapsed_seconds": 4.997,
+      "ended_at": "2026-11-10T07:43:45.545000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_load_base_6a158bdf271dc23d",
+      "job_type": "load",
+      "slot_ms": null,
+      "started_at": "2026-11-10T07:43:40.548000+00:00",
+      "state": "DONE",
+      "statement_type": null
+    },
+    {
+      "bytes_billed": null,
+      "bytes_processed": null,
+      "elapsed_seconds": 9.02,
+      "ended_at": "2026-11-10T07:44:05.968000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_load_final_6a158bdf271dc23d",
+      "job_type": "load",
+      "slot_ms": null,
+      "started_at": "2026-11-10T07:43:56.948000+00:00",
+      "state": "DONE",
+      "statement_type": null
+    },
+    {
+      "bytes_billed": null,
+      "bytes_processed": null,
+      "elapsed_seconds": 0.971,
+      "ended_at": "2026-11-10T07:44:13.337000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_load_delta_6a158bdf271dc23d",
+      "job_type": "load",
+      "slot_ms": null,
+      "started_at": "2026-11-10T07:44:12.366000+00:00",
+      "state": "DONE",
+      "statement_type": null
+    },
+    {
+      "bytes_billed": 44040192,
+      "bytes_processed": 43301000,
+      "elapsed_seconds": 2.19,
+      "ended_at": "2026-11-10T07:44:16.561000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_full_snapshot_6a158bdf271dc23d",
+      "job_type": "query",
+      "slot_ms": 4878,
+      "started_at": "2026-11-10T07:44:14.371000+00:00",
+      "state": "DONE",
+      "statement_type": "CREATE_TABLE_AS_SELECT"
+    },
+    {
+      "bytes_billed": null,
+      "bytes_processed": null,
+      "elapsed_seconds": 0.5,
+      "ended_at": "2026-11-10T07:44:19.061000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_incremental_baseline_6a158bdf271dc23d",
+      "job_type": "copy",
+      "slot_ms": null,
+      "started_at": "2026-11-10T07:44:18.561000+00:00",
+      "state": "DONE",
+      "statement_type": null
+    },
+    {
+      "bytes_billed": 44040192,
+      "bytes_processed": 43734004,
+      "elapsed_seconds": 1.921,
+      "ended_at": "2026-11-10T07:44:22.072000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_incremental_merge_6a158bdf271dc23d",
+      "job_type": "query",
+      "slot_ms": 4369,
+      "started_at": "2026-11-10T07:44:20.151000+00:00",
+      "state": "DONE",
+      "statement_type": "MERGE"
+    },
+    {
+      "bytes_billed": 130023424,
+      "bytes_processed": 129903000,
+      "elapsed_seconds": 0.3,
+      "ended_at": "2026-11-10T07:44:23.298000+00:00",
+      "error_result": null,
+      "job_id": "week5_benchmark_validate_6a158bdf271dc23d",
+      "job_type": "query",
+      "slot_ms": 1430,
+      "started_at": "2026-11-10T07:44:22.998000+00:00",
+      "state": "DONE",
+      "statement_type": "SELECT"
+    }
+  ],
+  "changed_events": 1000,
+  "changed_fraction": 0.01,
+  "cleanup": {
+    "cleanup_errors": [],
+    "gcs_objects_deleted": [
+      {
+        "generation": 1794296602571790,
+        "name": "tmp/week5/benchmark/run_id=6a158bdf271dc23d/full_snapshot/sha256=8bb42ee62c66a7aa84bf099a8dafa80734502aed120e596f2594a77d7a93748d/snapshot.parquet"
+      },
+      {
+        "generation": 1794296608804005,
+        "name": "tmp/week5/benchmark/run_id=6a158bdf271dc23d/incremental/sha256=49d3a0f5afe3e04bb9dc12274b3b6068daa20152622a4ca888d6a31b0c97dc3a/changes.parquet"
+      }
+    ],
+    "tables_deleted": [
+      "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_full_target",
+      "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_incremental_target",
+      "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_delta_source",
+      "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_final_source",
+      "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_base_source"
+    ]
+  },
+  "cleanup_error_count": 0,
+  "final_total_amount_decimal": "10500750.00",
+  "full_snapshot": {
+    "amount_total": "10500750",
+    "bytes_billed": 44040192,
+    "bytes_processed": 43301000,
+    "client_roundtrip_seconds": 3.063,
+    "job_elapsed_seconds": 2.19,
+    "mismatches_vs_decimal_oracle": 0,
+    "query_job_id": "week5_benchmark_full_snapshot_6a158bdf271dc23d",
+    "rows": 100000,
+    "table_id": "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_full_target"
+  },
+  "gcs_objects": {
+    "full_snapshot": {
+      "generation": 1794296602571790,
+      "metadata": {
+        "dataforge-week5-purpose": "synthetic-benchmark",
+        "dataforge-week5-sha256": "8bb42ee62c66a7aa84bf099a8dafa80734502aed120e596f2594a77d7a93748d"
+      },
+      "sha256": "8bb42ee62c66a7aa84bf099a8dafa80734502aed120e596f2594a77d7a93748d",
+      "size_bytes": 20772018,
+      "uri": "gs://dataforge-p7-lab-d0f725-bronze/tmp/week5/benchmark/run_id=6a158bdf271dc23d/full_snapshot/sha256=8bb42ee62c66a7aa84bf099a8dafa80734502aed120e596f2594a77d7a93748d/snapshot.parquet"
+    },
+    "incremental_delta": {
+      "generation": 1794296608804005,
+      "metadata": {
+        "dataforge-week5-purpose": "synthetic-benchmark",
+        "dataforge-week5-sha256": "49d3a0f5afe3e04bb9dc12274b3b6068daa20152622a4ca888d6a31b0c97dc3a"
+      },
+      "sha256": "49d3a0f5afe3e04bb9dc12274b3b6068daa20152622a4ca888d6a31b0c97dc3a",
+      "size_bytes": 208472,
+      "uri": "gs://dataforge-p7-lab-d0f725-bronze/tmp/week5/benchmark/run_id=6a158bdf271dc23d/incremental/sha256=49d3a0f5afe3e04bb9dc12274b3b6068daa20152622a4ca888d6a31b0c97dc3a/changes.parquet"
+    }
+  },
+  "gcs_scratch_cleanup_complete": true,
+  "gcs_upload_seconds": 13.48,
+  "incremental": {
+    "amount_total": "10500750",
+    "baseline_copy_job_id": "week5_benchmark_incremental_baseline_6a158bdf271dc23d",
+    "baseline_rows_preloaded": 100000,
+    "changed_events": 1000,
+    "client_roundtrip_seconds": 2.768,
+    "job_elapsed_seconds": 1.921,
+    "merge_bytes_billed": 44040192,
+    "merge_bytes_processed": 43734004,
+    "merge_job_id": "week5_benchmark_incremental_merge_6a158bdf271dc23d",
+    "mismatches_vs_decimal_oracle": 0,
+    "rows": 100000,
+    "table_id": "dataforge-p7-lab-d0f725.staging.week5_bench_6a158bdf271dc23d_incremental_target"
+  },
+  "local_parquet_build_seconds": 4.009,
+  "maximum_bytes_billed_per_query": 268435456,
+  "oracle_final_rows": 100000,
+  "oracle_summary_sha256": "08f49a44e27374b79a806fe32dd585be76b5a606a40a0d04156684b4321c61ed",
+  "parquet_sizes": {
+    "base_snapshot_bytes": 20768594,
+    "base_snapshot_sha256": "3b4c2738a6a4aa50ffd0ec9beba51140820c5fb89d841d94a9a3e594fb33a3ec",
+    "full_snapshot_bytes": 20772018,
+    "incremental_delta_bytes": 208472
+  },
+  "project_id": "dataforge-p7-lab-d0f725",
+  "query_bytes_billed_total": 218103808,
+  "query_bytes_processed_total": 216938004,
+  "query_cost_gross_list_estimate_usd": 0.00123978,
+  "region": "us-central1",
+  "run_id": "6a158bdf271dc23d",
+  "snapshot_rows": 100000,
+  "status": "BENCHMARK_RECONCILED",
+  "synthetic_only": true,
+  "tables_cleaned_up": true,
+  "timing_definitions": {
+    "client_roundtrip_seconds": "Local time from query submission through result polling, including API/control-plane latency.",
+    "job_elapsed_seconds": "BigQuery job start-to-end duration from persisted job metadata."
+  }
+}

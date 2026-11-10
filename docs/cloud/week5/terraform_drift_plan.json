@@ -1,0 +1,24 @@
+{
+  "status": "NO_DRIFT",
+  "captured_at_utc": "2026-11-10T08:06:55Z",
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "workspace": "p7-dataforge-p7-lab-d0f725",
+  "terraform_version": "1.17.1",
+  "google_provider_version": "8.9.0",
+  "plan_sha256": "AC6167665EAC3FC2F67EFA2B315CADC533E47CEEC971831C885C669FDEE8A777",
+  "plan_exit_code": 0,
+  "refresh": true,
+  "change_counts": {
+    "create": 0,
+    "update": 0,
+    "delete": 0,
+    "replace": 0
+  },
+  "resource_changes": [],
+  "scoped_runtime_binding_preserved": true,
+  "oauth_token_persisted": false,
+  "format_check": "passed",
+  "validate_check": "passed",
+  "post_benchmark": true
+}

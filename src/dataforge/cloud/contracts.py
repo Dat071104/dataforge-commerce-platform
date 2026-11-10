@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..ingestion import contracts as local_contracts
 
 
 @dataclass(frozen=True)
@@ -114,6 +113,12 @@ def source_contract(source: str) -> SourceContract:
         spec = SOURCE_CONTRACTS[source]
     except KeyError as exc:
         raise ValueError(f"unsupported cloud source {source!r}") from exc
+
+    # Keep cloud runtime imports light. The finite Week-5 consumer needs the
+    # declared contract types but does not run the local pandas-backed snapshot
+    # validator; load that dependency only when the P6 snapshot adapter asks for
+    # a source-to-local-contract comparison.
+    from ..ingestion import contracts as local_contracts
 
     local = local_contracts()
     if source not in local or spec.columns != tuple(local[source]["required_columns"]):

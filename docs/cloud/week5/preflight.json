@@ -1,0 +1,73 @@
+{
+  "status": "P7.2.0_BASELINE_RECORDED",
+  "checked_at_local": "2026-11-10 Asia/Bangkok",
+  "target": {
+    "project_id": "dataforge-p7-lab-d0f725",
+    "project_number": "955038620072",
+    "region": "us-central1",
+    "bronze_bucket": "dataforge-p7-lab-d0f725-bronze",
+    "terraform_workspace": "p7-dataforge-p7-lab-d0f725"
+  },
+  "source_control": {
+    "starting_commit": "8d3d11c2fca988a490713ce5a9b2b00e6481c3b6",
+    "remote_main_matches": true,
+    "working_tree_was_clean": true,
+    "feature_branch": "feature/p7-week5-incremental",
+    "week4_pr_ci_run": "42745483681",
+    "week4_main_ci_run": "42745711477",
+    "week4_ci_status": "passed"
+  },
+  "terraform": {
+    "version": "1.17.1",
+    "google_provider": "8.9.0",
+    "baseline_refresh_plan_sha256": "DDD1B1DFD14AF8492D95A56718C32B94175B9FFA65A28D477ED4B91A69C7143F",
+    "baseline_plan_actions": {
+      "create": 0,
+      "update": 0,
+      "delete": 0,
+      "replace": 0
+    },
+    "baseline_plan_kept_existing_runtime_test_binding": true
+  },
+  "live_inventory": {
+    "project_number_and_state": "955038620072 ACTIVE",
+    "bronze_bucket": {
+      "location": "US-CENTRAL1",
+      "public_access_prevention": "enforced",
+      "objects": 22,
+      "total_bytes": 249795
+    },
+    "bigquery": {
+      "datasets": ["staging", "silver", "gold"],
+      "staging_tables": 22,
+      "silver_tables": 0,
+      "gold_tables": 0
+    },
+    "week5_service_apis": {
+      "run.googleapis.com": "disabled",
+      "artifactregistry.googleapis.com": "disabled",
+      "cloudbilling.googleapis.com": "disabled"
+    }
+  },
+  "finops": {
+    "week4_measured_query_list_price_usd": 0.003338,
+    "week4_conservative_executed_task_estimate_usd": "<0.02",
+    "week5_additional_usage_target_usd": 5,
+    "project_operational_target_usd": 10,
+    "settled_dataforge_charge": "unknown; no current-month project row was visible in the authenticated Console report",
+    "trial_signal": "active with positive remaining credit indicated; exact personal credit value withheld",
+    "hard_spend_cap_or_budget_alert": "not configured",
+    "billing_api_enabled": false
+  },
+  "authorization_boundary": {
+    "only_project": "dataforge-p7-lab-d0f725",
+    "no_billing_upgrade": true,
+    "week5_cost_control": "stop if measured or conservatively forecast incremental usage exceeds USD 5 or projected total exceeds the USD 10 operational target"
+  },
+  "notes": [
+    "The isolated ADC used by Terraform initially resolved to an identity without target read permissions. The refreshed plan used a non-persisted short-lived token from the already active target-project gcloud identity; no credential file was changed.",
+    "An initial plan with the optional runtime_test_member unset would delete an existing scoped Token Creator binding. It was not applied. The recorded no-op plan explicitly retained that binding.",
+    "Cloud Run and Artifact Registry resource inventory is incomplete while their APIs are disabled; any later API enablement and resource inventory must follow a reviewed additive Terraform plan.",
+    "The Week-4 settled bill remains unknown. The USD 10 value is an operational target, not a billing cap."
+  ]
+}

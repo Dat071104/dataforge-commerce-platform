@@ -1,0 +1,81 @@
+{
+  "captured_at_utc": "2026-11-10T06:24:36+00:00",
+  "checkpoint": {
+    "bytes_billed": 0,
+    "bytes_processed": 0,
+    "committed_seq": 18,
+    "job_id": "week5_checkpoint_c30596d719f24698a1392562",
+    "maximum_bytes_billed": 268435456,
+    "source_id": "dataforge-operational-v1"
+  },
+  "gold_order_count": 4,
+  "gold_rows": [
+    {
+      "active_payment_count": 1,
+      "collected_amount": "130000",
+      "collection_variance": "-3000",
+      "delivered_sales_proxy": "133000",
+      "order_date": "2026-09-15",
+      "order_effective_seq": 14,
+      "order_id": "W5O0001",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "published_batch_id": "bce742027b7edc00ff4701f346dfa3cbcb04a3ddc2dc60d159de4ff5c094e7d6",
+      "published_run_id": "a50e970f256067a402c65fc65bea4209",
+      "successful_payment_count": 1,
+      "updated_at": "2026-11-10T06:08:58.243000Z"
+    },
+    {
+      "active_payment_count": 1,
+      "collected_amount": "200000",
+      "collection_variance": null,
+      "delivered_sales_proxy": "0",
+      "order_date": "2026-10-02",
+      "order_effective_seq": 10,
+      "order_id": "W5O0002",
+      "order_is_deleted": true,
+      "order_status": "delivered",
+      "published_batch_id": "38a6ff42469e9f7ef2d270fc759bfb4c3d655b5395422145b05ffdd60725b3aa",
+      "published_run_id": "2472d9f005f874c7d5e242c32caa3e84",
+      "successful_payment_count": 1,
+      "updated_at": "2026-11-10T05:58:55.807000Z"
+    },
+    {
+      "active_payment_count": 0,
+      "collected_amount": "0",
+      "collection_variance": "-80000",
+      "delivered_sales_proxy": "80000",
+      "order_date": "2026-10-03",
+      "order_effective_seq": 18,
+      "order_id": "W5O0003",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "published_batch_id": "bdf15225255b696f1d4181e5ee2d4c315bbebc4fb799c2320f7888ac80c632ab",
+      "published_run_id": "083594c915d03ff6ca34eedeecbc8e2a",
+      "successful_payment_count": 0,
+      "updated_at": "2026-11-10T06:15:38.538000Z"
+    },
+    {
+      "active_payment_count": 1,
+      "collected_amount": "12500",
+      "collection_variance": "-37500",
+      "delivered_sales_proxy": "50000",
+      "order_date": "2026-08-01",
+      "order_effective_seq": 15,
+      "order_id": "W5O0004",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "published_batch_id": "bdf15225255b696f1d4181e5ee2d4c315bbebc4fb799c2320f7888ac80c632ab",
+      "published_run_id": "083594c915d03ff6ca34eedeecbc8e2a",
+      "successful_payment_count": 1,
+      "updated_at": "2026-11-10T06:15:38.538000Z"
+    }
+  ],
+  "gold_rows_sha256": "d387aede992be7be743696f10c9d8aad0dfca059f890fc12149165b3e4ebb79d",
+  "query_job": {
+    "bytes_billed": 10485760,
+    "bytes_processed": 820,
+    "job_id": "week5_snapshot_inc08_before_430d33dd71e9",
+    "slot_ms": 8
+  }
+}
