@@ -1,0 +1,67 @@
+{
+  "captured_at_utc": "2026-11-10T07:04:14+00:00",
+  "cleanup_completed_at_utc": "2026-11-10T07:04:18+00:00",
+  "dataset": "staging",
+  "deleted_table_ids": [
+    "dataforge-p7-lab-d0f725.staging.week5_events_016b3ce875ee09b9",
+    "dataforge-p7-lab-d0f725.staging.week5_events_0318953ddf66d14a",
+    "dataforge-p7-lab-d0f725.staging.week5_events_30e6a112e7015ac7",
+    "dataforge-p7-lab-d0f725.staging.week5_events_38a6ff42469e9f7e",
+    "dataforge-p7-lab-d0f725.staging.week5_events_9b5424e38dd60f91",
+    "dataforge-p7-lab-d0f725.staging.week5_events_a107b47471ff130c",
+    "dataforge-p7-lab-d0f725.staging.week5_events_b0daaff51cfba1ed",
+    "dataforge-p7-lab-d0f725.staging.week5_events_bce742027b7edc00",
+    "dataforge-p7-lab-d0f725.staging.week5_events_bdf15225255b696f"
+  ],
+  "discovered_count": 9,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "remaining_week5_tables": [],
+  "source": "exact stage_table_id values in batch_run_ledger.json plus live BigQuery dataset inventory",
+  "tables_before_cleanup": [
+    {
+      "expires_at": "2026-11-17T06:27:01.183000+00:00",
+      "rows": 1,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_016b3ce875ee09b9"
+    },
+    {
+      "expires_at": "2026-11-17T05:55:16.027000+00:00",
+      "rows": 2,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_0318953ddf66d14a"
+    },
+    {
+      "expires_at": "2026-11-17T05:22:03.861000+00:00",
+      "rows": 6,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_30e6a112e7015ac7"
+    },
+    {
+      "expires_at": "2026-11-17T05:58:35.783000+00:00",
+      "rows": 2,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_38a6ff42469e9f7e"
+    },
+    {
+      "expires_at": "2026-11-17T06:12:04.479000+00:00",
+      "rows": 2,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_9b5424e38dd60f91"
+    },
+    {
+      "expires_at": "2026-11-17T06:32:03.672000+00:00",
+      "rows": 1,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_a107b47471ff130c"
+    },
+    {
+      "expires_at": "2026-11-17T06:05:10.128000+00:00",
+      "rows": 2,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_b0daaff51cfba1ed"
+    },
+    {
+      "expires_at": "2026-11-17T06:08:38.182000+00:00",
+      "rows": 2,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_bce742027b7edc00"
+    },
+    {
+      "expires_at": "2026-11-17T06:15:18.687000+00:00",
+      "rows": 3,
+      "table_id": "dataforge-p7-lab-d0f725.staging.week5_events_bdf15225255b696f"
+    }
+  ]
+}

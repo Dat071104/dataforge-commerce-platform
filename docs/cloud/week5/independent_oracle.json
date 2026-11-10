@@ -1,0 +1,63 @@
+{
+  "active_orders": 3,
+  "active_payment_events": 3,
+  "checkpoint_seq": 20,
+  "collections_total_including_tombstoned_orders": "344000.00",
+  "controls": [
+    {
+      "active_payment_count": 1,
+      "collected_amount": "130000.00",
+      "collection_variance": "-3000.00",
+      "delivered_sales_proxy": "133000.00",
+      "effective_seq": 14,
+      "order_date": "2026-09-15",
+      "order_id": "W5O0001",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "successful_payment_count": 1
+    },
+    {
+      "active_payment_count": 1,
+      "collected_amount": "200000.00",
+      "collection_variance": null,
+      "delivered_sales_proxy": "0.00",
+      "effective_seq": 10,
+      "order_date": "2026-10-02",
+      "order_id": "W5O0002",
+      "order_is_deleted": true,
+      "order_status": "delivered",
+      "successful_payment_count": 1
+    },
+    {
+      "active_payment_count": 0,
+      "collected_amount": "0.00",
+      "collection_variance": "-80000.00",
+      "delivered_sales_proxy": "80000.00",
+      "effective_seq": 18,
+      "order_date": "2026-10-03",
+      "order_id": "W5O0003",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "successful_payment_count": 0
+    },
+    {
+      "active_payment_count": 1,
+      "collected_amount": "14000.00",
+      "collection_variance": "-36000.00",
+      "delivered_sales_proxy": "50000.00",
+      "effective_seq": 15,
+      "order_date": "2026-08-01",
+      "order_id": "W5O0004",
+      "order_is_deleted": false,
+      "order_status": "delivered",
+      "successful_payment_count": 1
+    }
+  ],
+  "delivered_sales_proxy_total": "263000.00",
+  "event_count": 19,
+  "oracle": "dataforge.incremental.oracle Decimal replay; independent of production BigQuery MERGE code",
+  "orders": 4,
+  "payment_events": 4,
+  "source_identity": "dataforge-operational-v1",
+  "status": "ORACLE_REPLAYED"
+}

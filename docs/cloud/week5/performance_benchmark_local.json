@@ -1,0 +1,29 @@
+{
+  "base_amount_total_decimal": "10499500.00",
+  "changed_events": 1000,
+  "changed_fraction": 0.01,
+  "cloud_benchmark": {
+    "receipt": "performance_benchmark.json",
+    "status": "COMPLETED_SEPARATELY"
+  },
+  "expected_final_amount_total_decimal": "10500750.00",
+  "local_parquet_build_seconds": 3.158,
+  "oracle_summary_sha256": "08f49a44e27374b79a806fe32dd585be76b5a606a40a0d04156684b4321c61ed",
+  "parquet_sizes": {
+    "base_snapshot": {
+      "sha256": "3b4c2738a6a4aa50ffd0ec9beba51140820c5fb89d841d94a9a3e594fb33a3ec",
+      "size_bytes": 20768594
+    },
+    "full_snapshot": {
+      "sha256": "8bb42ee62c66a7aa84bf099a8dafa80734502aed120e596f2594a77d7a93748d",
+      "size_bytes": 20772018
+    },
+    "incremental_delta": {
+      "sha256": "49d3a0f5afe3e04bb9dc12274b3b6068daa20152622a4ca888d6a31b0c97dc3a",
+      "size_bytes": 208472
+    }
+  },
+  "snapshot_rows": 100000,
+  "status": "LOCAL_FIXTURE_MEASURED",
+  "synthetic_only": true
+}

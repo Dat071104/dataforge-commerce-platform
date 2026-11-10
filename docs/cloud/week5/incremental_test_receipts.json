@@ -1,0 +1,93 @@
+{
+  "captured_at_local": "2026-11-10 Asia/Bangkok",
+  "captured_at_utc": "2026-11-10T08:21:34+00:00",
+  "independent_controller": {
+    "follow_up": "Timing labels were corrected after the one review and the full unified tests/static checks were rerun; no second controller review was called.",
+    "review_count": 1,
+    "review_finding": "Benchmark job-runtime and client-round-trip summaries differed; labels and documentation were corrected to match persisted BigQuery job metadata.",
+    "review_mode": "read-only independent GPT-6 Luna Max controller",
+    "second_review_called": false,
+    "verdict": "CLOUD_GO_WEEK5"
+  },
+  "live_checks": [
+    {
+      "evidence": "source_journal_snapshot.json and independent_oracle.json",
+      "name": "Independent source oracle",
+      "result": "checkpoint 20; 19 events; sequence gap 17; delivered sales 263000.00; collections including tombstoned orders 344000.00"
+    },
+    {
+      "evidence": "reconciliation.csv and reconciliation_summary.json",
+      "name": "Silver/Gold reconciliation",
+      "result": "108 fields compared; zero mismatches"
+    },
+    {
+      "evidence": "acceptance_matrix.md and batch_run_ledger.json",
+      "name": "Cloud Run INC-01 through INC-10",
+      "result": "all ten scenarios executed in the approved project; failure attempts and recovery retained"
+    },
+    {
+      "evidence": "performance_benchmark.json",
+      "name": "100K-row snapshot/MERGE benchmark",
+      "result": "both targets matched the same Decimal oracle; 100000 rows; 1000 changes; billed bytes/runtime recorded"
+    }
+  ],
+  "post_review_timing_label_validation": {
+    "compileall": "passed",
+    "git_diff_check": "passed",
+    "offline_suite": "155 passed, 7 skipped",
+    "pip_check": "passed",
+    "powershell_parse": "passed",
+    "ruff": "passed",
+    "week5_postgres_integration": "5 passed"
+  },
+  "preserved_database_boundary": "Week-5 integration test used a separate loopback database; operational source and accepted application database were not reset.",
+  "status": "UNIFIED_VERIFICATION_PASS",
+  "tests": [
+    {
+      "command": "python -m pytest -q tests dashboards/P5/tests",
+      "name": "Offline project suite",
+      "result": "155 passed, 7 skipped",
+      "skip_notes": [
+        "Week-5 PostgreSQL test was run separately on dataforge_operational_test.",
+        "Six baseline PostgreSQL tests stayed gated by RUN_POSTGRES_TESTS to avoid resetting the accepted application database."
+      ]
+    },
+    {
+      "command": "pytest -q tests/incremental/test_source_oracle.py with RUN_OPERATIONAL_SOURCE_TESTS=1 and DATAFORGE_OPERATIONAL_TEST_DATABASE_URL pointing to dataforge_operational_test",
+      "name": "Week-5 isolated PostgreSQL source integration",
+      "result": "5 passed"
+    },
+    {
+      "command": "ruff check src/dataforge/incremental src/dataforge/cloud/google_cloud.py scripts/week5_incremental.py scripts/week5_benchmark.py tests/incremental cloud/jobs/week5",
+      "name": "Ruff",
+      "result": "passed"
+    },
+    {
+      "command": "python -m compileall -q src/dataforge/incremental src/dataforge/cloud/google_cloud.py scripts/week5_incremental.py scripts/week5_benchmark.py cloud/jobs/week5",
+      "name": "Compileall",
+      "result": "passed"
+    },
+    {
+      "command": "python -m pip check",
+      "name": "pip check",
+      "result": "No broken requirements found"
+    },
+    {
+      "command": "System.Management.Automation.Language.Parser.ParseFile for week5_incremental.ps1, week5_run_job.ps1, and week5_benchmark.ps1",
+      "name": "Week-5 PowerShell wrappers",
+      "result": "passed"
+    },
+    {
+      "command": "terraform fmt -check and terraform validate on cloud/terraform/dev using Terraform 1.17.1 / Google provider 8.9.0",
+      "evidence": "terraform_drift_plan.json",
+      "name": "Terraform formatting and validation",
+      "result": "terraform fmt -check, init -lockfile=readonly, validate passed; final refreshed plan returned exit 0 with zero create/update/delete/replace after the benchmark"
+    },
+    {
+      "command": "terraform plan -refresh=true -detailed-exitcode on p7-dataforge-p7-lab-d0f725 workspace",
+      "evidence": "terraform_drift_plan.json",
+      "name": "Refreshed Terraform drift plan",
+      "result": "exit 0; create/update/delete/replace all zero"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "source_identity": "dataforge-operational-v1",
+  "schema_version": 1,
+  "oracle": "independent Decimal replay of the exported source journal; production MERGE code is not imported",
+  "scenarios": [
+    {"id": "INC-01", "name": "initial load/backfill", "source_sequence": "bounded initial journal range", "expected": "Orders, payment events, per-order controls, counts, keys, and NUMERIC totals match the as-of oracle."},
+    {"id": "INC-02", "name": "exact batch replay", "source_sequence": "same immutable range, bytes, manifest generation, and object generation", "expected": "Observable NO_OP; Silver, Gold, and checkpoint values are unchanged."},
+    {"id": "INC-03", "name": "single-key update", "source_sequence": "new order and payment post-images", "expected": "One effective current value per key; exact Decimal change in the affected order control."},
+    {"id": "INC-04", "name": "explicit tombstone", "source_sequence": "payment tombstone plus order tombstone policy case", "expected": "Tombstone is explicit; order deletion does not delete payment events; absence in a delta never deletes."},
+    {"id": "INC-05", "name": "late business-date correction", "source_sequence": "higher sequence with corrected older order/payment business date", "expected": "Only affected order controls move to the corrected business period and match the oracle."},
+    {"id": "INC-06", "name": "same source timestamp", "source_sequence": "multiple events for one key sharing source_updated_at", "expected": "Deterministic highest change_seq wins; no skipped event or ambiguous MERGE source."},
+    {"id": "INC-07", "name": "corrupt, partial, or schema drift", "source_sequence": "altered Parquet bytes, incomplete manifest, duplicate-conflict, and unknown schema version", "expected": "Fail closed and quarantine/record failure; previously published Gold and checkpoint stay unchanged."},
+    {"id": "INC-08", "name": "failure after Silver MERGE before checkpoint", "source_sequence": "payment W5P0004 update followed by injected failure inside the BigQuery transaction after Silver mutations", "expected": "Transaction rollback keeps prior Silver, Gold, and checkpoint visible; a later retry converges without duplicate money."},
+    {"id": "INC-09", "name": "retroactive source event/backfill", "source_sequence": "new sequence with older source_updated_at plus explicit bounded old range", "expected": "Journal sequence captures the late delivery; backfill does not rewind checkpoint or overwrite newer Silver state."},
+    {"id": "INC-10", "name": "failure and operator recovery", "source_sequence": "W5P0004 amount update, injected pre-publication failure, and manual safe replay", "expected": "Durable FAILED code and attempt history remain; bounded recovery publishes exact oracle state."}
+  ]
+}
