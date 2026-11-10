@@ -1,6 +1,6 @@
 {
   "controller_decision": "CLOUD_GO_WEEK4",
-  "post_review_changes": "status labels and whitespace only; no implementation behavior changes",
+  "post_review_changes": "status labels, whitespace-only source formatting (identical AST), and CI dateutil constraint corrected to the version used in the successful local/cloud tests",
   "formatting_checks": [
     {
       "path": "README.md",
@@ -201,5 +201,16 @@
       "semantic_check": "identical Python AST"
     }
   ],
-  "hosted_ci_required_on_exact_release_head": true
+  "hosted_ci_required_on_exact_release_head": true,
+  "dependency_remediation": {
+    "initial_ci_run_id": 42745184397,
+    "initial_failed_step": "dependency installation",
+    "old_pin": "python-dateutil==4.0.0",
+    "new_pin": "python-dateutil==2.9.0.post0",
+    "bigquery_version": "3.47.0",
+    "bigquery_requirement": "python-dateutil>=2.8.2,<3.0.0",
+    "observed_local_dateutil": "2.9.0.post0",
+    "adapter_terraform_iam_behavior_changed": false,
+    "final_ci_required": true
+  }
 }
