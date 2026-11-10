@@ -1,6 +1,6 @@
 # P7.1 Week-4 deployment and release report
 
-**Deployment:** 2026-11-09. **Final local checks:** 2026-11-10 (Asia/Bangkok). **Independent review:** CLOUD_GO_WEEK4, release_ready true. **GitHub release:** exact-head hosted CI is required before merge.
+**Deployment:** 2026-11-09. **Final local checks:** 2026-11-10 (Asia/Bangkok). **Independent review:** CLOUD_GO_WEEK4, release_ready true. **GitHub release:** [PR #1](https://github.com/Dat071104/dataforge-commerce-platform/pull/1); exact-head hosted CI is required before merge.
 
 The user selected a new isolated project and an operational task target below USD 10 after shared SaigonBite resources were discovered. Existing projects and the accepted P6.2 `v1.0-local` baseline were preserved.
 
@@ -24,6 +24,8 @@ Measured usage: **89 completed jobs** (11 batch loads, 78 queries), 2,786,762 qu
 
 Final local validation: **127 passed in 25.95 seconds**, including PostgreSQL integration, exit 0; Ruff, compileall, pip check, PowerShell parse and diff checks passed. Power BI source validation passed (10 tables, 15 relationships, 3 pages, 33 visuals); all five PostgreSQL/Decimal financial controls matched. A Docker-stopped connection failure was resolved before this passing rerun. The publication candidate review found no high-confidence credential/billing-account/personal-email patterns or broken local links; a dedicated secret scanner was unavailable.
 
-Read [the independent verdict](controller_verdict.md) for release readiness. The feature branch is `feature/p7-week4-gcp-foundation`, based on `e5d8dfba6d996c8a68913ce8113b8f6aeeea502b`. Commit/push/PR follow only a successful controller decision; merge follows actual hosted CI on the final PR head. Publication metadata will be recorded here and in the PR.
+The single independent controller returned **CLOUD_GO_WEEK4**, `release_ready: true`, with no critical or major findings. Its status-label finding was resolved before publication; billing settlement and the retained scoped impersonation grant remain disclosed limits. The staged check also normalized whitespace; Python ASTs and non-whitespace documentation text were preserved, with hashes recorded in [release integration evidence](evidence/release_integration.json).
+
+Source implementation and deployment receipts were committed as [`094e3f838e1c033966306cafc5d7548d03762d91`](https://github.com/Dat071104/dataforge-commerce-platform/commit/094e3f838e1c033966306cafc5d7548d03762d91), pushed on `feature/p7-week4-gcp-foundation` from baseline `e5d8dfba6d996c8a68913ce8113b8f6aeeea502b`, and submitted in **[PR #1](https://github.com/Dat071104/dataforge-commerce-platform/pull/1)**. This documentation follow-up adds publication links. The exact final head, actual hosted CI and merge result are available in the [PR checks](https://github.com/Dat071104/dataforge-commerce-platform/pull/1/checks) and PR timeline. Root enforces passing CI on that exact head before merging; the independent verdict is preserved as issued before CI.
 
 Week 5 remains separate: create an append-only operational change journal, deterministic insert/update/delete/late cases, watermarks, replay/recovery, bounded BigQuery Silver merges and independent parity checks. Cloud Run is future work; CDC, Spark, dbt, schedules and cloud Gold publication have not run. Mentor acceptance of GCP in lieu of Azure/Fabric remains pending. Retained resources and reviewed cleanup are described in [cleanup.md](cleanup.md).

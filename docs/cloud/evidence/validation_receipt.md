@@ -16,7 +16,7 @@ Local source/test changes were integrated after all three bounded worker reports
 | Independent actual resource/job inventory | PASS; exit 0; all recorded jobs DONE without errors |
 | Terraform drift | Detailed exit 0; no changes; eleven managed resources |
 | Billing settlement | NOT YET POSTED; not inferred to be zero |
-| Hosted CI | Pending release; must pass on the PR revision before merge |
+| Hosted CI | [PR #1 checks](https://github.com/Dat071104/dataforge-commerce-platform/pull/1/checks); must pass on the exact PR head before merge |
 
 Root follow-up fixed the installed BigQuery client's warning by setting `job_retry=None` for explicitly named query jobs. Request retries remain bounded; successful jobs are not resubmitted. The final optional-client CI installation avoids skipping the constructor/auth-isolation check just because cloud packages are absent.
 

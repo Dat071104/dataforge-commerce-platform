@@ -14,5 +14,5 @@
 | Refreshed Terraform/drift | fmt/init/validate/plan/apply; drift exit 0 | CLOUD_TESTED |
 | Usage/cost and retained resources | usage_summary.json; cloud_cost_receipt.md; cleanup.md | Measured units; settlement not posted |
 | README and Azure/Fabric mapping | README.md; syllabus_mapping.md | Functional mapping; mentor pending |
-| Independent controller and GitHub release | controller_verdict.md; release_report.md | CLOUD_GO_WEEK4; hosted CI next |
+| Independent controller and GitHub release | controller_verdict.md; release_report.md | CLOUD_GO_WEEK4; PR #1, exact-head CI gate |
 | Cloud Run/CDC/Spark/dbt/scheduling | No Week-4 runtime deployed | DEFERRED |

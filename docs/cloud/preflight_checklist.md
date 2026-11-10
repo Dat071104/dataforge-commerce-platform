@@ -16,6 +16,6 @@ The earlier shared-project/authentication blockers are historical. The user sele
 | Terraform drift | PASS | [Detailed exit 0 / no changes](evidence/terraform_drift.json) |
 | Usage/cost controls | PASS; settlement pending | [Measured usage and estimates](cloud_cost_receipt.md); billing report has not yet posted the new project |
 | Mentor accepts GCP substitution | PENDING | No Azure/Fabric equivalence or syllabus acceptance claimed |
-| Independent controller / release | CLOUD_GO_WEEK4 / CI NEXT | Final controller passed; hosted CI must precede merge |
+| Independent controller / release | CLOUD_GO_WEEK4 / PR #1 | Final controller passed; hosted CI must precede merge |
 
 The two previous projects are excluded from active DataForge configuration. Their resources were not changed. Historical read-only inventories remain in `evidence/`. No later-week runtime is deployed.

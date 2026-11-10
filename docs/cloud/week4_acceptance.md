@@ -19,7 +19,7 @@
 | Settled bill | NOT YET POSTED | New project absent from the current billing-report rows; no USD 0 settlement claim |
 | Week-5 retention | PASS | One private bucket, three datasets, keyless account and scoped IAM; staging TTL seven days |
 | Independent final review | CLOUD_GO_WEEK4 | One final controller reviewed all four completed reports, 14 implementation hashes and 11 receipt pairs; no critical/major finding |
-| GitHub commit/PR/CI/merge | RELEASE IN PROGRESS | Controller passed; actual hosted CI is required before merge; see release_report.md |
+| GitHub release | [PR #1](https://github.com/Dat071104/dataforge-commerce-platform/pull/1) | Controller passed; exact-head hosted CI is required before merge; see release_report.md and PR checks |
 | Azure/Fabric mentor checkpoint | PENDING / separate | GCP implementation does not automatically satisfy an Azure-specific assessment |
 
 ## All-source verification

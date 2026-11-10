@@ -1,6 +1,6 @@
 # P7.1 Week-4 execution summary
 
-**State:** CLOUD_GO_WEEK4 from the independent final controller; deployment and technical verification complete. GitHub release is gated on hosted CI.
+**State:** CLOUD_GO_WEEK4 from the independent final controller; deployment and technical verification complete. Publication is tracked in [PR #1](https://github.com/Dat071104/dataforge-commerce-platform/pull/1); merge is gated on hosted CI.
 
 The user superseded the shared-project proposal and chose a new isolated project, `dataforge-p7-lab-d0f725` (number `955038620072`), with an operational target below USD 10. Existing SaigonBite and older-project resources were left untouched. The active target is recorded once in [target.json](target.json).
 
