@@ -1,6 +1,6 @@
 # P7.2 Week 5 — Architecture and ADR
 
-**Status:** P7.2.0 design baseline recorded on 2026-11-10. The bounded Week-5 implementation and INC-01–INC-10 live evidence are now recorded under `docs/cloud/week5/`; the final independent controller verdict is pending.
+**Status:** P7.2.0 design baseline recorded on 2026-11-10. The bounded Week-5 implementation and INC-01–INC-10 live evidence are recorded under `docs/cloud/week5/`; the independent controller returned `CLOUD_GO_WEEK5`, and implementation PR #2 passed exact-head CI and merged to `main`.
 
 ## Decision
 

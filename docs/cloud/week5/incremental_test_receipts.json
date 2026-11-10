@@ -9,6 +9,15 @@
     "second_review_called": false,
     "verdict": "CLOUD_GO_WEEK5"
   },
+  "github_release": {
+    "main_ci_run_id": "42785391818",
+    "merge_commit": "cfbfd55933e22c24e37969a88516fd9ceadfe40d",
+    "pull_request": "https://github.com/Dat071104/dataforge-commerce-platform/pull/2",
+    "pull_request_head": "4c081dae0becd4895aefec469aa337436acafb9b",
+    "pull_request_ci_run_id": "42784438912",
+    "push_ci_run_id": "42784430106",
+    "result": "merged; exact-head, push, and main-branch workflows passed"
+  },
   "live_checks": [
     {
       "evidence": "source_journal_snapshot.json and independent_oracle.json",

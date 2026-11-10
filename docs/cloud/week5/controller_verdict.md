@@ -17,4 +17,4 @@ The controller noted that benchmark summary times differed from persisted BigQue
 
 ## Release gate
 
-The `CLOUD_GO_WEEK5` verdict authorizes the feature-branch push and PR described in the master prompt. Exact PR-head hosted CI and no blocking review findings remain required before merge. Do not merge on this verdict alone.
+At the time of this review, the `CLOUD_GO_WEEK5` verdict authorized the feature-branch push and PR described in the master prompt; exact PR-head hosted CI and no blocking review findings were still required. The implementation was subsequently released through PR [#2](https://github.com/Dat071104/dataforge-commerce-platform/pull/2): exact-head run `42784438912` and push run `42784430106` passed, then it merged as `cfbfd55933e22c24e37969a88516fd9ceadfe40d`. Main-branch run `42785391818` passed. This post-review release record does not constitute another controller review; review count remains one.

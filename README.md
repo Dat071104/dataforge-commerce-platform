@@ -13,7 +13,7 @@ DataForge is an educational, synthetic-first order-to-cash analytics portfolio. 
 - **Reruns:** all 11 source receipts passed. Every replay preserved GCS and manifest generations, reused completed load/cast jobs, and matched exact raw and typed values.
 - **Live IAM:** the runtime service account read the source object and queried eight unique geography keys. Anonymous object access and runtime Gold listing returned HTTP 403; positive/negative IAM checks passed, and no static service-account key was created.
 - **Final gate:** the independent controller returned [CLOUD_GO_WEEK4](docs/cloud/controller_verdict.md); hosted CI must pass before merge.
-- **Week 5 (P7.2):** the separate operational journal → immutable GCS → Cloud Run Job → BigQuery Silver/Gold/checkpoint path passed live INC-01–INC-10 tests and a 100K-row synthetic snapshot/MERGE benchmark. The independent controller returned CLOUD_GO_WEEK5; exact-head hosted CI remains the merge gate.
+- **Week 5 (P7.2):** the separate operational journal → immutable GCS → Cloud Run Job → BigQuery Silver/Gold/checkpoint path passed live INC-01–INC-10 tests and a 100K-row synthetic snapshot/MERGE benchmark. The independent controller returned CLOUD_GO_WEEK5; exact-head hosted CI and main-branch CI passed, and implementation PR [#2](https://github.com/Dat071104/dataforge-commerce-platform/pull/2) merged.
 - **Syllabus:** GCP remains a functional mapping. Mentor approval is pending; GCP work does not automatically satisfy an Azure-specific checkpoint.
 - **Legacy services:** any superseded-project inventory is read-only and documented separately.
 
@@ -164,7 +164,7 @@ PostgreSQL integration tests are enabled separately with RUN_POSTGRES_TESTS=1 an
 
 ## Weeks 5–7 roadmap
 
-- **Week 5 — Incremental batch:** live tests, benchmark, and independent controller verdict complete; exact-head hosted CI/merge gate pending.
+- **Week 5 — Incremental batch:** live tests, benchmark, independent controller verdict, exact-head hosted CI, and merge complete; see the [final report](docs/cloud/week5/final_report.md).
 - **Week 6 — Spark:** local PySpark with a licensed public fixture, explain plans, and measured benchmarks. Managed Spark is optional and needs a separate cost decision.
 - **Week 7 — Orchestration and modeling:** dbt-bigquery tests/lineage, manual Workflows end-to-end, Cloud Scheduler only after manual recovery passes, and a local Airflow reference DAG.
 
