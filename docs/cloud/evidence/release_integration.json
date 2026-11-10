@@ -1,0 +1,216 @@
+{
+  "controller_decision": "CLOUD_GO_WEEK4",
+  "post_review_changes": "status labels, whitespace-only source formatting (identical AST), and CI dateutil constraint corrected to the version used in the successful local/cloud tests",
+  "formatting_checks": [
+    {
+      "path": "README.md",
+      "reviewed_byte_sha256": "eb55cb6882afadfbc385b2cc3317199bd4d80e3dd72dbbc4773b85fa53b1b75e",
+      "release_byte_sha256": "59b91b5409a160c9b53f40d56312b8bd53be3af15d2ad15589363bf547a89952",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/adr/001-serverless.md",
+      "reviewed_byte_sha256": "9aad2d46f76c195a4d718b93afd5d23d2b2bb866f1dfd7c4832b2c27d62564f3",
+      "release_byte_sha256": "d4ec950149d5fdd06783bf791bf5f75dc806633a006ac7c607aad211e64be0a1",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/adr/002-region.md",
+      "reviewed_byte_sha256": "87baf8e85673f055c3494ae91e97445c88fb5c68683e58ea19e6a7813fadc6d8",
+      "release_byte_sha256": "bcf87851239fab204f77fa42b39867cea219b96e2267f55fc0f367e04feec464",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/baseline_receipt.md",
+      "reviewed_byte_sha256": "5734b29de8c68e7e0b85b83749f6b99fa4bc7266e309befccda9d20d72fc6c2d",
+      "release_byte_sha256": "be96e58f80e36096b9c1bd5f989fa82ffc7b07fd7f247fb38263009149bf2b1f",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/budget_assumptions.md",
+      "reviewed_byte_sha256": "54a4804ec21fbcd9d752eded10fe7903d3c54a5a50aacab14a44cdd5021ab09a",
+      "release_byte_sha256": "98f53dbba6c929bbef6c515e1cb868a5e6a85b4e4f2cef5540dbb35f72eb00a3",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/cleanup.md",
+      "reviewed_byte_sha256": "46a41e347cb14c455c1363a8ee6ea80e6a209b917a272dff47e7db41746fb39b",
+      "release_byte_sha256": "dd14eb9edd7d09b6c5ed221b4b2bc11b5e2419db4bd6f253030c591bb06c8dc6",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/cloud_cost_receipt.md",
+      "reviewed_byte_sha256": "078db2c05fa439b8effd2e98273d781e60cb44a6619a4300d9354a38da4aa0c3",
+      "release_byte_sha256": "886d222ca0d4b4cd698f2e91902ee85d85127857aed5278dabb6e3e9c4c73e5b",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/controller_verdict.md",
+      "reviewed_byte_sha256": "450925d325f3980c64fada1b4182bafb239b8ea778224ae9b7d56a501f997a88",
+      "release_byte_sha256": "b9c80b85098460faecee2017fe58668dbc3912cb3364d7c12098e3d6a1ef1401",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/data_contract.md",
+      "reviewed_byte_sha256": "b4496022e33aca4e45ee919df12ee8d0feeaab1c3f7774b020614a50954e3f04",
+      "release_byte_sha256": "cd82a079c02a3f7581d67001b54db2677758d520a5917a6ecb6cf69b10180cfd",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/deployment_scope_review.md",
+      "reviewed_byte_sha256": "a6bab3d667c85a8e89f3ebf49add9f3c351516b8beb590a3c9d2aa5ba5f5aa8c",
+      "release_byte_sha256": "8379a8280532594f2eea36d2fbbee4693da7b1947e4d5e518d833589a72bc03f",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/initial_controller_no_go.md",
+      "reviewed_byte_sha256": "60200d465671b4abd0c04656c937d1f6cbe29086632188fea29c0aefce8df7db",
+      "release_byte_sha256": "de41e4c9af54aa5cc22fe3f7a60fe09abf7fa1a5d8bcb604c2356023570918ac",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/legacy_services_inventory.md",
+      "reviewed_byte_sha256": "f4203dfd25fa1a1d86e9c721314a7bde74ffa8304d923e6020bd82c1b50da518",
+      "release_byte_sha256": "8ab0a1bcea7085b7470914805c054be39cdfc60a78e0b97b03d1862810686d6a",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/shared_project_inventory.md",
+      "reviewed_byte_sha256": "9d2f83b0ae617b8de06a0e53647b99230bfdb00d2a6b927c8516d836c4ecf449",
+      "release_byte_sha256": "701345895783986e1d9158b8ad4d1a2c88e7ab88c71714dfec764da71bd44688",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/validation_receipt.md",
+      "reviewed_byte_sha256": "7eecb6d68052dc151879a6430fb96f52307735d3b0fb8c2c75de7b40cffd334a",
+      "release_byte_sha256": "cd90a7008f2d64061abb972e258b22b329a59cd7c16a02007b6931d8094cae27",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/worker_baseline_audit.md",
+      "reviewed_byte_sha256": "899fd4e765c50f04f68030f7120ac17560767e4b1adbf57d5bf28ed4131defd6",
+      "release_byte_sha256": "270f99689c3fc35f97632cfcd4fc67003671f283785d58f4bd746bb564977f63",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/evidence/worker_terraform_audit.md",
+      "reviewed_byte_sha256": "0ccbccbe55e32778a98e8069eb0d89fdd0297b3a8c298643c86b4ee4e3155621",
+      "release_byte_sha256": "97497cb4967eaeeaadcfb1bad7acab505b514c9b40e5df30fd7c98bbbd426f5b",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/file_change_manifest.md",
+      "reviewed_byte_sha256": "9049aa57657742a7a826e14f5beb1631abc25c94445d89ed7f1ba2dd380b3454",
+      "release_byte_sha256": "14affaf18d4be614c8186a20daad2078ac41717a129a70f525bbba4b6371001c",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/iam_matrix.md",
+      "reviewed_byte_sha256": "e4fb837dac7691a2e0256ce016a727d5653245a684538f8ef4cd2bf8814de777",
+      "release_byte_sha256": "940db8c7769a3e399e3b1180a87262bcf021059296c4a7b533dc2c98fbe5fc17",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/phase_summary.md",
+      "reviewed_byte_sha256": "a77efba2337e2c27eeb9cd95eefdb28fc6342bb3ade2f1552db4cc9cde720cd2",
+      "release_byte_sha256": "7910dfa73a6c4ec7e70d6067a61d09b9da16d64f8b382db0af9163e4a83c9027",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/preflight_checklist.md",
+      "reviewed_byte_sha256": "8debcbdbf697356016098fcd5eb41a94d8261a79e0786b70ff1fa82c6e737e9e",
+      "release_byte_sha256": "e021117553baa058b09d1970b184b97cea2dd3c3294106186d181728d1b11b2b",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/release_report.md",
+      "reviewed_byte_sha256": "a9755f1073ac4e39c126d91c7b0732cf40a880a21b61ea5733e0b146ea95e018",
+      "release_byte_sha256": "9ee6977ba187cafecb2e22a8dd358d5278b0c9016f220b8bac561f5ac48157e4",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/requirements_traceability.md",
+      "reviewed_byte_sha256": "013fabb8a67a872b378448442bd2b4eb6e650bfd8fdb9de81b0337fc785957f3",
+      "release_byte_sha256": "1661bf644e7591e8a1e381bcf5551fcc2ab02e4bb9dc32dec37e5f174827f1cb",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/risk_register.md",
+      "reviewed_byte_sha256": "9a22be21c93c82e5e6054ac97cf0bb18062b652341fe4278b45f40c0633d7486",
+      "release_byte_sha256": "d175bf433cd3a4642865edb831d60780bdb0632a821462aa569b7e6d9dd2c76d",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/runbook.md",
+      "reviewed_byte_sha256": "feda639b59e9b2a1642850174ab265623b92c7d4a0adf33de61ecf078e664760",
+      "release_byte_sha256": "cc365ed1267c32b0717294d23f500020c3df3493d91501a3046d934fddddbe39",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/syllabus_mapping.md",
+      "reviewed_byte_sha256": "7db9e2dd00f6196eeb95e0d63dd6bbf31963e6666ad9b12ab8bbadeffc16ce75",
+      "release_byte_sha256": "9bd683df44426f510c7ce323c5bf5e0519f1a97435e5c2b18c40ac842e7a4f85",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/terraform_plan.md",
+      "reviewed_byte_sha256": "daa063e31aa6b8788e208bc9617b0bad88b5327be69904d6705df0da18568224",
+      "release_byte_sha256": "564b17fb4502bb9cd53af3aed41319b782a16ed71c66937c43e754b3502900ed",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/terraform_validation.md",
+      "reviewed_byte_sha256": "e4cdfe8dd511e35c96520d046495d6bb944fa406ecb7c1674c0bede17b7a3661",
+      "release_byte_sha256": "863dfb5c3dee84da7394413368e4deedc46dad2ad0337714a536d1c91074d828",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/cloud/week4_acceptance.md",
+      "reviewed_byte_sha256": "0647096c044e48b262191fadda7a47c1d7e99b51e3d88a7c38fb0cae366b16bb",
+      "release_byte_sha256": "48e38e6ee10ab035816b9ff52273a129596e6a07f7765be6e0ad809cbb7d084e",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "docs/releases/v1.0-local.md",
+      "reviewed_byte_sha256": "444f9e6babf13d94974308d6588e4fd78d5a474f58cbd0f81f02a8be505b2455",
+      "release_byte_sha256": "a9198317ac06058c7d5d170c7e601dd461fc240f36f28577de0dce9805f4cdc1",
+      "semantic_check": "identical non-whitespace text"
+    },
+    {
+      "path": "src/dataforge/cloud/adapters.py",
+      "reviewed_byte_sha256": "f48b2198561eb73eb1c219bfedba9ed6e2c41fc73ab9ecf05a07f1478b38cb20",
+      "release_byte_sha256": "739523139c54ee08510fa1af5c21a103c569892985e80decf09313122107bb12",
+      "semantic_check": "identical Python AST"
+    },
+    {
+      "path": "src/dataforge/cloud/contracts.py",
+      "reviewed_byte_sha256": "6bb3834c37a6bf92741fcae95064ce9f645f763ad9b7f10c8c380a98b81e7fb4",
+      "release_byte_sha256": "434efbdae73d0b2a1ff249f5d3b7a498d0c58cb320481586329f161f22be7372",
+      "semantic_check": "identical Python AST"
+    },
+    {
+      "path": "src/dataforge/cloud/google_cloud.py",
+      "reviewed_byte_sha256": "7b3b24d73949e1ac6413d85d458ab7e0b2a5383fbd6337c85686ed098a0465fa",
+      "release_byte_sha256": "514206350794614bd5b2c74d71d07d9fc07a05340d21d67fc1ca60756c76213d",
+      "semantic_check": "identical Python AST"
+    },
+    {
+      "path": "tests/cloud/test_adapters.py",
+      "reviewed_byte_sha256": "0602537e1fec83aa4422eb0632e0e2d3b1f714347fd9028fc7a26a606357e35c",
+      "release_byte_sha256": "6856d6ad76bb892908e18a718c9e945f04827af1b9264bfeb5ec0c3c794068d8",
+      "semantic_check": "identical Python AST"
+    }
+  ],
+  "hosted_ci_required_on_exact_release_head": true,
+  "dependency_remediation": {
+    "initial_ci_run_id": 42745184397,
+    "initial_failed_step": "dependency installation",
+    "old_pin": "python-dateutil==4.0.0",
+    "new_pin": "python-dateutil==2.9.0.post0",
+    "bigquery_version": "3.47.0",
+    "bigquery_requirement": "python-dateutil>=2.8.2,<3.0.0",
+    "observed_local_dateutil": "2.9.0.post0",
+    "adapter_terraform_iam_behavior_changed": false,
+    "final_ci_required": true
+  }
+}

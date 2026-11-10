@@ -1,5 +1,6 @@
 # Resolved dependency snapshot from the verified Windows Python 3.11.9 venv
 # on 2026-11-04. The local DataForge package itself is installed editable by CI.
+# 2026-11-10: retain the locally verified dateutil 2.x pin required by BigQuery.
 certifi==2026.10.23
 charset-normalizer==3.5.2
 colorama==0.4.6
@@ -16,7 +17,7 @@ psycopg-binary==3.3.7
 pyarrow==23.0.1
 Pygments==2.21.0
 pytest==9.2.0
-python-dateutil==4.0.0
+python-dateutil==2.9.0.post0
 pytz==2026.6
 requests==2.34.2
 ruff==0.17.3

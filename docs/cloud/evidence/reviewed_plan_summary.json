@@ -1,0 +1,111 @@
+{
+  "project": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "workspace": "p7-dataforge-p7-lab-d0f725",
+  "refresh": true,
+  "create_count": 11,
+  "update_count": 0,
+  "delete_count": 0,
+  "plan_sha256": "4ED9CD3876E0F282253BD4C9A6E9199DCB7343C27A3790CF3BE121F786F88B40",
+  "resources": [
+    {
+      "address": "google_bigquery_dataset.gold",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": "us-central1",
+      "role": null
+    },
+    {
+      "address": "google_bigquery_dataset.silver",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": "us-central1",
+      "role": null
+    },
+    {
+      "address": "google_bigquery_dataset.staging",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": "us-central1",
+      "role": null
+    },
+    {
+      "address": "google_bigquery_dataset_iam_member.runtime_staging_editor",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": null,
+      "role": "roles/bigquery.dataEditor"
+    },
+    {
+      "address": "google_project_iam_member.runtime_bigquery_job_user",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": null,
+      "role": "roles/bigquery.jobUser"
+    },
+    {
+      "address": "google_project_iam_member.runtime_service_usage_consumer",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": null,
+      "role": "roles/serviceusage.serviceUsageConsumer"
+    },
+    {
+      "address": "google_service_account.runtime",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": null,
+      "role": null
+    },
+    {
+      "address": "google_service_account_iam_member.runtime_test_token_creator[0]",
+      "actions": [
+        "create"
+      ],
+      "project": null,
+      "location": null,
+      "role": "roles/iam.serviceAccountTokenCreator"
+    },
+    {
+      "address": "google_storage_bucket.bronze",
+      "actions": [
+        "create"
+      ],
+      "project": "dataforge-p7-lab-d0f725",
+      "location": "US-CENTRAL1",
+      "role": null
+    },
+    {
+      "address": "google_storage_bucket_iam_member.runtime_bucket_viewer",
+      "actions": [
+        "create"
+      ],
+      "project": null,
+      "location": null,
+      "role": "roles/storage.bucketViewer"
+    },
+    {
+      "address": "google_storage_bucket_iam_member.runtime_object_viewer",
+      "actions": [
+        "create"
+      ],
+      "project": null,
+      "location": null,
+      "role": "roles/storage.objectViewer"
+    }
+  ]
+}

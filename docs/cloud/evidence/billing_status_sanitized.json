@@ -1,0 +1,11 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_state": "ACTIVE",
+  "billing_enabled": true,
+  "billing_link_present": true,
+  "trial_active_observed_in_console": true,
+  "trial_credit_balance_recorded": false,
+  "billing_report_grouped_by_project": true,
+  "new_project_charge_row_posted": false,
+  "settled_project_charge_usd": null
+}

@@ -1,0 +1,563 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "source_count": 11,
+  "rerun_count": 11,
+  "mixed_grain_source_row_count_total": 16259,
+  "parquet_bytes": 235910,
+  "gcs_object_count": 22,
+  "gcs_object_bytes": 249795,
+  "bigquery_raw_table_count": 11,
+  "bigquery_typed_table_count": 11,
+  "bigquery_storage_logical_bytes": 1750425,
+  "unique_job_count": 89,
+  "query_job_count": 78,
+  "load_job_count": 11,
+  "query_bytes_processed": 2786762,
+  "query_bytes_billed": 587202560,
+  "query_list_price_usd_before_free_tier_and_credits": "0.003338",
+  "operational_cost_target_usd": 10,
+  "conservative_executed_task_estimate_usd_less_than": "0.02",
+  "actual_settled_project_charge_usd": null,
+  "billing_report_target_project_row_visible": false,
+  "billing_report_note": "Current-month Console report grouped by project did not yet list this newly created project; final charges are not inferred to be zero.",
+  "all_job_ids_done_without_errors": true,
+  "all_reruns_preserve_objects_and_reuse_load_cast": true,
+  "user_managed_service_account_key_count": 0,
+  "jobs": [
+    {
+      "job_id": "dataforge_cast_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_8218ec4711f2",
+      "job_type": "QUERY",
+      "bytes_processed": 10482,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_5f25b7fdf0b4",
+      "job_type": "QUERY",
+      "bytes_processed": 3072,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_41cab5fe8684",
+      "job_type": "QUERY",
+      "bytes_processed": 10482,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_e27f56c6658b",
+      "job_type": "QUERY",
+      "bytes_processed": 8346,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_da7863e76790",
+      "job_type": "LOAD",
+      "source": "customer_segments",
+      "output_rows": 342
+    },
+    {
+      "job_id": "dataforge_cast_customers_1b8ab9513d624bbcba6692a6ea0818f6_3eb8105d1a57",
+      "job_type": "QUERY",
+      "bytes_processed": 9467,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_customers_1b8ab9513d624bbcba6692a6ea0818f6_2ba7656b6df6",
+      "job_type": "QUERY",
+      "bytes_processed": 2400,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_customers_1b8ab9513d624bbcba6692a6ea0818f6_09239ae5c36a",
+      "job_type": "QUERY",
+      "bytes_processed": 9467,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_customers_1b8ab9513d624bbcba6692a6ea0818f6_0e2d68400d29",
+      "job_type": "QUERY",
+      "bytes_processed": 8267,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_customers_1b8ab9513d624bbcba6692a6ea0818f6_085bb1f9bf16",
+      "job_type": "LOAD",
+      "source": "customers",
+      "output_rows": 300
+    },
+    {
+      "job_id": "dataforge_cast_geography_1b8ab9513d624bbcba6692a6ea0818f6_5dbd5507dcb3",
+      "job_type": "QUERY",
+      "bytes_processed": 179,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_geography_1b8ab9513d624bbcba6692a6ea0818f6_ec4a573f6f85",
+      "job_type": "QUERY",
+      "bytes_processed": 33,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_geography_1b8ab9513d624bbcba6692a6ea0818f6_97fe396462b0",
+      "job_type": "QUERY",
+      "bytes_processed": 179,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_geography_1b8ab9513d624bbcba6692a6ea0818f6_17d0050b35e7",
+      "job_type": "QUERY",
+      "bytes_processed": 179,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_geography_1b8ab9513d624bbcba6692a6ea0818f6_6e81034d63a7",
+      "job_type": "LOAD",
+      "source": "geography",
+      "output_rows": 8
+    },
+    {
+      "job_id": "dataforge_cast_inventory_1b8ab9513d624bbcba6692a6ea0818f6_be5bd22704d0",
+      "job_type": "QUERY",
+      "bytes_processed": 5002,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_inventory_1b8ab9513d624bbcba6692a6ea0818f6_f7540578c22e",
+      "job_type": "QUERY",
+      "bytes_processed": 1260,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_inventory_1b8ab9513d624bbcba6692a6ea0818f6_2be1fc1ec53f",
+      "job_type": "QUERY",
+      "bytes_processed": 5002,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_inventory_1b8ab9513d624bbcba6692a6ea0818f6_76eddd7c0d11",
+      "job_type": "QUERY",
+      "bytes_processed": 5580,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_inventory_1b8ab9513d624bbcba6692a6ea0818f6_edf907bf1bec",
+      "job_type": "LOAD",
+      "source": "inventory",
+      "output_rows": 180
+    },
+    {
+      "job_id": "dataforge_cast_order_items_1b8ab9513d624bbcba6692a6ea0818f6_f53e47e094a5",
+      "job_type": "QUERY",
+      "bytes_processed": 277116,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_order_items_1b8ab9513d624bbcba6692a6ea0818f6_f5bec11e87fe",
+      "job_type": "QUERY",
+      "bytes_processed": 72012,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_9b43248a5b8c",
+      "job_type": "QUERY",
+      "bytes_processed": 277116,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_8017594efa72",
+      "job_type": "QUERY",
+      "bytes_processed": 414069,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_order_items_1b8ab9513d624bbcba6692a6ea0818f6_c5f6d61fb623",
+      "job_type": "LOAD",
+      "source": "order_items",
+      "output_rows": 6001
+    },
+    {
+      "job_id": "dataforge_cast_orders_1b8ab9513d624bbcba6692a6ea0818f6_78184ae8b8b2",
+      "job_type": "QUERY",
+      "bytes_processed": 135543,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_orders_1b8ab9513d624bbcba6692a6ea0818f6_eaebe60dcc0b",
+      "job_type": "QUERY",
+      "bytes_processed": 30000,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_572bf091fe6a",
+      "job_type": "QUERY",
+      "bytes_processed": 135543,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_651957f6bd62",
+      "job_type": "QUERY",
+      "bytes_processed": 123543,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_orders_1b8ab9513d624bbcba6692a6ea0818f6_b53e675c4508",
+      "job_type": "LOAD",
+      "source": "orders",
+      "output_rows": 3000
+    },
+    {
+      "job_id": "dataforge_cast_payments_1b8ab9513d624bbcba6692a6ea0818f6_7062ad348444",
+      "job_type": "QUERY",
+      "bytes_processed": 172203,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_payments_1b8ab9513d624bbcba6692a6ea0818f6_754f02efcab1",
+      "job_type": "QUERY",
+      "bytes_processed": 40110,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_payments_1b8ab9513d624bbcba6692a6ea0818f6_bffdc086025c",
+      "job_type": "QUERY",
+      "bytes_processed": 172203,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_payments_1b8ab9513d624bbcba6692a6ea0818f6_4b4c184d151f",
+      "job_type": "QUERY",
+      "bytes_processed": 181734,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_payments_1b8ab9513d624bbcba6692a6ea0818f6_a33f56c38b4b",
+      "job_type": "LOAD",
+      "source": "payments",
+      "output_rows": 2865
+    },
+    {
+      "job_id": "dataforge_cast_products_1b8ab9513d624bbcba6692a6ea0818f6_aa30faacde08",
+      "job_type": "QUERY",
+      "bytes_processed": 3127,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_products_1b8ab9513d624bbcba6692a6ea0818f6_cb81aff34bf9",
+      "job_type": "QUERY",
+      "bytes_processed": 420,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_products_1b8ab9513d624bbcba6692a6ea0818f6_f29a9b312051",
+      "job_type": "QUERY",
+      "bytes_processed": 3127,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_products_1b8ab9513d624bbcba6692a6ea0818f6_0f99e2b5bef8",
+      "job_type": "QUERY",
+      "bytes_processed": 4080,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_products_1b8ab9513d624bbcba6692a6ea0818f6_e3f7add67bc8",
+      "job_type": "LOAD",
+      "source": "products",
+      "output_rows": 60
+    },
+    {
+      "job_id": "dataforge_cast_returns_1b8ab9513d624bbcba6692a6ea0818f6_cae5d7ebb2ec",
+      "job_type": "QUERY",
+      "bytes_processed": 7416,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_returns_1b8ab9513d624bbcba6692a6ea0818f6_6da71fef4a0c",
+      "job_type": "QUERY",
+      "bytes_processed": 1390,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_be731803b9cb",
+      "job_type": "QUERY",
+      "bytes_processed": 7416,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_4b940cb64dd0",
+      "job_type": "QUERY",
+      "bytes_processed": 7923,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_returns_1b8ab9513d624bbcba6692a6ea0818f6_0478b7cb0101",
+      "job_type": "LOAD",
+      "source": "returns",
+      "output_rows": 139
+    },
+    {
+      "job_id": "dataforge_cast_shipments_1b8ab9513d624bbcba6692a6ea0818f6_1d5630085819",
+      "job_type": "QUERY",
+      "bytes_processed": 162561,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_shipments_1b8ab9513d624bbcba6692a6ea0818f6_faecc21e1c55",
+      "job_type": "QUERY",
+      "bytes_processed": 46152,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_shipments_1b8ab9513d624bbcba6692a6ea0818f6_1b02397d6edf",
+      "job_type": "QUERY",
+      "bytes_processed": 162561,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_shipments_1b8ab9513d624bbcba6692a6ea0818f6_360b0dc73ed6",
+      "job_type": "QUERY",
+      "bytes_processed": 142049,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_shipments_1b8ab9513d624bbcba6692a6ea0818f6_cbfe8997dc9a",
+      "job_type": "LOAD",
+      "source": "shipments",
+      "output_rows": 2564
+    },
+    {
+      "job_id": "dataforge_cast_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_4bc8d6597201",
+      "job_type": "QUERY",
+      "bytes_processed": 27459,
+      "bytes_billed": 20971520
+    },
+    {
+      "job_id": "dataforge_verify_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_755d5c97f1a6",
+      "job_type": "QUERY",
+      "bytes_processed": 28900,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_rawreconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_b2b4de1b3375",
+      "job_type": "QUERY",
+      "bytes_processed": 27459,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_reconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_e051d52e0e1e",
+      "job_type": "QUERY",
+      "bytes_processed": 44100,
+      "bytes_billed": 10485760
+    },
+    {
+      "job_id": "dataforge_load_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_95d7d4177870",
+      "job_type": "LOAD",
+      "source": "weather_daily",
+      "output_rows": 800
+    },
+    {
+      "job_id": "dataforge_verify_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_7c54ac0b2106",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_7b16dd005fd1",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_customer_segments_1b8ab9513d624bbcba6692a6ea0818f6_c5796941e77a",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_customers_1b8ab9513d624bbcba6692a6ea0818f6_0d0466388078",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_customers_1b8ab9513d624bbcba6692a6ea0818f6_36c478e8e2e6",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_customers_1b8ab9513d624bbcba6692a6ea0818f6_d0a009d62bcc",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_geography_1b8ab9513d624bbcba6692a6ea0818f6_791c1bec5440",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_geography_1b8ab9513d624bbcba6692a6ea0818f6_ebe0de0ef71d",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_geography_1b8ab9513d624bbcba6692a6ea0818f6_366bacc859e3",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_inventory_1b8ab9513d624bbcba6692a6ea0818f6_039a61ad7a48",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_inventory_1b8ab9513d624bbcba6692a6ea0818f6_5d11ea955c98",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_inventory_1b8ab9513d624bbcba6692a6ea0818f6_c6ab24b03c07",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_order_items_1b8ab9513d624bbcba6692a6ea0818f6_c90d315e33e3",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_728aa3b76032",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_0cdf7ba712c1",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_orders_1b8ab9513d624bbcba6692a6ea0818f6_1dadd6298a58",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_df9bcc7b42af",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_d09434272366",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_payments_1b8ab9513d624bbcba6692a6ea0818f6_0c5955002d5d",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_payments_1b8ab9513d624bbcba6692a6ea0818f6_6f1c25b8669a",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_payments_1b8ab9513d624bbcba6692a6ea0818f6_4ad27f0a1b95",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_products_1b8ab9513d624bbcba6692a6ea0818f6_f4387d8af607",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_products_1b8ab9513d624bbcba6692a6ea0818f6_e3e05e8d20a2",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_products_1b8ab9513d624bbcba6692a6ea0818f6_3700c87d628f",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_returns_1b8ab9513d624bbcba6692a6ea0818f6_5fb7d24942ff",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_4a38fcae51cc",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_returns_1b8ab9513d624bbcba6692a6ea0818f6_e33dc1bc8380",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_shipments_1b8ab9513d624bbcba6692a6ea0818f6_5e075da1ea4d",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_shipments_1b8ab9513d624bbcba6692a6ea0818f6_6307ba17c649",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_shipments_1b8ab9513d624bbcba6692a6ea0818f6_17da7ace8186",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_verify_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_f28e91343ef2",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_rawreconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_4ccd4eadaf23",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_reconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_29c836262aa1",
+      "job_type": "QUERY",
+      "bytes_processed": 0,
+      "bytes_billed": 0
+    },
+    {
+      "job_id": "dataforge_runtime_verify_geography_8154f1ee3830",
+      "job_type": "QUERY",
+      "bytes_processed": 33,
+      "bytes_billed": 10485760
+    }
+  ]
+}

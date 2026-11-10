@@ -1,0 +1,10 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "bucket": "dataforge-p7-lab-d0f725-bronze",
+  "configuration": "dataforge-p7-lab-d0f725",
+  "sdk_directory": "gcloud-dataforge-p7-lab",
+  "terraform_workspace": "p7-dataforge-p7-lab-d0f725",
+  "operational_cost_target_usd": 10,
+  "project_number": "955038620072"
+}

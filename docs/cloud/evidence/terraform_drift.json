@@ -1,0 +1,20 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "workspace": "p7-dataforge-p7-lab-d0f725",
+  "drift_exit_code": 0,
+  "no_changes": true,
+  "managed_resource_count": 11,
+  "managed_addresses": [
+    "google_bigquery_dataset.gold",
+    "google_bigquery_dataset.silver",
+    "google_bigquery_dataset.staging",
+    "google_bigquery_dataset_iam_member.runtime_staging_editor",
+    "google_project_iam_member.runtime_bigquery_job_user",
+    "google_project_iam_member.runtime_service_usage_consumer",
+    "google_service_account.runtime",
+    "google_service_account_iam_member.runtime_test_token_creator[0]",
+    "google_storage_bucket.bronze",
+    "google_storage_bucket_iam_member.runtime_bucket_viewer",
+    "google_storage_bucket_iam_member.runtime_object_viewer"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "source": "order_items",
+  "target_project_number": "955038620072",
+  "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_sha256": "66a4114a975c704564e58575670b7aa186ecd5b9456e786081ff3d56c703c41a",
+  "parquet_sha256": "9468dee8ff81f4e6469efa5c071f45171e8dc643ecaa0610af090e87c056f3de",
+  "row_count": 6001,
+  "gcs_uri": "gs://dataforge-p7-lab-d0f725-bronze/bronze/source=order_items/sha256=9468dee8ff81f4e6469efa5c071f45171e8dc643ecaa0610af090e87c056f3de/part-000.parquet",
+  "gcs_generation": 1794241322191361,
+  "gcs_size_bytes": 74202,
+  "gcs_crc32c": "TXeTcg==",
+  "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/source=order_items/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+  "manifest_sha256": "43cfbba7aa3d5a2423c356bd8213b067e11b745789b60d3145a61a2619b58830",
+  "manifest_generation": 1794241325368782,
+  "manifest_size_bytes": 1384,
+  "manifest_crc32c": "aEVn+A==",
+  "bucket_location": "US-CENTRAL1",
+  "dataset_location": "us-central1",
+  "bigquery": {
+    "raw_table": "dataforge-p7-lab-d0f725.staging.order_items_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+    "typed_table": "dataforge-p7-lab-d0f725.staging.order_items_1b8ab9513d624bbcba6692a6ea0818f6",
+    "load_job_id": "dataforge_load_order_items_1b8ab9513d624bbcba6692a6ea0818f6_c5f6d61fb623",
+    "cast_job_id": "dataforge_cast_order_items_1b8ab9513d624bbcba6692a6ea0818f6_f53e47e094a5",
+    "metrics_job_id": "dataforge_verify_order_items_1b8ab9513d624bbcba6692a6ea0818f6_c90d315e33e3",
+    "row_count": 6001,
+    "filtered_row_count": 1,
+    "null_counts": {},
+    "schema": [
+      {
+        "name": "order_item_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "order_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "product_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "quantity",
+        "bq_type": "INT64",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "unit_price",
+        "bq_type": "NUMERIC",
+        "nullable": false,
+        "precision": 18,
+        "scale": 2
+      },
+      {
+        "name": "discount_pct",
+        "bq_type": "NUMERIC",
+        "nullable": false,
+        "precision": 8,
+        "scale": 4
+      }
+    ],
+    "raw_reconciliation_job_id": "dataforge_rawreconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_728aa3b76032",
+    "raw_value_sha256": "579be015b98d7db1327906b50de4938db5346a3fcbaeea72d0ade50c979f808c",
+    "raw_values_match": true,
+    "raw_reconciliation_bytes_processed": 0,
+    "raw_reconciliation_bytes_billed": 0,
+    "reconciliation_job_id": "dataforge_reconcile_order_items_1b8ab9513d624bbcba6692a6ea0818f6_0cdf7ba712c1",
+    "source_value_sha256": "7002a2f2831fb91f9246df9aa0d200ba36a8745998256b7a334625872d839cd6",
+    "bigquery_value_sha256": "7002a2f2831fb91f9246df9aa0d200ba36a8745998256b7a334625872d839cd6",
+    "exact_values_match": true,
+    "load_reused": true,
+    "cast_reused": true,
+    "cast_bytes_processed": null,
+    "cast_bytes_billed": null,
+    "metrics_bytes_processed": 0,
+    "metrics_bytes_billed": 0,
+    "reconciliation_bytes_processed": 0,
+    "reconciliation_bytes_billed": 0,
+    "maximum_bytes_billed": 268435456,
+    "request_retry_deadline_seconds": 60,
+    "api_request_timeout_seconds": 60,
+    "job_wait_timeout_seconds": 300
+  }
+}

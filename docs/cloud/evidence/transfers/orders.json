@@ -1,0 +1,88 @@
+{
+  "source": "orders",
+  "target_project_number": "955038620072",
+  "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_sha256": "05b8039ada6e6ca05c63b9fd8c126c731545e68ab237b0afc6f17da27662314f",
+  "parquet_sha256": "40048c8fff4851814d8a58afcf93c4cdd62301bd6d679ef35e940f8cbfddec4f",
+  "row_count": 3000,
+  "gcs_uri": "gs://dataforge-p7-lab-d0f725-bronze/bronze/source=orders/sha256=40048c8fff4851814d8a58afcf93c4cdd62301bd6d679ef35e940f8cbfddec4f/part-000.parquet",
+  "gcs_generation": 1794241301041454,
+  "gcs_size_bytes": 31424,
+  "gcs_crc32c": "/8yKuw==",
+  "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/source=orders/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+  "manifest_sha256": "4cc0d3e3685f392a8afe3ae2876e6fcf2cccc59322c2990e854fb7c0d71493f5",
+  "manifest_generation": 1794241303822400,
+  "manifest_size_bytes": 1264,
+  "manifest_crc32c": "L+s/2g==",
+  "bucket_location": "US-CENTRAL1",
+  "dataset_location": "us-central1",
+  "bigquery": {
+    "raw_table": "dataforge-p7-lab-d0f725.staging.orders_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+    "typed_table": "dataforge-p7-lab-d0f725.staging.orders_1b8ab9513d624bbcba6692a6ea0818f6",
+    "load_job_id": "dataforge_load_orders_1b8ab9513d624bbcba6692a6ea0818f6_b53e675c4508",
+    "cast_job_id": "dataforge_cast_orders_1b8ab9513d624bbcba6692a6ea0818f6_78184ae8b8b2",
+    "metrics_job_id": "dataforge_verify_orders_1b8ab9513d624bbcba6692a6ea0818f6_eaebe60dcc0b",
+    "row_count": 3000,
+    "filtered_row_count": 1,
+    "null_counts": {},
+    "schema": [
+      {
+        "name": "order_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "customer_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "order_date",
+        "bq_type": "DATE",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "province_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "status",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      }
+    ],
+    "raw_reconciliation_job_id": "dataforge_rawreconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_572bf091fe6a",
+    "raw_value_sha256": "972f7d6d5f8357dee83db129aa90883ad933a4f4a9bf7a4bbdec5938a048639b",
+    "raw_values_match": true,
+    "raw_reconciliation_bytes_processed": 135543,
+    "raw_reconciliation_bytes_billed": 10485760,
+    "reconciliation_job_id": "dataforge_reconcile_orders_1b8ab9513d624bbcba6692a6ea0818f6_651957f6bd62",
+    "source_value_sha256": "972f7d6d5f8357dee83db129aa90883ad933a4f4a9bf7a4bbdec5938a048639b",
+    "bigquery_value_sha256": "972f7d6d5f8357dee83db129aa90883ad933a4f4a9bf7a4bbdec5938a048639b",
+    "exact_values_match": true,
+    "load_reused": false,
+    "cast_reused": false,
+    "cast_bytes_processed": 135543,
+    "cast_bytes_billed": 20971520,
+    "metrics_bytes_processed": 30000,
+    "metrics_bytes_billed": 10485760,
+    "reconciliation_bytes_processed": 123543,
+    "reconciliation_bytes_billed": 10485760,
+    "maximum_bytes_billed": 268435456,
+    "request_retry_deadline_seconds": 60,
+    "api_request_timeout_seconds": 60,
+    "job_wait_timeout_seconds": 300
+  }
+}

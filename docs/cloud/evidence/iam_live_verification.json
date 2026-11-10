@@ -1,0 +1,18 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "runtime_service_account": "dataforge-runtime@dataforge-p7-lab-d0f725.iam.gserviceaccount.com",
+  "runtime_gcs_read_http": 200,
+  "runtime_gcs_sha256_match": true,
+  "runtime_query_job_id": "dataforge_runtime_verify_geography_8154f1ee3830",
+  "runtime_query_rows": 8,
+  "runtime_query_unique_keys": 8,
+  "runtime_query_bytes_processed": 33,
+  "runtime_query_bytes_billed": 10485760,
+  "anonymous_private_object_http": 403,
+  "runtime_gold_table_list_http": 403,
+  "runtime_gcs_test_permissions": [
+    "storage.objects.get"
+  ],
+  "static_service_account_key_created": false,
+  "iam_positive_negative_status": "PASS"
+}

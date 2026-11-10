@@ -1,0 +1,9 @@
+{
+  "candidate_files_scanned": 80,
+  "secret_pattern_findings": [],
+  "broken_local_links": [],
+  "source_receipt_pairs": 11,
+  "all_rerun_and_inventory_integrity_checks": "PASS",
+  "scope": "changed and non-ignored untracked publication candidates; no credential/state reads",
+  "dedicated_secret_scanner": "not installed; bounded pattern review only"
+}

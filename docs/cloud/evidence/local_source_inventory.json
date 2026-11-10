@@ -1,0 +1,591 @@
+{
+  "status": "LOCAL_PREFLIGHT_PASS",
+  "cloud_status": "NOT_CHECKED",
+  "network_used": false,
+  "credentials_checked": false,
+  "resource_mutation": false,
+  "validated_at": "2026-11-09",
+  "source_count": 11,
+  "total_rows": 16259.0,
+  "total_parquet_bytes": 235910.0,
+  "sources": [
+    {
+      "source": "geography",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "3bcdf90e15c2dfea7a6226ecaec6b62e85c6cc7cc6eea493f38d725fcef4422d",
+      "parquet_sha256": "f344ecbda43de5c0b76bdd1917ccc142c0b01746c380ce002ed42fa64a7ff966",
+      "row_count": 8,
+      "parquet_size_bytes": 2378,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "province_id:string",
+        "province:string",
+        "region:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "province_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "province",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "region",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "customers",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "07cba486cfd081d2d194e0c4fe2273acc204c71d4185cf61b9ed4df01473b4ef",
+      "parquet_sha256": "d94404a812d95ed8c5cef8238e34815573d3f36c03965fef0a6125dd22d64a53",
+      "row_count": 300,
+      "parquet_size_bytes": 4571,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "customer_id:string",
+        "signup_date:string",
+        "province_id:string",
+        "segment:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "customer_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "signup_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "province_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "segment",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "customer_segments",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "c5d46224faafe9d80260aa79f0263f77dbfe515e0de7641e43afe664218e0372",
+      "parquet_sha256": "d0b2b4cd07918c1178ea13eca9d3e698e52578d932f9921cf522ad00769b7683",
+      "row_count": 342,
+      "parquet_size_bytes": 4486,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "customer_id:string",
+        "segment:string",
+        "valid_from:string",
+        "valid_to:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "customer_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "segment",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "valid_from",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "valid_to",
+          "bq_type": "DATE",
+          "nullable": true,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "products",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "c16650ef01eccdadfc017c1071945289d4735a3f091728dd90572f4f27688e26",
+      "parquet_sha256": "dccb8312b9127d7d7387a58c4259851566e97b5fdaa989ca8351a319b03621b9",
+      "row_count": 60,
+      "parquet_size_bytes": 4505,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "product_id:string",
+        "category:string",
+        "subcategory:string",
+        "base_price:string",
+        "unit_cogs:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "product_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "category",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "subcategory",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "base_price",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 18,
+          "scale": 2
+        },
+        {
+          "name": "unit_cogs",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 18,
+          "scale": 2
+        }
+      ]
+    },
+    {
+      "source": "orders",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "05b8039ada6e6ca05c63b9fd8c126c731545e68ab237b0afc6f17da27662314f",
+      "parquet_sha256": "40048c8fff4851814d8a58afcf93c4cdd62301bd6d679ef35e940f8cbfddec4f",
+      "row_count": 3000,
+      "parquet_size_bytes": 31424,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "order_id:string",
+        "customer_id:string",
+        "order_date:string",
+        "province_id:string",
+        "status:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "order_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "customer_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "order_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "province_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "status",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "order_items",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "66a4114a975c704564e58575670b7aa186ecd5b9456e786081ff3d56c703c41a",
+      "parquet_sha256": "9468dee8ff81f4e6469efa5c071f45171e8dc643ecaa0610af090e87c056f3de",
+      "row_count": 6001,
+      "parquet_size_bytes": 74202,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "order_item_id:string",
+        "order_id:string",
+        "product_id:string",
+        "quantity:string",
+        "unit_price:string",
+        "discount_pct:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "order_item_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "order_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "product_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "quantity",
+          "bq_type": "INT64",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "unit_price",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 18,
+          "scale": 2
+        },
+        {
+          "name": "discount_pct",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 8,
+          "scale": 4
+        }
+      ]
+    },
+    {
+      "source": "payments",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "78dd316936ae0148f9de364edb4ad6ee65cdb62ea7c7525ee89580444db0d952",
+      "parquet_sha256": "2bdd735da77d775219f54c07fac87cfbc39dbbab1e834047d34f0624206e9eeb",
+      "row_count": 2865,
+      "parquet_size_bytes": 57011,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "payment_id:string",
+        "order_id:string",
+        "payment_date:string",
+        "amount:string",
+        "status:string",
+        "method:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "payment_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "order_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "payment_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "amount",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 18,
+          "scale": 2
+        },
+        {
+          "name": "status",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "method",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "shipments",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "16d4ec135583aa74891729839204893a326d3d62693dd7ccd1e70c90e49463e0",
+      "parquet_sha256": "b9763098d5a16a0b2a8d3787aac2d56643c0c4a83d62aa81a4e25dce3ddc778f",
+      "row_count": 2564,
+      "parquet_size_bytes": 41785,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "shipment_id:string",
+        "order_id:string",
+        "ship_date:string",
+        "delivery_date:string",
+        "status:string",
+        "carrier:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "shipment_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "order_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "ship_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "delivery_date",
+          "bq_type": "DATE",
+          "nullable": true,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "status",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "carrier",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "returns",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "76b5c1c31bfa47e12555e7736588cf9ce0742f6fb810571d7ba051c059440c54",
+      "parquet_sha256": "fb241a0ef933bf296e2a51fdd840b88b802a6b210737c69962afa2982b76ed40",
+      "row_count": 139,
+      "parquet_size_bytes": 6532,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "return_id:string",
+        "order_item_id:string",
+        "return_date:string",
+        "refund_amount:string",
+        "status:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "return_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "order_item_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "return_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "refund_amount",
+          "bq_type": "NUMERIC",
+          "nullable": false,
+          "precision": 18,
+          "scale": 2
+        },
+        {
+          "name": "status",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "inventory",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "e229b42130c15083e902def1262c6e4a72a3fb4902b62bd94ea950fbbcdfd35d",
+      "parquet_sha256": "2bc153cf513d6c16329606b9e8a7b97f0347411918fd539eca819a8abd0bac65",
+      "row_count": 180,
+      "parquet_size_bytes": 4043,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "snapshot_date:string",
+        "product_id:string",
+        "quantity_in_stock:string",
+        "reorder_point:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "snapshot_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "product_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "quantity_in_stock",
+          "bq_type": "INT64",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "reorder_point",
+          "bq_type": "INT64",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    },
+    {
+      "source": "weather_daily",
+      "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+      "source_sha256": "0309382961e6ee602a8f098c6922f66a25e55306f1dfd14aa98bf396fd0e7cff",
+      "parquet_sha256": "eed7b2712dab1015e097919d73e8a1343971984bd870d25937d071af57698f57",
+      "row_count": 800,
+      "parquet_size_bytes": 4973,
+      "source_value_sha256": null,
+      "parquet_schema": [
+        "province_id:string",
+        "observation_date:string",
+        "precipitation_mm:string",
+        "temp_max_c:string",
+        "source:string"
+      ],
+      "typed_schema": [
+        {
+          "name": "province_id",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "observation_date",
+          "bq_type": "DATE",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        },
+        {
+          "name": "precipitation_mm",
+          "bq_type": "NUMERIC",
+          "nullable": true,
+          "precision": 12,
+          "scale": 3
+        },
+        {
+          "name": "temp_max_c",
+          "bq_type": "NUMERIC",
+          "nullable": true,
+          "precision": 8,
+          "scale": 2
+        },
+        {
+          "name": "source",
+          "bq_type": "STRING",
+          "nullable": false,
+          "precision": null,
+          "scale": null
+        }
+      ]
+    }
+  ]
+}

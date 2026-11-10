@@ -1,0 +1,54 @@
+{
+  "status": "LOCAL_PREFLIGHT_PASS",
+  "cloud_status": "NOT_CHECKED",
+  "network_used": false,
+  "credentials_checked": false,
+  "resource_mutation": false,
+  "project_id": null,
+  "expected_project_number": null,
+  "bucket": null,
+  "dataset": "staging",
+  "requested_region": "us-central1",
+  "region_check": "NOT_SUPPLIED",
+  "source": "geography",
+  "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_sha256": "3bcdf90e15c2dfea7a6226ecaec6b62e85c6cc7cc6eea493f38d725fcef4422d",
+  "parquet_sha256": "f344ecbda43de5c0b76bdd1917ccc142c0b01746c380ce002ed42fa64a7ff966",
+  "row_count": 8,
+  "expected_null_counts": {},
+  "parquet_size_bytes": 2378,
+  "parquet_schema": [
+    "province_id:string",
+    "province:string",
+    "region:string"
+  ],
+  "gcs_object_name": "bronze/source=geography/sha256=f344ecbda43de5c0b76bdd1917ccc142c0b01746c380ce002ed42fa64a7ff966/part-000.parquet",
+  "manifest_object_name": "manifests/source=geography/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+  "bigquery_raw_table": "geography_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+  "bigquery_typed_table": "geography_1b8ab9513d624bbcba6692a6ea0818f6",
+  "typed_schema": [
+    {
+      "name": "province_id",
+      "bq_type": "STRING",
+      "nullable": false,
+      "precision": null,
+      "scale": null
+    },
+    {
+      "name": "province",
+      "bq_type": "STRING",
+      "nullable": false,
+      "precision": null,
+      "scale": null
+    },
+    {
+      "name": "region",
+      "bq_type": "STRING",
+      "nullable": false,
+      "precision": null,
+      "scale": null
+    }
+  ],
+  "note": "GCP authentication, IAM, resource existence, billing, and live region were not checked."
+}

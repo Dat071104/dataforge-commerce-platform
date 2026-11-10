@@ -1,0 +1,91 @@
+{
+  "source": "weather_daily",
+  "target_project_number": "955038620072",
+  "active_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_ingest_run_id": "1b8ab9513d624bbcba6692a6ea0818f6",
+  "source_sha256": "0309382961e6ee602a8f098c6922f66a25e55306f1dfd14aa98bf396fd0e7cff",
+  "parquet_sha256": "eed7b2712dab1015e097919d73e8a1343971984bd870d25937d071af57698f57",
+  "row_count": 800,
+  "gcs_uri": "gs://dataforge-p7-lab-d0f725-bronze/bronze/source=weather_daily/sha256=eed7b2712dab1015e097919d73e8a1343971984bd870d25937d071af57698f57/part-000.parquet",
+  "gcs_generation": 1794241425446576,
+  "gcs_size_bytes": 4973,
+  "gcs_crc32c": "IUltuQ==",
+  "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/source=weather_daily/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+  "manifest_sha256": "b343d8584ceffc9d0e18d796031edb7e01b721a60f389573b5db32939dc0f8ee",
+  "manifest_generation": 1794241428097234,
+  "manifest_size_bytes": 1341,
+  "manifest_crc32c": "ykV9/w==",
+  "bucket_location": "US-CENTRAL1",
+  "dataset_location": "us-central1",
+  "bigquery": {
+    "raw_table": "dataforge-p7-lab-d0f725.staging.weather_daily_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+    "typed_table": "dataforge-p7-lab-d0f725.staging.weather_daily_1b8ab9513d624bbcba6692a6ea0818f6",
+    "load_job_id": "dataforge_load_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_95d7d4177870",
+    "cast_job_id": "dataforge_cast_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_4bc8d6597201",
+    "metrics_job_id": "dataforge_verify_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_755d5c97f1a6",
+    "row_count": 800,
+    "filtered_row_count": 100,
+    "null_counts": {
+      "precipitation_mm": 0,
+      "temp_max_c": 0
+    },
+    "schema": [
+      {
+        "name": "province_id",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "observation_date",
+        "bq_type": "DATE",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      },
+      {
+        "name": "precipitation_mm",
+        "bq_type": "NUMERIC",
+        "nullable": true,
+        "precision": 12,
+        "scale": 3
+      },
+      {
+        "name": "temp_max_c",
+        "bq_type": "NUMERIC",
+        "nullable": true,
+        "precision": 8,
+        "scale": 2
+      },
+      {
+        "name": "source",
+        "bq_type": "STRING",
+        "nullable": false,
+        "precision": null,
+        "scale": null
+      }
+    ],
+    "raw_reconciliation_job_id": "dataforge_rawreconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_b2b4de1b3375",
+    "raw_value_sha256": "f84bf386dd53ce98899aaff5de62e4bd39390568d68e99d8cdebcac5c5394904",
+    "raw_values_match": true,
+    "raw_reconciliation_bytes_processed": 27459,
+    "raw_reconciliation_bytes_billed": 10485760,
+    "reconciliation_job_id": "dataforge_reconcile_weather_daily_1b8ab9513d624bbcba6692a6ea0818f6_e051d52e0e1e",
+    "source_value_sha256": "a7c8490d3a38ac9629046adb39012cbc8110b18874efb4559c6e697aee9997e0",
+    "bigquery_value_sha256": "a7c8490d3a38ac9629046adb39012cbc8110b18874efb4559c6e697aee9997e0",
+    "exact_values_match": true,
+    "load_reused": false,
+    "cast_reused": false,
+    "cast_bytes_processed": 27459,
+    "cast_bytes_billed": 20971520,
+    "metrics_bytes_processed": 28900,
+    "metrics_bytes_billed": 10485760,
+    "reconciliation_bytes_processed": 44100,
+    "reconciliation_bytes_billed": 10485760,
+    "maximum_bytes_billed": 268435456,
+    "request_retry_deadline_seconds": 60,
+    "api_request_timeout_seconds": 60,
+    "job_wait_timeout_seconds": 300
+  }
+}

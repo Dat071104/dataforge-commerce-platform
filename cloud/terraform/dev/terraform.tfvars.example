@@ -1,0 +1,10 @@
+project_id = "your-gcp-project-id"
+bucket_name = "dataforge-gcp-dev-unique-suffix"
+region = "us-central1"
+
+# Set only after choosing the authorized local uploader principal.
+# transfer_member = "user:person@example.com"
+
+# Set only for an explicitly authorized runtime identity smoke test.
+# The impersonation grant is scoped to the DataForge runtime service account.
+# runtime_test_member = "user:person@example.com"

@@ -1,0 +1,359 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "bucket": "dataforge-p7-lab-d0f725-bronze",
+  "gcs_objects": [
+    {
+      "name": "bronze/source=customer_segments/sha256=d0b2b4cd07918c1178ea13eca9d3e698e52578d932f9921cf522ad00769b7683/part-000.parquet",
+      "generation": "1794241257904387",
+      "size": "4486",
+      "crc32c": "Xf2piQ=="
+    },
+    {
+      "name": "bronze/source=customers/sha256=d94404a812d95ed8c5cef8238e34815573d3f36c03965fef0a6125dd22d64a53/part-000.parquet",
+      "generation": "1794241237042288",
+      "size": "4571",
+      "crc32c": "MlSavg=="
+    },
+    {
+      "name": "bronze/source=geography/sha256=f344ecbda43de5c0b76bdd1917ccc142c0b01746c380ce002ed42fa64a7ff966/part-000.parquet",
+      "generation": "1794241093122561",
+      "size": "2378",
+      "crc32c": "YGvg+A=="
+    },
+    {
+      "name": "bronze/source=inventory/sha256=2bc153cf513d6c16329606b9e8a7b97f0347411918fd539eca819a8abd0bac65/part-000.parquet",
+      "generation": "1794241404564991",
+      "size": "4043",
+      "crc32c": "/1OsKg=="
+    },
+    {
+      "name": "bronze/source=order_items/sha256=9468dee8ff81f4e6469efa5c071f45171e8dc643ecaa0610af090e87c056f3de/part-000.parquet",
+      "generation": "1794241322191361",
+      "size": "74202",
+      "crc32c": "TXeTcg=="
+    },
+    {
+      "name": "bronze/source=orders/sha256=40048c8fff4851814d8a58afcf93c4cdd62301bd6d679ef35e940f8cbfddec4f/part-000.parquet",
+      "generation": "1794241301041454",
+      "size": "31424",
+      "crc32c": "/8yKuw=="
+    },
+    {
+      "name": "bronze/source=payments/sha256=2bdd735da77d775219f54c07fac87cfbc39dbbab1e834047d34f0624206e9eeb/part-000.parquet",
+      "generation": "1794241344585828",
+      "size": "57011",
+      "crc32c": "gCuk6g=="
+    },
+    {
+      "name": "bronze/source=products/sha256=dccb8312b9127d7d7387a58c4259851566e97b5fdaa989ca8351a319b03621b9/part-000.parquet",
+      "generation": "1794241279706800",
+      "size": "4505",
+      "crc32c": "sXj6+Q=="
+    },
+    {
+      "name": "bronze/source=returns/sha256=fb241a0ef933bf296e2a51fdd840b88b802a6b210737c69962afa2982b76ed40/part-000.parquet",
+      "generation": "1794241385123209",
+      "size": "6532",
+      "crc32c": "U2XJMA=="
+    },
+    {
+      "name": "bronze/source=shipments/sha256=b9763098d5a16a0b2a8d3787aac2d56643c0c4a83d62aa81a4e25dce3ddc778f/part-000.parquet",
+      "generation": "1794241363476816",
+      "size": "41785",
+      "crc32c": "mKk7Wg=="
+    },
+    {
+      "name": "bronze/source=weather_daily/sha256=eed7b2712dab1015e097919d73e8a1343971984bd870d25937d071af57698f57/part-000.parquet",
+      "generation": "1794241425446576",
+      "size": "4973",
+      "crc32c": "IUltuQ=="
+    },
+    {
+      "name": "manifests/source=customer_segments/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241260727960",
+      "size": "1192",
+      "crc32c": "0/VJVA=="
+    },
+    {
+      "name": "manifests/source=customers/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241239908317",
+      "size": "1168",
+      "crc32c": "ZWEEeQ=="
+    },
+    {
+      "name": "manifests/source=geography/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241095938778",
+      "size": "1050",
+      "crc32c": "M8flOg=="
+    },
+    {
+      "name": "manifests/source=inventory/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241407117038",
+      "size": "1207",
+      "crc32c": "BY5FHg=="
+    },
+    {
+      "name": "manifests/source=order_items/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241325368782",
+      "size": "1384",
+      "crc32c": "aEVn+A=="
+    },
+    {
+      "name": "manifests/source=orders/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241303822400",
+      "size": "1264",
+      "crc32c": "L+s/2g=="
+    },
+    {
+      "name": "manifests/source=payments/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241346255917",
+      "size": "1356",
+      "crc32c": "VWi4Cg=="
+    },
+    {
+      "name": "manifests/source=products/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241282434488",
+      "size": "1263",
+      "crc32c": "2IxbZA=="
+    },
+    {
+      "name": "manifests/source=returns/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241387770764",
+      "size": "1272",
+      "crc32c": "TUATPg=="
+    },
+    {
+      "name": "manifests/source=shipments/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241366310780",
+      "size": "1388",
+      "crc32c": "20r1AQ=="
+    },
+    {
+      "name": "manifests/source=weather_daily/active_run=1b8ab9513d624bbcba6692a6ea0818f6/manifest.json",
+      "generation": "1794241428097234",
+      "size": "1341",
+      "crc32c": "ykV9/w=="
+    }
+  ],
+  "gcs_soft_delete_retention_seconds": "604800",
+  "gcs_lifecycle": {
+    "rule": [
+      {
+        "action": {
+          "type": "Delete"
+        },
+        "condition": {
+          "age": 30,
+          "matchesPrefix": [
+            "tmp/"
+          ]
+        }
+      }
+    ]
+  },
+  "staging_tables": [
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.customer_segments_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "customer_segments",
+      "kind": "raw",
+      "row_count": 342,
+      "num_bytes": 10482,
+      "expires_ms": "1794846056209",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.customer_segments_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "customer_segments",
+      "kind": "typed",
+      "row_count": 342,
+      "num_bytes": 8346,
+      "expires_ms": "1794846056209",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.customers_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "customers",
+      "kind": "raw",
+      "row_count": 300,
+      "num_bytes": 9467,
+      "expires_ms": "1794846035359",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.customers_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "customers",
+      "kind": "typed",
+      "row_count": 300,
+      "num_bytes": 8267,
+      "expires_ms": "1794846035359",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.geography_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "geography",
+      "kind": "raw",
+      "row_count": 8,
+      "num_bytes": 179,
+      "expires_ms": "1794845891369",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.geography_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "geography",
+      "kind": "typed",
+      "row_count": 8,
+      "num_bytes": 179,
+      "expires_ms": "1794845891369",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.inventory_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "inventory",
+      "kind": "raw",
+      "row_count": 180,
+      "num_bytes": 5002,
+      "expires_ms": "1794846202441",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.inventory_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "inventory",
+      "kind": "typed",
+      "row_count": 180,
+      "num_bytes": 5580,
+      "expires_ms": "1794846202441",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.order_items_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "order_items",
+      "kind": "raw",
+      "row_count": 6001,
+      "num_bytes": 277116,
+      "expires_ms": "1794846120837",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.order_items_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "order_items",
+      "kind": "typed",
+      "row_count": 6001,
+      "num_bytes": 414069,
+      "expires_ms": "1794846120837",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.orders_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "orders",
+      "kind": "raw",
+      "row_count": 3000,
+      "num_bytes": 135543,
+      "expires_ms": "1794846099294",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.orders_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "orders",
+      "kind": "typed",
+      "row_count": 3000,
+      "num_bytes": 123543,
+      "expires_ms": "1794846099294",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.payments_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "payments",
+      "kind": "raw",
+      "row_count": 2865,
+      "num_bytes": 172203,
+      "expires_ms": "1794846141007",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.payments_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "payments",
+      "kind": "typed",
+      "row_count": 2865,
+      "num_bytes": 181734,
+      "expires_ms": "1794846141007",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.products_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "products",
+      "kind": "raw",
+      "row_count": 60,
+      "num_bytes": 3127,
+      "expires_ms": "1794846077933",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.products_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "products",
+      "kind": "typed",
+      "row_count": 60,
+      "num_bytes": 4080,
+      "expires_ms": "1794846077933",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.returns_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "returns",
+      "kind": "raw",
+      "row_count": 139,
+      "num_bytes": 7416,
+      "expires_ms": "1794846183150",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.returns_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "returns",
+      "kind": "typed",
+      "row_count": 139,
+      "num_bytes": 7923,
+      "expires_ms": "1794846183150",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.shipments_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "shipments",
+      "kind": "raw",
+      "row_count": 2564,
+      "num_bytes": 162561,
+      "expires_ms": "1794846161645",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.shipments_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "shipments",
+      "kind": "typed",
+      "row_count": 2564,
+      "num_bytes": 142049,
+      "expires_ms": "1794846161645",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.weather_daily_raw_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "weather_daily",
+      "kind": "raw",
+      "row_count": 800,
+      "num_bytes": 27459,
+      "expires_ms": "1794846223544",
+      "location": "us-central1"
+    },
+    {
+      "table_id": "dataforge-p7-lab-d0f725:staging.weather_daily_1b8ab9513d624bbcba6692a6ea0818f6",
+      "source": "weather_daily",
+      "kind": "typed",
+      "row_count": 800,
+      "num_bytes": 44100,
+      "expires_ms": "1794846223544",
+      "location": "us-central1"
+    }
+  ],
+  "empty_future_datasets": {
+    "silver": 0,
+    "gold": 0
+  },
+  "all_foundation_and_table_locations_match": true
+}
