@@ -2,6 +2,18 @@ project_id = "your-gcp-project-id"
 bucket_name = "dataforge-gcp-dev-unique-suffix"
 region = "us-central1"
 
+# Week-7 provisioning is additive. Create the private image repository first,
+# build/push the reviewed dbt image, then set the digest and enable orchestration.
+# The scheduler is opt-in and paused until the manual workflow/recovery pass.
+# Enabling orchestration also creates a short-lived OIDC identity for read-only
+# dbt compile checks from trusted same-repository P7 branch pushes (no PR/fork tokens).
+# week7_artifact_registry_enabled = true
+# week7_orchestration_enabled = true
+# week7_scheduler_enabled = true
+# week7_dbt_image = "us-central1-docker.pkg.dev/your-gcp-project-id/dataforge-week7/dbt@sha256:<64 lowercase hex>"
+# week7_scheduler_paused = true
+# week7_scheduler_creator_member = "user:person@example.com"
+
 # Set only after choosing the authorized local uploader principal.
 # transfer_member = "user:person@example.com"
 

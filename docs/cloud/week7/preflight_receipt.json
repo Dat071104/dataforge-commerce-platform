@@ -1,0 +1,95 @@
+{
+  "checked_date": "2026-11-11",
+  "repository": {
+    "week6_head": "102af420e06150d85b450f003372cf37abe2c5a0",
+    "week6_pr": "https://github.com/Dat071104/dataforge-commerce-platform/pull/4",
+    "week6_pr_state": "MERGED",
+    "week6_merge_commit": "dbf41e3968081c768e258645c56fab461e76d695",
+    "week6_hosted_ci": [
+      {
+        "run_id": 42974124559,
+        "workflow": "DataForge CI (Python 3.11 and PostgreSQL 16)",
+        "commit": "102af420e06150d85b450f003372cf37abe2c5a0",
+        "conclusion": "success"
+      },
+      {
+        "run_id": 42974124591,
+        "workflow": "Week 6 Spark Lab (local fixtures)",
+        "commit": "102af420e06150d85b450f003372cf37abe2c5a0",
+        "conclusion": "success"
+      }
+    ],
+    "local_main": "dbf41e3968081c768e258645c56fab461e76d695",
+    "remote_main": "dbf41e3968081c768e258645c56fab461e76d695",
+    "week7_branch": "feature/p7-week7-dbt-orchestration",
+    "week7_branch_base": "dbf41e3968081c768e258645c56fab461e76d695",
+    "initial_worktree": "clean"
+  },
+  "gcp": {
+    "project_id": "dataforge-p7-lab-d0f725",
+    "project_number": "955038620072",
+    "region": "us-central1",
+    "gcloud_configuration": "dataforge-p7-lab-d0f725",
+    "adc_project": "dataforge-p7-lab-d0f725",
+    "credential_type": "google.oauth2.credentials.Credentials",
+    "project_read_http": 200,
+    "workflows_api": "disabled_before_week7",
+    "scheduler_api": "disabled_before_week7",
+    "existing_cloud_run_jobs": ["dataforge-week5-processor"],
+    "existing_artifact_registry_repositories": ["dataforge-week5"],
+    "terraform_version": "1.17.1",
+    "terraform_workspace": "p7-dataforge-p7-lab-d0f725",
+    "terraform_target_state_resource_count": 19,
+    "terraform_other_workspace_modified": false,
+    "gcloud_user_cli_auth": "expired; ADC is valid and used for authorized API clients/Terraform"
+  },
+  "week5_source_baseline": {
+    "source_id": "dataforge-operational-v1",
+    "committed_seq": 20,
+    "last_batch_id": "a107b47471ff130cece65af2dea2f97d2731ecb0b4ca543b83ba3f5019226c63",
+    "local_journal_rows": 19,
+    "local_journal_max_seq": 20,
+    "local_source_backup": {
+      "file": "operational-source-before-week7.dump",
+      "stored_outside_repository": true,
+      "bytes": 10465,
+      "sha256": "3b17e2dc6c246cba041066e86d11edcdd21123ed21d9a346a632596b18c083b7"
+    },
+    "silver_orders": {
+      "row_count": 4,
+      "tombstones": 1,
+      "max_effective_seq": 18
+    },
+    "silver_payment_events": {
+      "row_count": 4,
+      "tombstones": 1,
+      "active_successes": 3,
+      "max_effective_seq": 20
+    },
+    "week5_gold": {
+      "row_count": 4,
+      "delivered_sales_proxy": "263000",
+      "collected_amount": "344000",
+      "order_w5o0004": {
+        "order_date": "2026-08-01",
+        "order_effective_seq": 15,
+        "delivered_sales_proxy": "50000",
+        "collected_amount": "14000",
+        "collection_variance": "-36000"
+      }
+    },
+    "read_query_jobs": [
+      {"job_id": "cdf3b42a-ad02-418f-ba43-7014a72aa186", "bytes_billed": 10485760},
+      {"job_id": "c12301d4-116e-437c-9061-ae3dddb654e8", "bytes_billed": 10485760},
+      {"job_id": "90722e21-f404-4132-9b1d-1019d1991653", "bytes_billed": 10485760},
+      {"job_id": "5b33d1a5-473e-4101-b46c-1609827a6d47", "bytes_billed": 10485760},
+      {"job_id": "64447ffe-d61b-4f3a-addd-ac2893ef4e73", "bytes_billed": 10485760}
+    ]
+  },
+  "spend_controls": {
+    "week7_gross_target_usd": 5,
+    "hard_cap": false,
+    "billing_api_or_upgrade": "not requested",
+    "recurring_scheduler": "must remain paused after verification"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "arguments": {
+    "batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+    "manifest_generation": "1794390619113736",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713/manifest.json",
+    "run_mode": "normal",
+    "trigger": "manual"
+  },
+  "data_plane_invoked": false,
+  "end_time": "2026-11-11T13:58:20.186724012Z",
+  "error": {
+    "context": "HTTP server responded with error code 404\nin step \"load_exact_manifest_generation\", routine \"main\", line: 59",
+    "payload": "{\"body\":\"No such object: dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713/manifest.json\",\"code\":404,\"headers\":{\"Alt-Svc\":\"h3=\\\":443\\\"; ma=2592000,h3-29=\\\":443\\\"; ma=2592000\",\"Cache-Control\":\"private, max-age=0\",\"Content-Length\":\"150\",\"Content-Type\":\"text/html; charset=UTF-8\",\"Date\":\"Wed, 11 Nov 2026 13:58:20 GMT\",\"Expires\":\"Wed, 11 Nov 2026 13:58:20 GMT\",\"Server\":\"UploadServer\",\"Vary\":\"Origin, X-Origin\",\"X-Goog-Gcs-Base-Ts\":\"1a1cae704b4\",\"X-Guploader-Uploadid\":\"AFy3sg33W5gJUIS0_W9wkSgD51lhIQbhDjS4Wr8sr22S_LmSbFNmePpCncxB6eNrW2IOzqjp\"},\"message\":\"HTTP server responded with error code 404\",\"tags\":[\"HttpError\"]}",
+    "stackTrace": {
+      "elements": [
+        {
+          "position": {
+            "column": "9",
+            "length": "4",
+            "line": "59"
+          },
+          "routine": "main",
+          "step": "load_exact_manifest_generation"
+        }
+      ]
+    }
+  },
+  "scenario": "ORC-05_generation_mismatch",
+  "start_time": "2026-11-11T13:58:19.875948536Z",
+  "state": "FAILED",
+  "status": "PASS_EXPECTED_FAILURE",
+  "step_names": [
+    "handle_no_new_batch_or_invalid_input",
+    "initialize",
+    "load_exact_manifest_generation",
+    "validate_input_shape"
+  ],
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/30b53794-d6cc-4545-9071-b7a24ffc3492"
+}

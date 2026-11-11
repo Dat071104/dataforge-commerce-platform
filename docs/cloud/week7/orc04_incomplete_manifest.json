@@ -1,0 +1,38 @@
+{
+  "arguments": {
+    "batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713/manifest.json",
+    "run_mode": "normal",
+    "trigger": "manual"
+  },
+  "data_plane_invoked": false,
+  "end_time": "2026-11-11T13:58:15.088374566Z",
+  "error": {
+    "context": "RuntimeError: \"INVALID_WEEK7_WORKFLOW_INPUT: supply a complete manifest_uri, string manifest_generation, batch_id, and normal/backfill run_mode.\"\nin step \"invalid_input\", routine \"main\", line: 142",
+    "payload": "\"INVALID_WEEK7_WORKFLOW_INPUT: supply a complete manifest_uri, string manifest_generation, batch_id, and normal/backfill run_mode.\"",
+    "stackTrace": {
+      "elements": [
+        {
+          "position": {
+            "column": "9",
+            "length": "5",
+            "line": "142"
+          },
+          "routine": "main",
+          "step": "invalid_input"
+        }
+      ]
+    }
+  },
+  "scenario": "ORC-04_incomplete_manifest",
+  "start_time": "2026-11-11T13:58:14.730021115Z",
+  "state": "FAILED",
+  "status": "PASS_EXPECTED_FAILURE",
+  "step_names": [
+    "handle_no_new_batch_or_invalid_input",
+    "handle_no_new_batch_or_invalid_input.condition11",
+    "initialize",
+    "invalid_input"
+  ],
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/6e76d649-ed4c-47c4-a228-6f60287cf826"
+}

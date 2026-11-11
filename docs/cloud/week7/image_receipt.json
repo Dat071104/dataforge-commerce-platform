@@ -1,0 +1,43 @@
+{
+  "built_at": "2026-11-11",
+  "base_image": "python:3.11-slim-bookworm@sha256:e8c69d86735f6df3efa06b324694fe51f0422785f83a3bd463052636c2421944",
+  "dbt_core": "1.11.17",
+  "dbt_bigquery": "1.11.3",
+  "lock_packages": 99,
+  "registry": "us-central1-docker.pkg.dev/dataforge-p7-lab-d0f725/dataforge-week7/dbt",
+  "active_image_tag": "week7-20261111-r4",
+  "active_manifest_list_digest": "sha256:c9272dd067815d61ae7e7f88c1e37b79fe8efe14d97aedd243dc2984e344c1f6",
+  "active_manifest_list_size_bytes": 2006,
+  "active_linux_amd64_manifest_digest": "sha256:07d867c34a817a8e9b5d7f4a65019120e9d0f7260a4959337cad8fef1f22a65b",
+  "active_linux_amd64_image_size_bytes": 227550371,
+  "active_attestation_manifest_digest": null,
+  "previous_images": [
+    {
+      "tag": "week7-20261111-r3",
+      "manifest_list_digest": "sha256:0e5f4cc6b10e254d9231d05f6f811bcf88824eb24333e89120d4648760a1cc32",
+      "linux_amd64_manifest_digest": "sha256:7f8921a6c085a8493632aab925afd853b3bd1db86ce0b9339c5cb1322799aeef",
+      "linux_amd64_image_size_bytes": 227550123,
+      "status": "superseded after Week-7 currentness fencing was added to the published view and pointer"
+    },
+    {
+      "tag": "week7-20261111-r2",
+      "manifest_list_digest": "sha256:90613ce940f8a1110b3d2572e4b451821c8dc9571b1e740a842dc81ca4fbf025",
+      "linux_amd64_manifest_digest": "sha256:3807e6904caa1abee45fa6c34fcefff0d70593de804ab0c53e1556ce281f004e",
+      "linux_amd64_image_size_bytes": 227550085,
+      "status": "superseded after live dbt build found an invalid no-FROM CTE; Silver committed but no Week-7 publication occurred"
+    },
+    {
+      "tag": "week7-20261111",
+      "manifest_list_digest": "sha256:4948d6e769f95a4188ad07eea25600603146333d5b4629f4123c5b938b0f02de",
+      "linux_amd64_manifest_digest": "sha256:e5cfd1810ec931ff9483b0a08a7aaadfb424197d900982cb1e22d5862a249a59",
+      "linux_amd64_image_size_bytes": 227549599,
+      "status": "superseded before any Cloud Run execution; retained because tags are immutable"
+    }
+  ],
+  "artifact_registry_verification_http": 200,
+  "terraform_reference": "sha256:c9272dd067815d61ae7e7f88c1e37b79fe8efe14d97aedd243dc2984e344c1f6",
+  "local_container_version_check": "PASS",
+  "local_container_parse": "PASS after r4 currentness-fence update",
+  "local_container_compile_no_credentials": "NOT_SUPPORTED_BY_BIGQUERY_ADAPTER; compile requires an adapter connection; credential-free validation uses parse",
+  "credentials": "ADC used for registry push; temporary Docker config logged out after push; no service-account key"
+}

@@ -1,0 +1,19 @@
+{
+  "argument": {
+    "no_new_batch": true,
+    "trigger": "manual"
+  },
+  "duration_seconds": 1.437,
+  "end_time": "2026-11-11T09:16:26.937972589Z",
+  "error": null,
+  "result": {
+    "message": "No complete immutable GCS manifest was supplied; the local PostgreSQL source is not reachable from Cloud Run.",
+    "status": "NO_NEW_BATCH",
+    "workflow_execution_name": "216128e0-871a-4c65-8d0a-df7e8e659961",
+    "workflow_run_id": "216128e0-871a-4c65-8d0a-df7e8e659961"
+  },
+  "start_time": "2026-11-11T09:16:26.604593152Z",
+  "state": "SUCCEEDED",
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/216128e0-871a-4c65-8d0a-df7e8e659961",
+  "workflow_name": "projects/dataforge-p7-lab-d0f725/locations/us-central1/workflows/dataforge-week7-orchestrator"
+}

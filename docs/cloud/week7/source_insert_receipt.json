@@ -1,0 +1,1 @@
+{"change_count": 3, "change_ids": ["week7-insert-order-w5o0005", "week7-insert-payment-w5p0005", "week7-insert-payment-w5p0006"], "no_cloud_calls": true, "scenario": "insert_order_with_two_payments", "seq_max": 23, "seq_min": 21, "source_identity": "dataforge-operational-v1", "status": "APPLIED_OR_EXACT_REPLAY"}

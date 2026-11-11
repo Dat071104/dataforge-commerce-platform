@@ -1,0 +1,17 @@
+{
+  "status": "NO_DRIFT",
+  "terraform_version": "1.17.1",
+  "workspace": "p7-dataforge-p7-lab-d0f725",
+  "state_resource_count": 73,
+  "planned_non_noop_resources": 0,
+  "planned_destroys": 0,
+  "scheduler_job_in_state": false,
+  "final_plan_file": "Terraform CLI plan -refresh=true (no binary retained)",
+  "cloud_scheduler_service_enabled": true,
+  "cloud_scheduler_job": "ABSENT",
+  "scheduler_forced_run_receipt": "scheduler_forced_no_new_batch.json",
+  "scheduler_cleanup_receipt": "scheduler_cleanup_receipt.json",
+  "final_plan_refresh": true,
+  "final_plan_exit_code": 0,
+  "checked_at_utc": "2026-11-11T17:22:57+00:00"
+}

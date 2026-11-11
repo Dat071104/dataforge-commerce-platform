@@ -1,0 +1,20 @@
+{
+  "bootstrap_job_id": "2934de11-24d1-43bd-9dd9-dfb16939cd02",
+  "bootstrap_sql_sha256": "1e2ad5d6510966ca9d69e1a72718755a5bfa5a4066df07969050688844356c64",
+  "bytes_billed": 52428800,
+  "lock_rows": 1,
+  "lock_version": 26,
+  "maximum_bytes_billed": 268435456,
+  "pointer_rows": 1,
+  "pointer_version": 4,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "publication_is_current": false,
+  "region": "us-central1",
+  "status": "BOOTSTRAP_COMPLETE",
+  "verification_bytes_billed": 20971520,
+  "verification_job_id": "35d475f0-6d3a-4d90-8564-726d868958dc",
+  "view_refresh_bytes_billed": 0,
+  "view_refresh_job_id": "bfe4f665-1ef3-4912-b45d-c61a0b556323",
+  "view_refresh_status": "CURRENTNESS_FENCE_APPLIED"
+}

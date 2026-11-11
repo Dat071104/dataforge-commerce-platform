@@ -1,0 +1,1 @@
+{"change_count": 1, "change_ids": ["week7-recovery-payment-w5p0004"], "no_cloud_calls": true, "scenario": "recovery_payment_update", "seq_max": 29, "seq_min": 29, "source_identity": "dataforge-operational-v1", "status": "APPLIED_OR_EXACT_REPLAY"}

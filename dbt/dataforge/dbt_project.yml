@@ -1,0 +1,27 @@
+name: dataforge
+version: "1.0.0"
+config-version: 2
+profile: dataforge
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+analysis-paths: ["analyses"]
+snapshot-paths: ["snapshots"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+models:
+  dataforge:
+    staging:
+      +materialized: view
+      +tags: ["week7", "staging"]
+    intermediate:
+      +materialized: view
+      +tags: ["week7", "intermediate"]
+    marts:
+      +materialized: view
+      +tags: ["week7", "marts"]

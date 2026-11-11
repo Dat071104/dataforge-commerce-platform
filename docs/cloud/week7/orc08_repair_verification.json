@@ -1,0 +1,13 @@
+{
+  "bytes_billed": 31457280,
+  "candidate_collected_amount": "15000",
+  "candidate_sha256": "58bcada6cc4f181565e148fe7599c0fd480f809ee73a8b2340f0519acc9fc7ec",
+  "maximum_bytes_billed": 67108864,
+  "order_id": "W5O0004",
+  "pointer_version": 3,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "published_collected_amount": "15000",
+  "query_job_id": "0522b3c9-333a-4b2f-98b4-93e2ac576ab9",
+  "repair_receipt": "orc08_full_refresh_repair.json",
+  "status": "PASS"
+}

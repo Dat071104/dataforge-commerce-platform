@@ -1,0 +1,49 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+  "manifest_generation": 1794390619113735,
+  "attempts": [
+    {
+      "workflow_execution_id": "d14854b7-f238-41f1-8715-d2ba87516e7a",
+      "status": "FAILED_BEFORE_LOCK_OR_CLOUD_RUN",
+      "error": "Cloud Storage connector returned a manifest map; the workflow incorrectly accessed a body field.",
+      "workload_started": false,
+      "fix": "Read the connector result as the JSON manifest map."
+    },
+    {
+      "workflow_execution_id": "867bb876-719d-43d9-ad13-080d02c7d9ea",
+      "status": "FAILED_BEFORE_LOCK_OR_CLOUD_RUN",
+      "error": "The JSON manifest map was incorrectly passed to text.decode, which requires bytes.",
+      "workload_started": false,
+      "fix": "Use the JSON map returned by the Storage connector directly."
+    },
+    {
+      "workflow_execution_id": "a2b6b097-7018-4e82-9934-a792d75140c9",
+      "status": "FAILED_DURING_LOCK_ACQUIRE",
+      "error": "The Workflow identity could invoke Cloud Run but lacked run.operations.get to wait for the returned operation. The error path started a release job while acquisition was still running.",
+      "cloud_run_operation_id": "a5428005-9d28-441b-a546-b7d1cf5d6b51",
+      "cloud_run_executions": [
+        {
+          "execution_id": "dataforge-week7-dbt-j28fx",
+          "task_result": "FAILED",
+          "reason": "Concurrent update against ops.week7_publish_lock"
+        },
+        {
+          "execution_id": "dataforge-week7-dbt-znj6p",
+          "task_result": "SUCCEEDED",
+          "application_result": "NOT_OWNER"
+        }
+      ],
+      "state_after": {
+        "checkpoint_seq": 20,
+        "week7_pointer_version": 0,
+        "week7_lock_owner_count": 0,
+        "week5_silver_and_gold_changed": false
+      },
+      "fix": "Grant the Workflow identity a project-scoped custom role containing only run.operations.get; retain job-scoped roles/run.developer for invocation. The Workflow now waits for Cloud Run operations before continuing."
+    }
+  ],
+  "state_receipt": "state_after_orc06_403.json",
+  "no_publication_occurred": true
+}

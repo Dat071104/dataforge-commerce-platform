@@ -1,0 +1,31 @@
+{
+  "scan_date": "2026-11-11",
+  "image": "apache/airflow:3.4.0-python3.11@sha256:be92e15d57c5be726fc39a91cd09cce8f7488483b67979e0fb74c1a2c7cfb4e2",
+  "method": "Python distribution metadata (License / License-Expression / OSI classifiers) in a network-disabled disposable container",
+  "distribution_count": 444,
+  "unknown_license_metadata_count": 3,
+  "unknown_metadata_packages": [
+    "openlineage-sql==1.55.0",
+    "isoduration==20.11.0",
+    "lockfile==0.12.2"
+  ],
+  "unresolved_license_metadata_packages": ["openlineage-sql==1.55.0"],
+  "pypi_metadata_follow_up": {
+    "isoduration==20.11.0": "ISC License",
+    "lockfile==0.12.2": "MIT License",
+    "openlineage-sql==1.55.0": "No license field in the PyPI release metadata; upstream OpenLineage repository identifies Apache-2.0, but the package metadata itself remains incomplete."
+  },
+  "license_fields_containing_copyleft_terms": [
+    "python-daemon==3.1.2 (distribution license text lists Apache-2.0 for its daemon library and GPL for other files)",
+    "psycopg==3.3.6 (LGPL-3.0-only)",
+    "psycopg-binary==3.3.6 (LGPL-3.0-only)",
+    "mysqlclient==2.3.0 (GPL-2.0-or-later)",
+    "paramiko==5.1.0 (LGPL-2.1)",
+    "asyncssh==2.24.1 (EPL-2.0 OR GPL-2.0-or-later)",
+    "psycopg2-binary==2.9.13 (LGPL with exceptions)",
+    "mysql-connector-python==26.10.0 (GPLv2 with FOSS License Exception)",
+    "scipy==1.17.1 (BSD project license; metadata also includes third-party notices)",
+    "google-ads==35.0.0 (Apache-2.0 distribution license; the long metadata field includes third-party license notices containing GPL text)"
+  ],
+  "scope_note": "The reference DAG uses SQLite and no SSH/MySQL/PostgreSQL provider in its test path. This official Airflow image is used locally in a network-disabled container and is not copied into DataForge's Artifact Registry. Review these transitive image notices before redistributing an Airflow-derived image."
+}

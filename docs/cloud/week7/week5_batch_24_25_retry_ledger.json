@@ -1,0 +1,34 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "batch_id": "63501d1d4ad335772a3a9e06d16e9b3bb3f4f0bcd2beaf89b76229398b0cb2af",
+  "manifest_generation": 1794405730520817,
+  "cloud_run_execution_id": "dataforge-week5-processor-h5ljt",
+  "run_mode": "backfill",
+  "upper_seq": 25,
+  "ledger_query_job_id": "362dbaa8-b8fe-4383-af3e-16f29ee52a12",
+  "ledger_query_bytes_billed": 10485760,
+  "attempts": [
+    {
+      "attempt": 0,
+      "status": "FAILED",
+      "error_code": "INJECTED_AFTER_SILVER_BEFORE_CHECKPOINT",
+      "checkpoint_before": 23,
+      "checkpoint_after": null,
+      "publish_job_id": "week5_publish_63501d1d4ad33577_4ddd450cf892862f"
+    },
+    {
+      "attempt": 1,
+      "status": "PUBLISHED",
+      "error_code": null,
+      "checkpoint_before": 23,
+      "checkpoint_after": 23,
+      "publish_job_id": "week5_publish_63501d1d4ad33577_e2772fb4e73deb4d"
+    }
+  ],
+  "validated": true,
+  "staged": true,
+  "merged": true,
+  "checked": true,
+  "checkpoint_advanced": false
+}

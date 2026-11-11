@@ -1,0 +1,28 @@
+{
+  "expected": "The second execution returned OVERLAP_SKIPPED before Week-5; the first owned the publication lease.",
+  "first_execution": {
+    "id": "7afb53aa-10bf-4c8c-b978-85a51b34ce35",
+    "result": null,
+    "start_time": "2026-11-11T13:22:16.313431883Z",
+    "state": "ACTIVE"
+  },
+  "manifest_batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+  "overlapping_execution": {
+    "end_time": "2026-11-11T13:26:35.675795454Z",
+    "id": "ef8136bd-8d9d-449d-b84a-88a714fe7625",
+    "result": {
+      "acquire_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/765392df-2c90-4503-a926-7293e73ec9c5",
+      "batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+      "message": "Another workflow owns the atomic Week-7 publication lease; this execution did not build or publish Gold.",
+      "status": "OVERLAP_SKIPPED",
+      "workflow_execution_name": "ef8136bd-8d9d-449d-b84a-88a714fe7625",
+      "workflow_run_id": "ef8136bd-8d9d-449d-b84a-88a714fe7625"
+    },
+    "start_time": "2026-11-11T13:23:34.084897628Z",
+    "state": "SUCCEEDED"
+  },
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "scenario": "ORC-09",
+  "state_snapshot": "state_concurrent_orc06_runs.json"
+}

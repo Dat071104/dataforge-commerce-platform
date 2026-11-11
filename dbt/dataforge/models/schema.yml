@@ -1,0 +1,212 @@
+version: 2
+
+models:
+  - name: stg_week5_orders
+    description: Current Week-5 order Silver rows, including order tombstones.
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: effective_seq
+        data_tests: [not_null]
+      - name: is_deleted
+        data_tests: [not_null]
+      - name: order_status
+        description: >-
+          Accepted values reflect the deterministic Week-5 simulator scenarios;
+          the source contract does not define a general order-status enum.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['delivered', 'processing']
+
+  - name: stg_week5_payment_events
+    description: Current Week-5 payment Silver rows, including payment tombstones.
+    columns:
+      - name: payment_id
+        data_tests: [not_null, unique]
+      - name: effective_seq
+        data_tests: [not_null]
+      - name: is_deleted
+        data_tests: [not_null]
+      - name: payment_status
+        description: >-
+          Accepted values reflect the deterministic Week-5 simulator scenarios;
+          the source contract does not define a general payment-status enum.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['success', 'failed']
+
+  - name: int_week5_active_orders
+    description: One non-deleted current order per order_id.
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: order_effective_seq
+        data_tests: [not_null]
+
+  - name: int_week5_current_payments
+    description: One current payment state per payment_id; soft tombstones remain visible.
+    columns:
+      - name: payment_id
+        data_tests: [not_null, unique]
+      - name: payment_effective_seq
+        data_tests: [not_null]
+
+  - name: int_week5_payment_control_by_order
+    description: One row per order_id with payment sequence and aggregate controls.
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: max_payment_effective_seq
+        data_tests: [not_null]
+      - name: collected_amount
+        data_tests: [not_null]
+
+  - name: int_week5_successful_collections_by_order
+    description: One row per order_id with active successful payment count and NUMERIC amount.
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: collected_amount
+        data_tests: [not_null]
+
+  - name: int_week5_delivered_sales_proxy_by_order
+    description: One row per order_id; zero for non-delivered or deleted orders.
+    columns:
+      - name: order_id
+        data_tests: [not_null, unique]
+      - name: delivered_sales_proxy
+        data_tests: [not_null]
+
+  - name: int_week7_batch_control
+    description: One run-level quality and checkpoint control from the Week-5 run ledger.
+    columns:
+      - name: run_id
+        data_tests: [not_null, unique]
+      - name: run_outcome
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['DISCOVERED', 'VALIDATED', 'STAGED', 'FAILED', 'NO_OP', 'PUBLISHED', 'PUBLISHED_WITH_RETRY']
+      - name: publish_quality_gate_passed
+        data_tests: [not_null]
+      - name: published_manifest_generation
+
+  - name: fct_week7_order_reconciliation
+    description: >-
+      One row per order. Success collections are pre-aggregated; deleted orders
+      remain visible with zero delivered-sales proxy and null variance. The
+      model's effective sequence columns make source I/U/D changes replay-safe.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: order_id
+        data_type: STRING
+        description: Stable order business key and unique output grain.
+        data_tests: [not_null, unique]
+      - name: order_id_bucket
+        data_type: INT64
+        description: Stable hash range partition derived only from order_id.
+        data_tests: [not_null]
+      - name: customer_id
+        data_type: STRING
+        description: Current customer key from the latest order post-image.
+      - name: order_date
+        data_type: DATE
+        description: Current business order date; may move after a correction.
+      - name: province_id
+        data_type: STRING
+        description: Current province key from the latest order post-image.
+      - name: order_status
+        data_type: STRING
+        description: Current order status from the latest post-image.
+      - name: order_is_deleted
+        data_type: BOOL
+        description: True when the current order state is a soft tombstone.
+        data_tests: [not_null]
+      - name: delivered_sales_proxy
+        data_type: NUMERIC
+        description: Current delivered order amount, or zero when not delivered or deleted.
+        data_tests: [not_null]
+      - name: collected_amount
+        data_type: NUMERIC
+        description: Sum of active successful payment amounts, pre-aggregated by order.
+        data_tests: [not_null]
+      - name: collection_variance
+        data_type: NUMERIC
+        description: NULL for deleted orders; otherwise collections minus delivered-sales proxy.
+      - name: order_effective_seq
+        data_type: INT64
+        description: Latest effective Week-5 journal sequence for this order row.
+        data_tests: [not_null]
+      - name: max_payment_effective_seq
+        data_type: INT64
+        description: Latest effective sequence across all current payment rows, including tombstones.
+        data_tests: [not_null]
+      - name: active_payment_count
+        data_type: INT64
+        description: Number of non-deleted current payment rows for this order.
+        data_tests: [not_null]
+      - name: successful_payment_count
+        data_type: INT64
+        description: Number of non-deleted current successful payment rows for this order.
+        data_tests: [not_null]
+      - name: order_ingested_at
+        data_type: TIMESTAMP
+        description: Silver ingestion timestamp for the current order state.
+      - name: latest_payment_ingested_at
+        data_type: TIMESTAMP
+        description: Latest Silver ingestion timestamp for the order's current payment states.
+
+  - name: fct_week7_build_receipt
+    description: One reproducible receipt for the exact candidate model built by one workflow run.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: workflow_run_id
+        data_type: STRING
+        description: Normalized final execution ID from Cloud Workflows.
+        data_tests: [not_null, unique]
+      - name: batch_id
+        data_type: STRING
+        description: Immutable Week-5 batch digest supplied to this dbt build.
+        data_tests: [not_null]
+      - name: run_mode
+        data_type: STRING
+        description: Normal or backfill mode associated with the manifest.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['normal', 'backfill']
+      - name: manifest_generation
+        data_type: INT64
+        description: Exact immutable Cloud Storage manifest generation.
+      - name: upper_seq
+        data_type: INT64
+        description: Inclusive manifest upper sequence, distinct from the normal checkpoint.
+      - name: candidate_project
+        data_type: STRING
+        description: BigQuery project holding this candidate build.
+      - name: candidate_dataset
+        data_type: STRING
+        description: BigQuery dataset holding this incremental or full-refresh candidate.
+      - name: build_invocation_id
+        data_type: STRING
+        description: dbt invocation identifier for the build that wrote this receipt.
+      - name: candidate_row_count
+        data_type: INT64
+        description: Number of order-grain rows in the candidate reconciliation.
+        data_tests: [not_null]
+      - name: candidate_sha256
+        data_type: STRING
+        description: Stable SHA-256 over sorted row hashes and bucket checksums.
+        data_tests: [not_null]
+      - name: source_checkpoint_seq
+        data_type: INT64
+        description: Current committed normal source sequence; a backfill upper_seq may exceed it.
+      - name: built_at
+        data_type: TIMESTAMP
+        description: BigQuery timestamp when this receipt query ran.

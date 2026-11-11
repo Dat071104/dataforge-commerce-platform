@@ -1,0 +1,15 @@
+{
+  "cleanup_actions": [
+    "delete scheduler job",
+    "delete scheduler-only workflow execution role/binding",
+    "delete scheduler service account and creator actAs binding"
+  ],
+  "cleanup_terraform_plan": "week7-scheduler-cleanup.tfplan",
+  "http_status_after_terraform_cleanup": 404,
+  "job": "dataforge-week7-no-new-batch",
+  "job_absent": true,
+  "outcome": "PASS",
+  "project_id": "dataforge-p7-lab-d0f725",
+  "recurring_trigger_remaining": false,
+  "region": "us-central1"
+}

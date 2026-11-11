@@ -1,0 +1,1 @@
+{"change_count": 1, "change_ids": ["week7-publish-failure-payment-w5p0004"], "no_cloud_calls": true, "scenario": "publication_pointer_failure_payment_update", "seq_max": 30, "seq_min": 30, "source_identity": "dataforge-operational-v1", "status": "APPLIED_OR_EXACT_REPLAY"}

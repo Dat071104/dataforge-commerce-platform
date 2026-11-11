@@ -1,0 +1,23 @@
+{
+  "batch_id": "172fa35dfa0fdab2230a93f10e970b1e30220d89fe8c5aaa177748655a5278e8",
+  "checkpoint_mutated": false,
+  "checkpoint_read": 29,
+  "event_count": 1,
+  "event_seq_max": 30,
+  "event_seq_min": 30,
+  "gcs_generation": 1794411978464930,
+  "gcs_sha256": "3a2049373faaa1790cc9f775b511cb10f8614e750ed270a3869a637a7aeab01f",
+  "gcs_uri": "gs://dataforge-p7-lab-d0f725-bronze/bronze/week5/source=dataforge-operational-v1/sha256=3a2049373faaa1790cc9f775b511cb10f8614e750ed270a3869a637a7aeab01f/part-000.parquet",
+  "lower_seq": 30,
+  "manifest_generation": 1794411981353220,
+  "manifest_sha256": "2cc81e09aad3c8a529deabf43b3f0ff2c9c4f9e12b5800798292beab2ea8883d",
+  "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=172fa35dfa0fdab2230a93f10e970b1e30220d89fe8c5aaa177748655a5278e8/manifest.json",
+  "parquet_sha256": "3a2049373faaa1790cc9f775b511cb10f8614e750ed270a3869a637a7aeab01f",
+  "parquet_size_bytes": 3953,
+  "row_value_sha256": "100460b03d277319fca9069234bce0874b2f91f0f383ed607db4521ed19d80c8",
+  "run_mode": "normal",
+  "source_identity": "dataforge-operational-v1",
+  "source_run_id": "dataforge-operational-v1:172fa35dfa0fdab2230a93f10e970b1e30220d89fe8c5aaa177748655a5278e8",
+  "status": "UPLOADED_COMPLETE",
+  "upper_seq": 30
+}

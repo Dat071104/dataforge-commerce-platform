@@ -1,0 +1,51 @@
+{
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "manifest_batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+  "manifest_generation": 1794390619113735,
+  "initial_execution": {
+    "workflow_execution_id": "7afb53aa-10bf-4c8c-b978-85a51b34ce35",
+    "workflow_state": "FAILED",
+    "week5_cloud_run_execution_id": "dataforge-week5-processor-qfq5m",
+    "week5_attempt_zero": {
+      "status": "FAILED",
+      "error_code": "INJECTED_AFTER_SILVER_BEFORE_CHECKPOINT",
+      "publish_job_id": "week5_publish_0ee013bca5056f55_55ff53745ff24b40"
+    },
+    "week5_attempt_one": {
+      "status": "PUBLISHED",
+      "publish_job_id": "week5_publish_0ee013bca5056f55_975f547b22f5a6a6",
+      "query_bytes_billed": 377487360,
+      "maximum_publish_bytes_billed": 1073741824
+    },
+    "dbt_cloud_run_execution_id": "dataforge-week7-dbt-x6zrn",
+    "dbt_status": "FAILED",
+    "dbt_tests": {
+      "pass": 43,
+      "error": 1,
+      "skipped": 20
+    },
+    "dbt_bigquery_job_id": "7ed2fa63-19ec-412d-aaba-060548885b7d",
+    "dbt_error": "Query without FROM clause cannot have a WHERE clause at [19:5]",
+    "root_cause": "The first materialization of the incremental reconciliation model used SELECT ... WHERE FALSE without a FROM clause, which BigQuery rejects.",
+    "checkpoint_before": 20,
+    "checkpoint_after_silver": 23,
+    "pointer_version_before": 0,
+    "pointer_version_after_failure": 0,
+    "state_after_failure": "state_after_dbt_failure_before_recovery.json",
+    "fix": "Added a one-row UNNEST seed source for the empty non-incremental CTE and deployed dbt image r3 by digest."
+  },
+  "recovery_execution": {
+    "workflow_execution_id": "40f468a2-d81f-4719-9657-5906ce8b8944",
+    "workflow_state": "SUCCEEDED",
+    "result": "PUBLISHED",
+    "week5_result": "NO_OP",
+    "checkpoint_after_recovery": 23,
+    "pointer_version_after_recovery": 1,
+    "candidate_row_count": 5,
+    "candidate_sha256": "58eb706ccb975c62dcb54a355e7b8d7f407bf3c67f5155555a39b165cb9489f7",
+    "state_receipt": "state_after_orc02_recovery.json"
+  },
+  "failed_build_did_not_publish": true,
+  "same_immutable_manifest_replayed": true
+}

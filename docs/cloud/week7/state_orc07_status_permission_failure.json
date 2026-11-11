@@ -1,0 +1,55 @@
+{
+  "bytes_billed": 62914560,
+  "bytes_processed": 785,
+  "label": "orc07_publication_before_status_permission_fix",
+  "maximum_bytes_billed": 67108864,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "query_job_id": "5f5d764c-003c-4dab-a1cb-390540ac8639",
+  "region": "us-central1",
+  "slot_ms": 262,
+  "state": {
+    "checkpoint": {
+      "committed_seq": 29,
+      "last_batch_id": "c43724af0eb8b0172681e6984a381a8e17113f9d01d5c744a33de0fc7b052d65",
+      "manifest_generation": 1794410262337962,
+      "source_id": "dataforge-operational-v1"
+    },
+    "publication_lock": {
+      "lock_version": 31,
+      "owned_rows": 0,
+      "row_count": 1
+    },
+    "publication_pointer": {
+      "batch_id": "c43724af0eb8b0172681e6984a381a8e17113f9d01d5c744a33de0fc7b052d65",
+      "candidate_dataset": "dbt_week7",
+      "candidate_row_count": 5,
+      "candidate_sha256": "31cf8a940f303d4cb7c523254627cc688e66c3f9dff725735254165f4499a45a",
+      "manifest_generation": 1794410262337962,
+      "pointer_version": 5,
+      "publication_id": "49c988aeba4cb90437f4134ea8a8b35a2b8ff054608e2d8bb29c7e2566f052af",
+      "publication_is_current": true,
+      "published_at": "2026-11-11 15:32:22.363000+00:00",
+      "published_run_id": "6b1da20d-39fb-44ee-8835-3932eb94a84a",
+      "published_run_mode": "normal",
+      "source_checkpoint_seq": 29,
+      "upper_seq": 29
+    },
+    "silver_orders": {
+      "max_effective_seq": 28,
+      "row_count": 5,
+      "tombstone_count": 2
+    },
+    "silver_payments": {
+      "active_successes": 4,
+      "max_effective_seq": 29,
+      "row_count": 6,
+      "tombstone_count": 2
+    },
+    "week5_gold": {
+      "collected_amount": "351000",
+      "delivered_sales_proxy": "268000",
+      "row_count": 5
+    }
+  }
+}
