@@ -2,7 +2,7 @@
 
 **Technical verification:** complete, bounded to synthetic Week-5 orders and payment events in project `dataforge-p7-lab-d0f725` (`955038620072`), `us-central1`.
 **Independent controller:** `CLOUD_GO_WEEK7`.
-**Release:** hosted PR-head CI and merge are pending. This report will be updated with the final PR and merge references before merge.
+**Release:** `RELEASE_BLOCKED`. The feature branch is pushed, but GitHub PR creation returned HTTP 403. No PR exists; hosted PR-head CI has not run.
 
 ## Result
 
@@ -75,4 +75,7 @@ The final local runs passed: **176 offline tests** with 7 expected integration s
 - Week 6 prerequisite: PR [#4](https://github.com/Dat071104/dataforge-commerce-platform/pull/4) merged at `dbf41e3968081c768e258645c56fab461e76d695` after both hosted checks passed on `102af420e06150d85b450f003372cf37abe2c5a0`.
 - Week 7 feature branch: `feature/p7-week7-dbt-orchestration`, based on the Week-6 merge.
 - Independent Week-7 controller verdict: [`CLOUD_GO_WEEK7`](controller_verdict.md).
-- Week-7 hosted CI, PR, and merge commit: pending; this section will be completed before merge.
+- The initial release commit `a9f30c18327482fc9c2986e97fcd59e8bae681c8` was pushed to `origin/feature/p7-week7-dbt-orchestration`; the PR attempt used that exact head.
+- PR creation: blocked by GitHub API HTTP 403 (`Resource not accessible by integration`); no PR was created and the connector was not retried. A follow-up commit records this release outcome.
+- Compare link to create the PR: [main...feature/p7-week7-dbt-orchestration](https://github.com/Dat071104/dataforge-commerce-platform/compare/main...feature/p7-week7-dbt-orchestration?expand=1).
+- Hosted CI on a PR head and merge commit: not run because no PR exists.

@@ -1016,12 +1016,25 @@
   },
   "release": {
     "controller_verdict": "CLOUD_GO_WEEK7",
-    "hosted_ci": null,
+    "controller_verdict_file": "controller_verdict.md",
+    "status": "RELEASE_BLOCKED",
+    "branch": "feature/p7-week7-dbt-orchestration",
+    "branch_pushed": true,
+    "week7_pr": {
+      "created": false,
+      "status": "BLOCKED_GITHUB_API_403",
+      "http_status": 403,
+      "error": "Resource not accessible by integration",
+      "compare_url": "https://github.com/Dat071104/dataforge-commerce-platform/compare/main...feature/p7-week7-dbt-orchestration?expand=1"
+    },
+    "hosted_ci": {
+      "status": "NOT_RUN_ON_PR_HEAD",
+      "reason": "No Week 7 PR was created."
+    },
     "merge_commit": null,
-    "week7_pr": null,
-    "controller_verdict_file": "controller_verdict.md"
+    "pr_creation_attempt_head_commit": "a9f30c18327482fc9c2986e97fcd59e8bae681c8"
   },
-  "status": "CLOUD_GO_WEEK7; HOSTED_CI_PR_AND_MERGE_PENDING",
+  "status": "CLOUD_GO_WEEK7; RELEASE_BLOCKED_GITHUB_API_403",
   "target": {
     "project_id": "dataforge-p7-lab-d0f725",
     "project_number": "955038620072",
