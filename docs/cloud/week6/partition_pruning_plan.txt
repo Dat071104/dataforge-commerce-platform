@@ -1,0 +1,14 @@
+== Physical Plan ==
+* ColumnarToRow (2)
++- Scan parquet  (1)
+
+
+(1) Scan parquet
+Output [10]: [pickup_hour#3445, pickup_zone#3446, pickup_borough#3447, trip_count#3448L, distance_miles_sum#3449, fare_amount_sum#3450, total_amount_sum#3451, duration_p50_minutes#3452, duration_p95_minutes#3453, pickup_date#3454]
+Batched: true
+Location: InMemoryFileIndex [file:/workspace/labs/spark_nyc_taxi/data/output/runs/week6-20261110-03/parquet]
+PartitionFilters: [isnotnull(pickup_date#3454), (pickup_date#3454 = 2024-01-15)]
+ReadSchema: struct<pickup_hour:int,pickup_zone:int,pickup_borough:string,trip_count:bigint,distance_miles_sum:decimal(28,3),fare_amount_sum:decimal(28,2),total_amount_sum:decimal(28,2),duration_p50_minutes:double,duration_p95_minutes:double>
+
+(2) ColumnarToRow [codegen id : 1]
+Input [10]: [pickup_hour#3445, pickup_zone#3446, pickup_borough#3447, trip_count#3448L, distance_miles_sum#3449, fare_amount_sum#3450, total_amount_sum#3451, duration_p50_minutes#3452, duration_p95_minutes#3453, pickup_date#3454]

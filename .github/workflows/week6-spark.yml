@@ -1,0 +1,29 @@
+name: Week 6 Spark Lab (local fixtures)
+
+on:
+  push:
+    paths:
+      - 'labs/spark_nyc_taxi/**'
+      - 'docs/cloud/week6/**'
+      - '.github/workflows/week6-spark.yml'
+  pull_request:
+    paths:
+      - 'labs/spark_nyc_taxi/**'
+      - 'docs/cloud/week6/**'
+      - '.github/workflows/week6-spark.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  spark-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build pinned local Spark image
+        run: docker compose --file labs/spark_nyc_taxi/compose.yaml build
+
+      - name: Run network-free fixtures only
+        run: docker compose --file labs/spark_nyc_taxi/compose.yaml run --rm spark -m pytest -q labs/spark_nyc_taxi/tests

@@ -1,0 +1,788 @@
+{
+  "benchmark": {
+    "application_id": "local-1794323176305",
+    "aqe": true,
+    "candidate_slower_percent": 19.8,
+    "correctness_parity": {
+      "approximate_columns": [
+        "duration_p50_minutes",
+        "duration_p95_minutes"
+      ],
+      "checked_outside_timed_intervals": true,
+      "exact_columns": [
+        "trip_count",
+        "distance_miles_sum",
+        "fare_amount_sum",
+        "total_amount_sum"
+      ],
+      "exact_metric_mismatch_rows": 0,
+      "joined_rows": 308833,
+      "key_columns": [
+        "pickup_date",
+        "pickup_hour",
+        "pickup_zone",
+        "pickup_borough"
+      ],
+      "max_duration_p50_minutes_delta_minutes": 0.0,
+      "max_duration_p95_minutes_delta_minutes": 0.0,
+      "percentile_tolerance_minutes": 1.0,
+      "percentile_tolerance_mismatch_rows": 0,
+      "status": "PASS",
+      "unmatched_key_rows": 0
+    },
+    "event_log_elapsed_interval_method": "SparkListenerJobStart/JobEnd per job group; in-process timer receipt was not flushed.",
+    "event_log_sha256": "a5f9ab22eccfe6d552bb36b305087c06cf67cf6dc21117c19d4c02e1389f6533",
+    "median_baseline_over_candidate_ratio": 0.8346397094109798,
+    "method": "Spark event-log job-group start/end intervals; the in-process timer report was not flushed by the failed wrapper.",
+    "physical_plan_evidence": {
+      "baseline_broadcast_hash_join_present": false,
+      "baseline_exchange_present": true,
+      "baseline_sort_merge_join_present": true,
+      "candidate_broadcast_hash_join_present": true,
+      "source": "SparkListenerSQLExecutionStart/AdaptiveExecutionUpdate event log"
+    },
+    "session_timezone": "America/New_York",
+    "shuffle_partitions": 96,
+    "speedup_conclusion": "Broadcast reduced shuffle/spill but its median elapsed interval was slower; no speedup is claimed.",
+    "timed_repetitions_per_variant": 5,
+    "variants": {
+      "baseline": {
+        "max_seconds": 297.146,
+        "median_event_task_metric_sums": {
+          "disk_bytes_spilled": 469051958,
+          "executor_cpu_time_ns": 720123742527,
+          "executor_run_time_ms": 784502,
+          "input_records": 13069330,
+          "jvm_gc_time_ms": 44726,
+          "memory_bytes_spilled": 2789988608,
+          "shuffle_read_bytes": 260286084,
+          "shuffle_write_bytes": 260286084
+        },
+        "median_seconds": 213.924,
+        "min_seconds": 197.517,
+        "range_seconds": 99.62900000000002,
+        "timed_runs_seconds": [
+          297.146,
+          267.702,
+          213.924,
+          210.983,
+          197.517
+        ],
+        "warmup_runs_seconds": [
+          263.76
+        ]
+      },
+      "broadcast_candidate": {
+        "max_seconds": 323.406,
+        "median_event_task_metric_sums": {
+          "disk_bytes_spilled": 203843133,
+          "executor_cpu_time_ns": 762786288114,
+          "executor_run_time_ms": 957479,
+          "input_records": 13069330,
+          "jvm_gc_time_ms": 70161,
+          "memory_bytes_spilled": 1560537280,
+          "shuffle_read_bytes": 89457162,
+          "shuffle_write_bytes": 89457162
+        },
+        "median_seconds": 256.307,
+        "min_seconds": 220.174,
+        "range_seconds": 103.232,
+        "timed_runs_seconds": [
+          323.406,
+          312.831,
+          234.428,
+          256.307,
+          220.174
+        ],
+        "warmup_runs_seconds": [
+          298.676
+        ]
+      }
+    },
+    "warmups_per_variant": 1
+  },
+  "cloud": {
+    "gcp_resource_mutation": false,
+    "managed_batch_submitted": false,
+    "status": "CLOUD_SPARK_NOT_AUTHORIZED"
+  },
+  "dataframe_sql_parity": {
+    "checked_distributed": true,
+    "label": "full TLC DataFrame versus Spark SQL",
+    "left_only_rows": 0,
+    "right_only_rows": 0,
+    "status": "PASS"
+  },
+  "delta": {
+    "append_replay_verified": true,
+    "append_transaction_id": "dataforge-p73-week6-31cc55d476598eea",
+    "append_transaction_version": 1,
+    "delta_log_files": [
+      ".00000000000000000000.crc.crc",
+      ".00000000000000000000.json.crc",
+      ".00000000000000000001.crc.crc",
+      ".00000000000000000001.json.crc",
+      "00000000000000000000.crc",
+      "00000000000000000000.json",
+      "00000000000000000001.crc",
+      "00000000000000000001.json"
+    ],
+    "format": "delta",
+    "history": [
+      {
+        "isolation_level": "Serializable",
+        "operation": "WRITE",
+        "operation_parameters": {
+          "mode": "ErrorIfExists",
+          "partitionBy": "[]"
+        },
+        "read_version": null,
+        "version": 0
+      },
+      {
+        "isolation_level": "Serializable",
+        "operation": "WRITE",
+        "operation_parameters": {
+          "mode": "Append",
+          "partitionBy": "[]"
+        },
+        "read_version": 0,
+        "version": 1
+      }
+    ],
+    "initial_row_count": 20,
+    "latest_row_count_after_append": 21,
+    "latest_version": 1,
+    "metadata": {
+      "format": "delta",
+      "min_reader_version": 1,
+      "min_writer_version": 2,
+      "num_files": 2,
+      "partition_columns": [],
+      "size_bytes": 7045
+    },
+    "row_count_after_idempotent_replay": 21,
+    "schema": [
+      {
+        "name": "pickup_hour",
+        "type": "int"
+      },
+      {
+        "name": "pickup_zone",
+        "type": "int"
+      },
+      {
+        "name": "pickup_borough",
+        "type": "string"
+      },
+      {
+        "name": "trip_count",
+        "type": "bigint"
+      },
+      {
+        "name": "distance_miles_sum",
+        "type": "decimal(28,3)"
+      },
+      {
+        "name": "fare_amount_sum",
+        "type": "decimal(28,2)"
+      },
+      {
+        "name": "total_amount_sum",
+        "type": "decimal(28,2)"
+      },
+      {
+        "name": "duration_p50_minutes",
+        "type": "double"
+      },
+      {
+        "name": "duration_p95_minutes",
+        "type": "double"
+      },
+      {
+        "name": "pickup_date",
+        "type": "date"
+      }
+    ],
+    "table_path": "labs/spark_nyc_taxi/data/output/evidence/week6-20261110-03/delta_demo (ignored local scratch)",
+    "time_travel_row_count": 20,
+    "time_travel_verified": true,
+    "time_travel_version": 0
+  },
+  "full_scale_reconciliation": {
+    "accepted_rows_summed_independently": {
+      "distance_miles_sum": "55506667.980",
+      "fare_amount_sum": "229937113.36",
+      "total_amount_sum": "338433782.17"
+    },
+    "grouped": {
+      "aggregate_group_count": 308833,
+      "distance_miles_sum": "55506667.980",
+      "fare_amount_sum": "229937113.36",
+      "max_pickup_date": "2024-04-30",
+      "min_pickup_date": "2024-01-01",
+      "total_amount_sum": "338433782.17",
+      "trip_count_sum": 12686794
+    },
+    "money_and_distance_sums_match": true,
+    "output_keys_unique": true,
+    "trip_count_equals_accepted": true
+  },
+  "independent_oracle": {
+    "accepted_plus_rejected": 77033,
+    "correctness": "all keys, counts, exact decimal sums, and p50/p95 tolerances passed",
+    "duration_percentile_tolerance_minutes": 0.001,
+    "exact_decimal_fields": [
+      "distance_miles_sum",
+      "fare_amount_sum",
+      "total_amount_sum"
+    ],
+    "independent_accepted_rows": 74680,
+    "independent_negative_amount_rows": 934,
+    "independent_rejected_rows": 2353,
+    "maximum_observed_duration_error_minutes": 0.00033333333340124227,
+    "oracle_duplicate_like_rows_diagnostic_only": 0,
+    "oracle_rejection_counts": {
+      "dst_ambiguous": 0,
+      "dst_crossing": 0,
+      "dst_nonexistent": 0,
+      "invalid_distance": 1321,
+      "invalid_duration": 28,
+      "invalid_money": 0,
+      "invalid_timestamp": 0,
+      "null_critical": 0,
+      "out_of_period": 0,
+      "unknown_zone": 1004
+    },
+    "pickup_date": "2024-01-15",
+    "source_input_rows": 77033,
+    "source_reader": "PyArrow row-group scan with in-memory pickup-date filter; TLC timestamp row-group min/max statistics were absent",
+    "spark_aggregate_rows": 2089,
+    "spark_partition_trip_count_sum": 74680,
+    "status": "PASS"
+  },
+  "parquet": {
+    "aggregate_rows": 308833,
+    "average_file_bytes": 68843.45,
+    "manifest_sha256": "bd11b082e595938591c6e75e3e0d06534fd4938967e3509b920b200d831a63b5",
+    "maximum_file_bytes": 79298,
+    "minimum_file_bytes": 51740,
+    "parquet_bytes": 8330057,
+    "parquet_file_count": 121,
+    "partition_column": "pickup_date",
+    "partition_count": 121,
+    "partition_pruning": {
+      "aggregate_rows": 2089,
+      "partition_column": "pickup_date",
+      "partition_filter_present_in_plan": true,
+      "plan_file": "docs/cloud/week6/partition_pruning_plan.txt",
+      "selected_date": "2024-01-15",
+      "status": "PASS",
+      "trip_count_sum": 74680
+    },
+    "path": "labs/spark_nyc_taxi/data/output/runs/week6-20261110-03/parquet",
+    "same_run_replay": "VERIFIED_NO_OP",
+    "trip_count_sum": 12686794
+  },
+  "quality": {
+    "accepted_plus_rejected": 13069067,
+    "accepted_rows": 12686794,
+    "deduplication_applied": false,
+    "duplicate_like_full_row_fingerprint": {
+      "duplicate_like_extra_rows": 1,
+      "duplicate_like_group_members": 2,
+      "duplicate_like_signature_groups": 1
+    },
+    "exclusive_first_rejection_reasons": {
+      "distance_out_of_decimal_range": 0,
+      "dst_gap_fold_or_crossing": 1156,
+      "invalid_duration": 3963,
+      "invalid_timestamp_parse": 0,
+      "missing_critical": 0,
+      "money_out_of_decimal_range": 0,
+      "nonfinite_distance": 0,
+      "nonfinite_money": 0,
+      "nonpositive_distance": 248798,
+      "outside_pickup_period": 24,
+      "unknown_zone": 128332
+    },
+    "input_rows": 13069067,
+    "negative_amount_field_counts": {
+      "Airport_fee": 23252,
+      "congestion_surcharge": 130503,
+      "extra": 79936,
+      "fare_amount": 194135,
+      "improvement_surcharge": 159633,
+      "mta_tax": 154706,
+      "tip_amount": 483,
+      "tolls_amount": 10948,
+      "total_amount": 159644
+    },
+    "negative_amount_rows_flagged": 194695,
+    "nonzero_source_null_counts": {
+      "Airport_fee": 1160538,
+      "RatecodeID": 1160538,
+      "congestion_surcharge": 1160538,
+      "passenger_count": 1160538,
+      "store_and_fwd_flag": 1160538
+    },
+    "reconciliation_status": "PASS",
+    "rejected_rows": 382273
+  },
+  "run_id": "week6-20261110-03",
+  "run_window_local": "2026-11-10 to 2026-11-11 (Asia/Bangkok)",
+  "skew": {
+    "max_to_median_ratio": 517.7240204429302,
+    "max_zone_id": 161,
+    "max_zone_trips": 607808,
+    "median_zone_trips": 1174,
+    "mitigation": "Spark's map-side partial aggregation reduces repeated hot-zone rows before the wide exchange.",
+    "partial_hash_aggregate_in_plan": true,
+    "source": "real accepted 2024 Yellow Taxi trips, aggregated by pickup zone",
+    "status": "MEASURED",
+    "top_10_zone_share": 0.37940097395764444,
+    "top_zones": [
+      {
+        "pickup_zone": 161,
+        "trip_count": 607808
+      },
+      {
+        "pickup_zone": 237,
+        "trip_count": 596667
+      },
+      {
+        "pickup_zone": 236,
+        "trip_count": 560233
+      },
+      {
+        "pickup_zone": 132,
+        "trip_count": 550657
+      },
+      {
+        "pickup_zone": 162,
+        "trip_count": 448567
+      },
+      {
+        "pickup_zone": 230,
+        "trip_count": 438711
+      },
+      {
+        "pickup_zone": 142,
+        "trip_count": 426516
+      },
+      {
+        "pickup_zone": 186,
+        "trip_count": 423801
+      },
+      {
+        "pickup_zone": 138,
+        "trip_count": 384376
+      },
+      {
+        "pickup_zone": 239,
+        "trip_count": 376046
+      }
+    ],
+    "total_trips": 12686794,
+    "zone_count": 259
+  },
+  "source": {
+    "files": [
+      {
+        "bytes": 49961641,
+        "file": "yellow_tripdata_2024-01.parquet",
+        "footer_rows": 2964624,
+        "row_groups": 3,
+        "schema": [
+          {
+            "name": "VendorID",
+            "type": "int32"
+          },
+          {
+            "name": "tpep_pickup_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "tpep_dropoff_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "passenger_count",
+            "type": "int64"
+          },
+          {
+            "name": "trip_distance",
+            "type": "double"
+          },
+          {
+            "name": "RatecodeID",
+            "type": "int64"
+          },
+          {
+            "name": "store_and_fwd_flag",
+            "type": "large_string"
+          },
+          {
+            "name": "PULocationID",
+            "type": "int32"
+          },
+          {
+            "name": "DOLocationID",
+            "type": "int32"
+          },
+          {
+            "name": "payment_type",
+            "type": "int64"
+          },
+          {
+            "name": "fare_amount",
+            "type": "double"
+          },
+          {
+            "name": "extra",
+            "type": "double"
+          },
+          {
+            "name": "mta_tax",
+            "type": "double"
+          },
+          {
+            "name": "tip_amount",
+            "type": "double"
+          },
+          {
+            "name": "tolls_amount",
+            "type": "double"
+          },
+          {
+            "name": "improvement_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "total_amount",
+            "type": "double"
+          },
+          {
+            "name": "congestion_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "Airport_fee",
+            "type": "double"
+          }
+        ],
+        "sha256": "c4d59da7bbc8abaeeeb1727947ee93d9891a71acb42854bd80db1571b2030510",
+        "source_url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
+      },
+      {
+        "bytes": 50349284,
+        "file": "yellow_tripdata_2024-02.parquet",
+        "footer_rows": 3007526,
+        "row_groups": 3,
+        "schema": [
+          {
+            "name": "VendorID",
+            "type": "int32"
+          },
+          {
+            "name": "tpep_pickup_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "tpep_dropoff_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "passenger_count",
+            "type": "int64"
+          },
+          {
+            "name": "trip_distance",
+            "type": "double"
+          },
+          {
+            "name": "RatecodeID",
+            "type": "int64"
+          },
+          {
+            "name": "store_and_fwd_flag",
+            "type": "large_string"
+          },
+          {
+            "name": "PULocationID",
+            "type": "int32"
+          },
+          {
+            "name": "DOLocationID",
+            "type": "int32"
+          },
+          {
+            "name": "payment_type",
+            "type": "int64"
+          },
+          {
+            "name": "fare_amount",
+            "type": "double"
+          },
+          {
+            "name": "extra",
+            "type": "double"
+          },
+          {
+            "name": "mta_tax",
+            "type": "double"
+          },
+          {
+            "name": "tip_amount",
+            "type": "double"
+          },
+          {
+            "name": "tolls_amount",
+            "type": "double"
+          },
+          {
+            "name": "improvement_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "total_amount",
+            "type": "double"
+          },
+          {
+            "name": "congestion_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "Airport_fee",
+            "type": "double"
+          }
+        ],
+        "sha256": "c76c43c18c6c6664080dd920baab4928988d5786a6b65980792ca7cd796f9f20",
+        "source_url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-02.parquet"
+      },
+      {
+        "bytes": 60078280,
+        "file": "yellow_tripdata_2024-03.parquet",
+        "footer_rows": 3582628,
+        "row_groups": 4,
+        "schema": [
+          {
+            "name": "VendorID",
+            "type": "int32"
+          },
+          {
+            "name": "tpep_pickup_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "tpep_dropoff_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "passenger_count",
+            "type": "int64"
+          },
+          {
+            "name": "trip_distance",
+            "type": "double"
+          },
+          {
+            "name": "RatecodeID",
+            "type": "int64"
+          },
+          {
+            "name": "store_and_fwd_flag",
+            "type": "large_string"
+          },
+          {
+            "name": "PULocationID",
+            "type": "int32"
+          },
+          {
+            "name": "DOLocationID",
+            "type": "int32"
+          },
+          {
+            "name": "payment_type",
+            "type": "int64"
+          },
+          {
+            "name": "fare_amount",
+            "type": "double"
+          },
+          {
+            "name": "extra",
+            "type": "double"
+          },
+          {
+            "name": "mta_tax",
+            "type": "double"
+          },
+          {
+            "name": "tip_amount",
+            "type": "double"
+          },
+          {
+            "name": "tolls_amount",
+            "type": "double"
+          },
+          {
+            "name": "improvement_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "total_amount",
+            "type": "double"
+          },
+          {
+            "name": "congestion_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "Airport_fee",
+            "type": "double"
+          }
+        ],
+        "sha256": "2d4cdc8fb96726cdd3803b13b02d2e61e71d45720aff0ebc693a8bdd1f249823",
+        "source_url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-03.parquet"
+      },
+      {
+        "bytes": 59133625,
+        "file": "yellow_tripdata_2024-04.parquet",
+        "footer_rows": 3514289,
+        "row_groups": 4,
+        "schema": [
+          {
+            "name": "VendorID",
+            "type": "int32"
+          },
+          {
+            "name": "tpep_pickup_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "tpep_dropoff_datetime",
+            "type": "timestamp[us]"
+          },
+          {
+            "name": "passenger_count",
+            "type": "int64"
+          },
+          {
+            "name": "trip_distance",
+            "type": "double"
+          },
+          {
+            "name": "RatecodeID",
+            "type": "int64"
+          },
+          {
+            "name": "store_and_fwd_flag",
+            "type": "large_string"
+          },
+          {
+            "name": "PULocationID",
+            "type": "int32"
+          },
+          {
+            "name": "DOLocationID",
+            "type": "int32"
+          },
+          {
+            "name": "payment_type",
+            "type": "int64"
+          },
+          {
+            "name": "fare_amount",
+            "type": "double"
+          },
+          {
+            "name": "extra",
+            "type": "double"
+          },
+          {
+            "name": "mta_tax",
+            "type": "double"
+          },
+          {
+            "name": "tip_amount",
+            "type": "double"
+          },
+          {
+            "name": "tolls_amount",
+            "type": "double"
+          },
+          {
+            "name": "improvement_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "total_amount",
+            "type": "double"
+          },
+          {
+            "name": "congestion_surcharge",
+            "type": "double"
+          },
+          {
+            "name": "Airport_fee",
+            "type": "double"
+          }
+        ],
+        "sha256": "ce37f736c7cf9e92164c850ef2b502a8f7bb590fc1804b6edbcb80293da01b89",
+        "source_url": "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-04.parquet"
+      }
+    ],
+    "footer_rows": 13069067,
+    "page": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+    "period": {
+      "dropoff_may_cross_end_if_valid": true,
+      "pickup_end_exclusive": "2024-05-01",
+      "pickup_start_inclusive": "2024-01-01"
+    },
+    "raw_timestamp_coverage": {
+      "semantics": "naive NYC meter wall-clock timestamp[us], interpreted as America/New_York; not UTC instants",
+      "yellow_tripdata_2024-01.parquet": {
+        "dropoff_max": "2024-02-02T13:56:52",
+        "dropoff_min": "2002-12-31T23:05:41",
+        "null_dropoff": 0,
+        "null_pickup": 0,
+        "pickup_max": "2024-02-01T00:01:15",
+        "pickup_min": "2002-12-31T22:59:39"
+      },
+      "yellow_tripdata_2024-02.parquet": {
+        "dropoff_max": "2024-03-01T23:24:42",
+        "dropoff_min": "2008-12-31T23:04:09",
+        "null_dropoff": 0,
+        "null_pickup": 0,
+        "pickup_max": "2024-03-01T00:01:37",
+        "pickup_min": "2008-12-31T22:52:49"
+      },
+      "yellow_tripdata_2024-03.parquet": {
+        "dropoff_max": "2024-04-02T18:08:46",
+        "dropoff_min": "2002-12-31T22:42:24",
+        "null_dropoff": 0,
+        "null_pickup": 0,
+        "pickup_max": "2024-04-01T00:34:55",
+        "pickup_min": "2002-12-31T22:17:10"
+      },
+      "yellow_tripdata_2024-04.parquet": {
+        "dropoff_max": "2024-05-01T23:22:35",
+        "dropoff_min": "2002-12-31T22:14:22",
+        "null_dropoff": 0,
+        "null_pickup": 0,
+        "pickup_max": "2024-05-01T00:02:36",
+        "pickup_min": "2002-12-31T22:10:04"
+      }
+    },
+    "spark_count_matches_footer": true,
+    "spark_rows": 13069067,
+    "total_bytes": 219522830,
+    "zone_lookup": {
+      "assigned_rows": 263,
+      "source_rows": 265,
+      "unique_assigned_ids": 263
+    }
+  },
+  "status": "LOCAL_MEASURED"
+}
