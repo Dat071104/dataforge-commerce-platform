@@ -1,0 +1,542 @@
+{
+  "created_at_utc": "2026-11-10T16:30:37.781387+00:00",
+  "event_log": {
+    "application_id": "local-1794323176305",
+    "benchmark_groups": 12,
+    "bytes": 16821264,
+    "events_read": 1472,
+    "file": "labs/spark_nyc_taxi/data/eventlogs/local-1794323176305 (ignored local scratch)",
+    "sha256": "a5f9ab22eccfe6d552bb36b305087c06cf67cf6dc21117c19d4c02e1389f6533",
+    "status": "CAPTURED"
+  },
+  "experiment": {
+    "baseline": "automatic broadcast disabled; no broadcast hint",
+    "candidate": "same input and action; explicit broadcast hint",
+    "candidate_slower_percent": 19.8,
+    "controlled_change": "explicit broadcast hint on the small taxi-zone lookup",
+    "correctness_parity": {
+      "approximate_columns": [
+        "duration_p50_minutes",
+        "duration_p95_minutes"
+      ],
+      "checked_outside_timed_intervals": true,
+      "exact_columns": [
+        "trip_count",
+        "distance_miles_sum",
+        "fare_amount_sum",
+        "total_amount_sum"
+      ],
+      "exact_metric_mismatch_rows": 0,
+      "joined_rows": 308833,
+      "key_columns": [
+        "pickup_date",
+        "pickup_hour",
+        "pickup_zone",
+        "pickup_borough"
+      ],
+      "max_duration_p50_minutes_delta_minutes": 0.0,
+      "max_duration_p95_minutes_delta_minutes": 0.0,
+      "percentile_tolerance_minutes": 1.0,
+      "percentile_tolerance_mismatch_rows": 0,
+      "status": "PASS",
+      "unmatched_key_rows": 0
+    },
+    "disk_spill_reduction_percent": 56.5,
+    "eventlog_task_metric_medians": {
+      "baseline": {
+        "disk_bytes_spilled": 469051958,
+        "executor_cpu_time_ns": 720123742527,
+        "executor_run_time_ms": 784502,
+        "jvm_gc_time_ms": 44726,
+        "memory_bytes_spilled": 2789988608,
+        "shuffle_read_bytes": 260286084,
+        "shuffle_write_bytes": 260286084
+      },
+      "broadcast_candidate": {
+        "disk_bytes_spilled": 203843133,
+        "executor_cpu_time_ns": 762786288114,
+        "executor_run_time_ms": 957479,
+        "jvm_gc_time_ms": 70161,
+        "memory_bytes_spilled": 1560537280,
+        "shuffle_read_bytes": 89457162,
+        "shuffle_write_bytes": 89457162
+      }
+    },
+    "input_preparation": "same accepted DataFrame and same zone lookup for every run",
+    "measured_action": "aggregate one-row reconciliation summary including every output metric",
+    "median_baseline_over_candidate_ratio": 0.8346397094109798,
+    "memory_spill_reduction_percent": 44.1,
+    "parity_recheck_run_id": "week6-20261110-03",
+    "parity_rechecked_after_eventlog_recovery": true,
+    "physical_plan_evidence": {
+      "baseline_broadcast_hash_join_present": false,
+      "baseline_exchange_present": true,
+      "baseline_sort_merge_join_present": true,
+      "candidate_broadcast_hash_join_present": true,
+      "source": "SparkListenerSQLExecutionStart/AdaptiveExecutionUpdate event log"
+    },
+    "shuffle_write_reduction_percent": 65.6,
+    "speedup_claim": "NO SPEEDUP: the broadcast candidate median was 19.8% slower in this local run. It reduced shuffle and spill metrics; that did not reduce elapsed time here.",
+    "timed_repetitions_per_variant": 5,
+    "warmups_per_variant": 1
+  },
+  "limitations": [
+    "Single-machine local Spark result, not a cluster-scale guarantee.",
+    "Event-log action intervals exclude a small amount of Python driver setup/teardown around each Spark job group.",
+    "Filesystem cache warms across repetitions; the first measured run is not called a cold read.",
+    "Windows host could not reach the mapped Spark UI port during this run; the in-container REST API and event log were inspected, but no screenshot was captured."
+  ],
+  "measurement_method": "Spark event-log job-group start/end intervals; the in-process timer report was not flushed by the failed wrapper.",
+  "runtime": {
+    "adaptive_enabled": true,
+    "application_id": "local-1794323176305",
+    "cache_policy": "No DataFrame cache was used by the run.",
+    "master": "local[4]",
+    "session_timezone": "America/New_York",
+    "shuffle_partitions": 96,
+    "spark_version": "3.5.9"
+  },
+  "status": "LOCAL_MEASURED",
+  "ui": {
+    "container_rest_api_verified": true,
+    "host_browser_screenshot": "NOT_CAPTURED; computer-use helper could not verify current Chrome URL",
+    "host_port_probe": "127.0.0.1:4040 timed out from Windows during the run",
+    "url": "http://localhost:4040"
+  },
+  "variants": {
+    "baseline": {
+      "max_seconds": 297.146,
+      "median_seconds": 213.924,
+      "min_seconds": 197.517,
+      "range_seconds": 99.62900000000002,
+      "run_receipts": [
+        {
+          "elapsed_seconds": 263.76,
+          "group_id": "week6-baseline-warmup-0-bc72f36ee9",
+          "index": 0,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 469051958,
+              "executor_cpu_time_ns": 884539045959,
+              "executor_run_time_ms": 964870,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 54079,
+              "memory_bytes_spilled": 2789988608,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 297.146,
+          "group_id": "week6-baseline-run-0-678b2df871",
+          "index": 0,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 515470278,
+              "executor_cpu_time_ns": 1002358346580,
+              "executor_run_time_ms": 1089556,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 59886,
+              "memory_bytes_spilled": 3066942672,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 267.702,
+          "group_id": "week6-baseline-run-1-d1034ada03",
+          "index": 1,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 468807601,
+              "executor_cpu_time_ns": 914353283610,
+              "executor_run_time_ms": 996010,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 58428,
+              "memory_bytes_spilled": 2789988608,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 213.924,
+          "group_id": "week6-baseline-run-2-8fed438148",
+          "index": 2,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 469164382,
+              "executor_cpu_time_ns": 720123742527,
+              "executor_run_time_ms": 784502,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 44297,
+              "memory_bytes_spilled": 2789988608,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 210.983,
+          "group_id": "week6-baseline-run-3-56bccee68a",
+          "index": 3,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 468920025,
+              "executor_cpu_time_ns": 697621320034,
+              "executor_run_time_ms": 774330,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 41460,
+              "memory_bytes_spilled": 2789988608,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 197.517,
+          "group_id": "week6-baseline-run-4-0c38e93d24",
+          "index": 4,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 469051958,
+              "executor_cpu_time_ns": 660931611608,
+              "executor_run_time_ms": 723264,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 44726,
+              "memory_bytes_spilled": 2789988608,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 260286084,
+              "shuffle_read_records": 12687062,
+              "shuffle_write_bytes": 260286084,
+              "shuffle_write_records": 12687062
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        }
+      ],
+      "timed_runs_seconds": [
+        297.146,
+        267.702,
+        213.924,
+        210.983,
+        197.517
+      ],
+      "warmup_count": 1,
+      "warmup_runs_seconds": [
+        263.76
+      ]
+    },
+    "broadcast_candidate": {
+      "max_seconds": 323.406,
+      "median_seconds": 256.307,
+      "min_seconds": 220.174,
+      "range_seconds": 103.232,
+      "run_receipts": [
+        {
+          "elapsed_seconds": 298.676,
+          "group_id": "week6-broadcast_candidate-warmup-0-b409cdc318",
+          "index": 0,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 884318469892,
+              "executor_run_time_ms": 1101601,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 77013,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 323.406,
+          "group_id": "week6-broadcast_candidate-run-0-bd9ff97ceb",
+          "index": 0,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 965345528297,
+              "executor_run_time_ms": 1196830,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 80613,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 312.831,
+          "group_id": "week6-broadcast_candidate-run-1-206c0ae949",
+          "index": 1,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 930274254455,
+              "executor_run_time_ms": 1156616,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 79972,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 234.428,
+          "group_id": "week6-broadcast_candidate-run-2-22e11e8620",
+          "index": 2,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 694689152464,
+              "executor_run_time_ms": 870431,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 63871,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 256.307,
+          "group_id": "week6-broadcast_candidate-run-3-0a6aca4ac3",
+          "index": 3,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 762786288114,
+              "executor_run_time_ms": 957479,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 70161,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        },
+        {
+          "elapsed_seconds": 220.174,
+          "group_id": "week6-broadcast_candidate-run-4-81110ad526",
+          "index": 4,
+          "spark_event_metrics": {
+            "jobs": 4,
+            "status": "CAPTURED",
+            "successful_tasks": 12,
+            "sum_task_metrics": {
+              "disk_bytes_spilled": 203843133,
+              "executor_cpu_time_ns": 651149642331,
+              "executor_run_time_ms": 816891,
+              "input_bytes": 191484789,
+              "input_records": 13069330,
+              "jvm_gc_time_ms": 61575,
+              "memory_bytes_spilled": 1560537280,
+              "output_bytes": 0,
+              "output_records": 0,
+              "shuffle_read_bytes": 89457162,
+              "shuffle_read_records": 308872,
+              "shuffle_write_bytes": 89457162,
+              "shuffle_write_records": 308872
+            },
+            "task_duration_ms": {
+              "max": 0,
+              "max_to_median_ratio": null,
+              "median": 0.0,
+              "min": 0,
+              "p95": 0
+            }
+          },
+          "summary": "NOT_CAPTURED_BY_EVENT_LOG"
+        }
+      ],
+      "timed_runs_seconds": [
+        323.406,
+        312.831,
+        234.428,
+        256.307,
+        220.174
+      ],
+      "warmup_count": 1,
+      "warmup_runs_seconds": [
+        298.676
+      ]
+    }
+  }
+}

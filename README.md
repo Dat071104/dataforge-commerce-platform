@@ -14,6 +14,7 @@ DataForge is an educational, synthetic-first order-to-cash analytics portfolio. 
 - **Live IAM:** the runtime service account read the source object and queried eight unique geography keys. Anonymous object access and runtime Gold listing returned HTTP 403; positive/negative IAM checks passed, and no static service-account key was created.
 - **Final gate:** the independent controller returned [CLOUD_GO_WEEK4](docs/cloud/controller_verdict.md); hosted CI must pass before merge.
 - **Week 5 (P7.2):** the separate operational journal → immutable GCS → Cloud Run Job → BigQuery Silver/Gold/checkpoint path passed live INC-01–INC-10 tests and a 100K-row synthetic snapshot/MERGE benchmark. The independent controller returned CLOUD_GO_WEEK5; exact-head hosted CI and main-branch CI passed, and implementation PR [#2](https://github.com/Dat071104/dataforge-commerce-platform/pull/2) merged.
+- **Week 6 (P7.3):** the separate local Docker Spark lab processed 13,069,067 official NYC TLC Yellow Taxi rows, with DataFrame/SQL parity, an independent daily oracle, a measured join experiment, partitioned Parquet, and a verified Delta operation. The independent controller returned `GO_WEEK6_LOCAL`; managed Spark was not authorized or run. See the [Week 6 release report](docs/cloud/week6/final_report.md).
 - **Syllabus:** GCP remains a functional mapping. Mentor approval is pending; GCP work does not automatically satisfy an Azure-specific checkpoint.
 - **Legacy services:** any superseded-project inventory is read-only and documented separately.
 
@@ -42,11 +43,18 @@ flowchart LR
     S --> T["Silver MERGE<br/>sequence-aware I/U/D"]
     T --> U["Gold per-order controls<br/>+ ops checkpoint transaction"]
   end
+  subgraph Spark["Week 6 local NYC TLC lab — separate workload"]
+    NYC["Official 2024 Yellow Taxi Parquet"] --> SP["Docker Spark<br/>quality + hourly/zone aggregate"]
+    SP --> PP["Date-partitioned Parquet"]
+    SP --> DL["Isolated Delta<br/>append + history + time travel"]
+  end
   TF[Terraform and least-privilege IAM] -->|apply: 11 creates| G
   TF --> H
 ~~~
 
 Week 4’s accepted snapshot path ends at typed staging. Week 5 is a separate incremental learning reference that reaches per-order Gold controls and a transactionally committed checkpoint. All Week-4 replay generations remain intact. Week-5 source PostgreSQL stays on the developer machine; Cloud Run consumes only uploaded GCS generations and cannot reach the laptop’s loopback address.
+
+Week 6 processes public TLC data in a standalone local workload; it does not feed or change commerce Silver/Gold. See the [Spark lab runbook](labs/spark_nyc_taxi/README.md) and [Week 6 report](docs/cloud/week6/final_report.md).
 
 ## Local quickstart
 
@@ -130,7 +138,7 @@ The execute flag writes remote objects and tables. The same-source replay is ver
 | Fabric Lakehouse | Cloud Storage plus BigLake/BigQuery interoperability | No equivalent transaction layer is deployed; native BigQuery staging is not Delta/Iceberg. |
 | Fabric Warehouse | BigQuery | Week 5 has Silver and a small per-order Gold control reference; it is not an accounting mart or full Fabric Warehouse replacement. |
 | Data Factory | Cloud Run Jobs; Workflows/Scheduler for future orchestration | A finite manual Week-5 job is live-tested; no schedule or orchestration workflow is running. |
-| Spark Notebook | Local PySpark or Managed Service for Apache Spark | Week 6 plan; no Spark execution is claimed. |
+| Spark Notebook | Local PySpark or Managed Service for Apache Spark | Local Spark lab is verified; a managed batch is optional, `CLOUD_SPARK_NOT_AUTHORIZED`, and `NOT_RUN`. |
 | Key Vault | Secret Manager | Not configured for this phase. |
 | Terraform with Azure provider / Bicep | Terraform with Google provider | Terraform apply completed; provider resources and behavior differ. |
 
@@ -139,6 +147,7 @@ These are nearest learning analogies, not product equivalence. See the [full syl
 ## Data, security, and cost controls
 
 - All included commerce data is synthetic. Order items, payments, returns, shipments, inventory snapshots, and weather observations keep separate fact grains.
+- Week 6 uses public NYC TLC Yellow Taxi records in a separate local Spark lab; those records do not feed the commerce marts, and raw files stay out of Git.
 - Fulfilled sales is a synthetic proxy, not recognized revenue. Collections, refunds, and shipment measures use their own event definitions.
 - The verified transfer uses immutable manifests, create-only GCS generation preconditions, SHA-256 checks, typed staging, and independent row/schema/value reconciliation.
 - Standard BigQuery queries are capped at 256 MiB billed; the multi-statement publish script is capped at 1 GiB and its child jobs are captured. Staging tables expire after seven days. Terraform state uses an isolated, project-named local workspace.
@@ -165,7 +174,7 @@ PostgreSQL integration tests are enabled separately with RUN_POSTGRES_TESTS=1 an
 ## Weeks 5–7 roadmap
 
 - **Week 5 — Incremental batch:** live tests, benchmark, independent controller verdict, exact-head hosted CI, and merge complete; see the [final report](docs/cloud/week5/final_report.md).
-- **Week 6 — Spark:** local PySpark with a licensed public fixture, explain plans, and measured benchmarks. Managed Spark is optional and needs a separate cost decision.
+- **Week 6 — Spark:** local PySpark, official TLC data, explain plans, measured benchmark, partitioned Parquet, and a Delta table operation complete; final controller/release pending. Managed Spark remains optional and unrun.
 - **Week 7 — Orchestration and modeling:** dbt-bigquery tests/lineage, manual Workflows end-to-end, Cloud Scheduler only after manual recovery passes, and a local Airflow reference DAG.
 
 Each phase must earn its own evidence. No always-on VM, Cloud SQL, GKE, Composer, or recurring paid job is part of the current foundation.
@@ -180,6 +189,8 @@ Each phase must earn its own evidence. No always-on VM, Cloud SQL, GKE, Composer
 - [Week 4 acceptance matrix](docs/cloud/week4_acceptance.md)
 - [Week 5 acceptance matrix](docs/cloud/week5/acceptance_matrix.md)
 - [Week 5 final report](docs/cloud/week5/final_report.md)
+- [Week 6 acceptance matrix](docs/cloud/week6/acceptance_matrix.md)
+- [Week 6 final report](docs/cloud/week6/final_report.md)
 - [Week 4 first-pass transfer receipts](docs/cloud/evidence/transfers/)
 - [Week 4 safe-rerun receipts](docs/cloud/evidence/reruns/)
 - [Live IAM verification](docs/cloud/evidence/iam_live_verification.json)

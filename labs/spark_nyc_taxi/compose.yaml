@@ -1,0 +1,21 @@
+services:
+  spark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dataforge-week6-spark:3.5.9
+    working_dir: /workspace
+    init: true
+    cpus: 4.0
+    mem_limit: 6g
+    shm_size: 1g
+    ports:
+      - "127.0.0.1:4040:4040"
+    volumes:
+      - ../..:/workspace
+    environment:
+      SPARK_LOCAL_IP: 0.0.0.0
+      DATAFORGE_SPARK_MASTER: local[4]
+      DATAFORGE_SPARK_EVENTLOG_DIR: /workspace/labs/spark_nyc_taxi/data/eventlogs
+      DATAFORGE_SPARK_UI_PORT: "4040"
+    command: ["--version"]

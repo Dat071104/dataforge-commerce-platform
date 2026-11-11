@@ -71,3 +71,6 @@ crash.log
 /docs/screenshots/*
 !/docs/screenshots/v1.0-local/
 !/docs/screenshots/v1.0-local/*.jpg
+
+# Week-6 NYC TLC downloads, generated Spark outputs, event logs, and scratch receipts
+/labs/spark_nyc_taxi/data/
