@@ -1,6 +1,6 @@
 # P7.4 / Week 7 — architecture and decisions
 
-**Status:** bounded live implementation and acceptance complete; independent controller returned `CLOUD_GO_WEEK7`; branch `a9f30c18327482fc9c2986e97fcd59e8bae681c8` is pushed, but PR creation is blocked by GitHub API 403. All cloud claims are tied to the dated receipts under `docs/cloud/week7/`.
+**Status:** bounded live implementation and acceptance complete; independent controller returned `CLOUD_GO_WEEK7`; PR [#5](https://github.com/Dat071104/dataforge-commerce-platform/pull/5) was created in Chrome after the GitHub app API returned 403, and exact-head PR checks passed. The linked PR is the merge record. All cloud claims are tied to the dated receipts under `docs/cloud/week7/`.
 
 ## Accepted baseline and ownership
 

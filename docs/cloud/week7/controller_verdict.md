@@ -22,4 +22,4 @@ These caveats are disclosed in the runbooks and receipts. They do not block open
 
 ## Release outcome
 
-The reviewed branch was committed as `a9f30c18327482fc9c2986e97fcd59e8bae681c8` and pushed. GitHub PR creation then returned HTTP 403 (`Resource not accessible by integration`), so the release is recorded as `RELEASE_BLOCKED`; no PR or hosted PR-head CI run is claimed. The [compare link](https://github.com/Dat071104/dataforge-commerce-platform/compare/main...feature/p7-week7-dbt-orchestration?expand=1) is ready for PR creation by an authorized GitHub session.
+The initial GitHub app PR-creation request returned HTTP 403 (`Resource not accessible by integration`). At the user's direction, PR [#5](https://github.com/Dat071104/dataforge-commerce-platform/pull/5) was created in the already-open Chrome session. Both exact-head PR workflows passed on `90366db784dd4bfa83adcfb774abb722d8d59d92`. GitHub reports the PR mergeable and clean, with no reviews requested or submitted at verification time. The PR page is the live merge record.

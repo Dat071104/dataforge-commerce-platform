@@ -1017,24 +1017,79 @@
   "release": {
     "controller_verdict": "CLOUD_GO_WEEK7",
     "controller_verdict_file": "controller_verdict.md",
-    "status": "RELEASE_BLOCKED",
+    "status": "PR_OPEN_CI_PASS_AT_CHECK",
     "branch": "feature/p7-week7-dbt-orchestration",
     "branch_pushed": true,
-    "week7_pr": {
-      "created": false,
-      "status": "BLOCKED_GITHUB_API_403",
+    "initial_api_pr_attempt_head_commit": "a9f30c18327482fc9c2986e97fcd59e8bae681c8",
+    "initial_api_pr_attempt": {
       "http_status": 403,
-      "error": "Resource not accessible by integration",
-      "compare_url": "https://github.com/Dat071104/dataforge-commerce-platform/compare/main...feature/p7-week7-dbt-orchestration?expand=1"
+      "error": "Resource not accessible by integration"
+    },
+    "week7_pr": {
+      "created": true,
+      "number": 5,
+      "url": "https://github.com/Dat071104/dataforge-commerce-platform/pull/5",
+      "state": "open",
+      "base": "main",
+      "base_sha": "dbf41e3968081c768e258645c56fab461e76d695",
+      "head": "feature/p7-week7-dbt-orchestration",
+      "head_sha": "90366db784dd4bfa83adcfb774abb722d8d59d92",
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "requested_reviewers": [],
+      "submitted_reviews": []
     },
     "hosted_ci": {
-      "status": "NOT_RUN_ON_PR_HEAD",
-      "reason": "No Week 7 PR was created."
+      "status": "PASS_ON_EXACT_PR_HEAD",
+      "pr_head_sha": "90366db784dd4bfa83adcfb774abb722d8d59d92",
+      "pull_request_runs": [
+        {
+          "name": "DataForge CI (Python 3.11 and PostgreSQL 16)",
+          "run_id": 43143292807,
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43143292807"
+        },
+        {
+          "name": "DataForge Week 7 CI (local and read-only compile)",
+          "run_id": 43143292751,
+          "event": "pull_request",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43143292751"
+        }
+      ],
+      "trusted_push_runs": [
+        {
+          "name": "DataForge CI (Python 3.11 and PostgreSQL 16)",
+          "run_id": 43141386767,
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43141386767"
+        },
+        {
+          "name": "DataForge Week 7 CI (local and read-only compile)",
+          "run_id": 43141386714,
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43141386714"
+        }
+      ],
+      "pr_gcp_identity": "No GCP identity on pull_request by design; trusted-push compile passed on same head."
+    },
+    "review_state": {
+      "requested_reviewers": [],
+      "submitted_reviews": [],
+      "mergeable_state": "clean"
     },
     "merge_commit": null,
-    "pr_creation_attempt_head_commit": "a9f30c18327482fc9c2986e97fcd59e8bae681c8"
+    "merge_commit_reference": "https://github.com/Dat071104/dataforge-commerce-platform/pull/5",
+    "release_snapshot": "Captured before merge; the linked PR is the live merge record."
   },
-  "status": "CLOUD_GO_WEEK7; RELEASE_BLOCKED_GITHUB_API_403",
+  "status": "CLOUD_GO_WEEK7; PR_OPEN_CI_PASS_AT_CHECK",
   "target": {
     "project_id": "dataforge-p7-lab-d0f725",
     "project_number": "955038620072",
