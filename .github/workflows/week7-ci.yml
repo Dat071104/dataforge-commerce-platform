@@ -79,6 +79,17 @@ jobs:
         run: |
           python -m pytest -q tests dashboards/P5/tests
           RUN_POSTGRES_TESTS=1 python -m pytest -q -o faulthandler_timeout=60 tests dashboards/P5/tests
+      - name: Prepare deterministic synthetic Gold export
+        run: |
+          dataforge generate --orders 3000 --seed 42
+          dataforge ingest
+          dataforge db-init
+          dataforge db-load
+          dataforge db-build
+          dataforge db-check --synthetic > db_check.json
+          python -c "import json; from pathlib import Path; checks=json.loads(Path('db_check.json').read_text()); failures={name:value for name,value in checks.items() if value != 0}; assert not failures, failures"
+          python scripts/verify_financial_controls.py
+          python scripts/export_powerbi_gold.py --excel
       - name: Check dependency consistency and Power BI pack
         run: |
           python -m pip check
