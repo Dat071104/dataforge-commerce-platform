@@ -74,3 +74,13 @@ crash.log
 
 # Week-6 NYC TLC downloads, generated Spark outputs, event logs, and scratch receipts
 /labs/spark_nyc_taxi/data/
+
+# Week-7 local dbt profile/artifacts and Airflow reference state
+/dbt/dataforge/profiles.yml
+/dbt/dataforge/target/
+/dbt/dataforge/logs/
+/dbt/dataforge/dbt_packages/
+**/airflow.db
+**/airflow.db-shm
+**/airflow.db-wal
+gha-creds-*.json

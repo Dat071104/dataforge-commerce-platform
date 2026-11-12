@@ -1,0 +1,28 @@
+{
+  "bytes_billed": 31457280,
+  "bytes_processed": 1422,
+  "extra_rows": 0,
+  "maximum_bytes_billed": 67108864,
+  "mismatched_rows": 0,
+  "missing_rows": 0,
+  "pointer": {
+    "candidate_row_count": 5,
+    "candidate_sha256": "58eb706ccb975c62dcb54a355e7b8d7f407bf3c67f5155555a39b165cb9489f7",
+    "pointer_version": 1,
+    "publication_id": "784bcf763dd69d51d7d60f6075eba5010315eb95646c3a1751121c2033923694",
+    "source_checkpoint_seq": 23,
+    "upper_seq": 23
+  },
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "published_collections": "449000",
+  "published_delivered_sales_proxy": "363000",
+  "published_order_tombstones": 1,
+  "published_row_count": 5,
+  "query_job_id": "817adfe6-48a3-42f0-b807-ab8ddd97fe06",
+  "region": "us-central1",
+  "slot_ms": 2052,
+  "status": "PASS",
+  "tombstoned_orders_with_collections": 1,
+  "week5_row_count": 5
+}

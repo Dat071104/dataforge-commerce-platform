@@ -1,0 +1,35 @@
+dataforge:
+  target: offline
+  outputs:
+    # This profile is sufficient for dbt parse. It deliberately points at a
+    # non-existent project and contains no key or token. dbt compile can still
+    # require a BigQuery connection even with --no-introspect.
+    offline:
+      type: bigquery
+      method: oauth
+      project: dataforge-offline-project
+      dataset: dbt_week7_offline
+      location: us-central1
+      threads: 1
+
+    # For an explicitly authorized BigQuery run, set these environment
+    # variables after configuring ADC. No credential material belongs here.
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATAFORGE_TARGET_DATASET', 'dbt_week7') }}"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 2
+      priority: interactive
+      maximum_bytes_billed: 268435456
+
+    full:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATAFORGE_FULL_REFRESH_DATASET', 'dbt_week7_full') }}"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 2
+      priority: interactive
+      maximum_bytes_billed: 268435456

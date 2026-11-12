@@ -1,0 +1,49 @@
+{
+  "bucket": {
+    "name": "dataforge-p7-lab-d0f725-bronze",
+    "public_access_prevention": "enforced",
+    "public_members": [],
+    "uniform_bucket_level_access": true
+  },
+  "custom_roles": {
+    "dataforge_week7_cloud_run_job_runner": [
+      "run.jobs.run",
+      "run.jobs.runWithOverrides"
+    ],
+    "dataforge_week7_cloud_run_operation_reader": [
+      "run.operations.get"
+    ],
+    "dataforge_week7_manifest_reader": [
+      "storage.objects.get"
+    ]
+  },
+  "github_wif_provider_condition": "assertion.repository_id == '1446796465' && assertion.repository_owner_id == '242334093' && assertion.event_name == 'push' && (assertion.ref == 'refs/heads/main' || assertion.ref.startsWith('refs/heads/feature/p7-')) && assertion.workflow_ref.endsWith('/.github/workflows/week7-ci.yml@' + assertion.ref)",
+  "limitations": [
+    "This receipt inspects applied bindings and key inventory; it does not impersonate runtime identities for negative testIamPermissions probes.",
+    "The GitHub WIF provider rejects PR/fork tokens by its repository/event/ref condition; pull-request jobs receive no GCP identity."
+  ],
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "region": "us-central1",
+  "scheduler_job_absent": true,
+  "scheduler_job_http_status": 404,
+  "status": "PASS",
+  "user_managed_service_account_keys": {
+    "ci_compile": 0,
+    "dbt": 0,
+    "week5_runtime": 0,
+    "workflow": 0
+  },
+  "workflow_bigquery_read_only_tables": {
+    "gold_week7.week7_publication_pointer": true,
+    "ops.week7_publish_events": true
+  },
+  "workflow_cloud_run_job_bindings": {
+    "dataforge-week5-processor": [
+      "projects/dataforge-p7-lab-d0f725/roles/dataforge_week7_cloud_run_job_runner"
+    ],
+    "dataforge-week7-dbt": [
+      "projects/dataforge-p7-lab-d0f725/roles/dataforge_week7_cloud_run_job_runner"
+    ]
+  }
+}

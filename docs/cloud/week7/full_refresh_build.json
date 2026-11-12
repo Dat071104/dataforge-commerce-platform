@@ -1,0 +1,31 @@
+{
+  "batch_id": "172fa35dfa0fdab2230a93f10e970b1e30220d89fe8c5aaa177748655a5278e8",
+  "command": [
+    "build",
+    "--full-refresh",
+    "--target",
+    "full",
+    "--vars",
+    "{\"workflow_run_id\":\"repair-80e75afbf13448eb840ed9c1f701f7d6\",\"batch_id\":\"172fa35dfa0fdab2230a93f10e970b1e30220d89fe8c5aaa177748655a5278e8\",\"manifest_generation\":1794411981353220,\"upper_seq\":30,\"run_mode\":\"normal\",\"test_fail_dbt_build\":false}"
+  ],
+  "dbt_target": "full",
+  "duration_seconds": 116.734,
+  "execution": {
+    "completionTime": "2026-11-11T16:06:24.221615Z",
+    "failedCount": null,
+    "name": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-dbt/executions/dataforge-week7-dbt-v9crd",
+    "startTime": "2026-11-11T16:04:46.680139Z",
+    "succeededCount": 1
+  },
+  "job_id": "dataforge-week7-dbt",
+  "manifest_generation": 1794411981353220,
+  "operation_error": null,
+  "operation_name": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/7b1b3d52-1ff2-44e9-ae1f-bc71979f2a85",
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "region": "us-central1",
+  "run_mode": "normal",
+  "status": "SUCCEEDED",
+  "upper_seq": 30,
+  "workflow_run_id": "repair-80e75afbf13448eb840ed9c1f701f7d6"
+}

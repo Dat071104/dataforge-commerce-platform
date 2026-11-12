@@ -1,0 +1,45 @@
+{
+  "argument": {
+    "batch_id": "0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713",
+    "manifest_generation": "1794390619113735",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713/manifest.json",
+    "run_mode": "normal",
+    "test_fail_after_merge_once": true,
+    "test_fail_before_publish": false,
+    "test_fail_dbt_build": false,
+    "test_hold_after_lock_seconds": 0,
+    "trigger": "manual"
+  },
+  "end_time": "2026-11-11T13:31:27.828255918Z",
+  "error": {
+    "context": "An error occurred during execution of a long-running operation.\nin step \"rethrow_original_error\", routine \"run_dbt_publication\", line: 391\nin step \"run_dbt_publication_subworkflow\", routine \"main\", line: 79",
+    "payload": "{\"message\":\"An error occurred during execution of a long-running operation.\",\"operation\":{\"done\":true,\"error\":{\"code\":10,\"message\":\"Task dataforge-week7-dbt-x6zrn-task0 failed with exit code: 1 and message: The container exited with an error.\"},\"metadata\":{\"@type\":\"type.googleapis.com/google.cloud.run.v2.Execution\",\"completionTime\":\"2026-11-11T13:29:34.346411Z\",\"conditions\":[{\"lastTransitionTime\":\"2026-11-11T13:28:54.595359Z\",\"message\":\"Started deployed execution in 28.77s.\",\"state\":\"CONDITION_SUCCEEDED\",\"type\":\"Started\"},{\"executionReason\":\"NON_ZERO_EXIT_CODE\",\"lastTransitionTime\":\"2026-11-11T13:29:34.346411Z\",\"message\":\"Task dataforge-week7-dbt-x6zrn-task0 failed with exit code: 1 and message: The container exited with an error.\",\"state\":\"CONDITION_FAILED\",\"type\":\"Completed\"},{\"lastTransitionTime\":\"2026-11-11T13:28:25.735132Z\",\"message\":\"Imported container image.\",\"state\":\"CONDITION_SUCCEEDED\",\"type\":\"ContainerReady\"},{\"lastTransitionTime\":\"2026-11-11T13:28:25.818578Z\",\"message\":\"Provisioned imported containers.\",\"state\":\"CONDITION_SUCCEEDED\",\"type\":\"ResourcesAvailable\"}],\"createTime\":\"2026-11-11T13:28:25.036734Z\",\"creator\":\"dataforge-week7-workflow@dataforge-p7-lab-d0f725.iam.gserviceaccount.com\",\"etag\":\"\\\"CPna0dcGELCIwhE/cHJvamVjdHMvZGF0YWZvcmdlLXA3LWxhYi1kMGY3MjUvbG9jYXRpb25zL3VzLWNlbnRyYWwxL2pvYnMvZGF0YWZvcmdlLXdlZWs3LWRidC9leGVjdXRpb25zL2RhdGFmb3JnZS13ZWVrNy1kYnQteDZ6cm4\\\"\",\"failedCount\":1,\"generation\":\"1\",\"job\":\"dataforge-week7-dbt\",\"launchStage\":\"GA\",\"logUri\":\"https://console.cloud.google.com/logs/viewer?project=dataforge-p7-lab-d0f725\\u0026advancedFilter=resource.type%3D%22cloud_run_job%22%0Aresource.labels.job_name%3D%22dataforge-week7-dbt%22%0Aresource.labels.location%3D%22us-central1%22%0Alabels.%22run.googleapis.com/execution_name%22%3D%22dataforge-week7-dbt-x6zrn%22\",\"name\":\"projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-dbt/executions/dataforge-week7-dbt-x6zrn\",\"observedGeneration\":\"1\",\"parallelism\":1,\"startTime\":\"2026-11-11T13:28:36.100411Z\",\"taskCount\":1,\"template\":{\"containers\":[{\"args\":[\"build\",\"--target\",\"dev\",\"--vars\",\"{\\\"batch_id\\\":\\\"0ee013bca5056f5588f9e32122835bb30002c4af079d2158104f0bd0eadec713\\\",\\\"manifest_generation\\\":1794390619113735,\\\"run_mode\\\":\\\"normal\\\",\\\"test_fail_dbt_build\\\":false,\\\"upper_seq\\\":23,\\\"workflow_run_id\\\":\\\"7afb53aa-10bf-4c8c-b978-85a51b34ce35\\\"}\"],\"command\":[\"dbt\"],\"env\":[{\"name\":\"DBT_DATAFORGE_FULL_REFRESH_DATASET\",\"value\":\"dbt_week7_full\"},{\"name\":\"DBT_DATAFORGE_GOLD_DATASET\",\"value\":\"gold_week7\"},{\"name\":\"DBT_DATAFORGE_SOURCE_DATASET\",\"value\":\"silver\"},{\"name\":\"DBT_DATAFORGE_PROJECT_ID\",\"value\":\"dataforge-p7-lab-d0f725\"},{\"name\":\"DBT_DATAFORGE_LOCATION\",\"value\":\"us-central1\"},{\"name\":\"DBT_DATAFORGE_TARGET_DATASET\",\"value\":\"dbt_week7\"},{\"name\":\"DBT_BIGQUERY_MAXIMUM_BYTES_BILLED\",\"value\":\"268435456\"},{\"name\":\"DBT_DATAFORGE_CONTROL_DATASET\",\"value\":\"ops\"}],\"image\":\"us-central1-docker.pkg.dev/dataforge-p7-lab-d0f725/dataforge-week7/dbt@sha256:3807e6904caa1abee45fa6c34fcefff0d70593de804ab0c53e1556ce281f004e\",\"name\":\"dbt\",\"resources\":{\"limits\":{\"cpu\":\"1\",\"memory\":\"1Gi\"}}}],\"executionEnvironment\":\"EXECUTION_ENVIRONMENT_GEN2\",\"maxRetries\":0,\"serviceAccount\":\"dataforge-week7-dbt@dataforge-p7-lab-d0f725.iam.gserviceaccount.com\",\"timeout\":\"240s\"},\"uid\":\"95072f15-e830-4030-9856-23eed3f8a110\",\"updateTime\":\"2026-11-11T13:28:25.036734Z\"},\"name\":\"projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/92b1e1f9-46b0-46a4-9c6f-1f28f248a1f2\"},\"tags\":[\"OperationError\"]}",
+    "stackTrace": {
+      "elements": [
+        {
+          "position": {
+            "column": "9",
+            "length": "4",
+            "line": "79"
+          },
+          "routine": "main",
+          "step": "run_dbt_publication_subworkflow"
+        },
+        {
+          "position": {
+            "column": "17",
+            "length": "5",
+            "line": "391"
+          },
+          "routine": "run_dbt_publication",
+          "step": "rethrow_original_error"
+        }
+      ]
+    }
+  },
+  "result": null,
+  "start_time": "2026-11-11T13:22:16.313431883Z",
+  "state": "FAILED",
+  "waited_seconds": 140.578,
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/7afb53aa-10bf-4c8c-b978-85a51b34ce35"
+}

@@ -1,0 +1,19 @@
+{
+  "bytes_billed": 20971520,
+  "bytes_processed": 1426,
+  "duration_seconds": 2.063,
+  "full_refresh_collected_amount": "352000",
+  "full_refresh_delivered_sales_proxy": "268000",
+  "full_refresh_rows": 5,
+  "full_refresh_unique_order_ids": 5,
+  "incremental_collected_amount": "352000",
+  "incremental_delivered_sales_proxy": "268000",
+  "incremental_rows": 5,
+  "incremental_unique_order_ids": 5,
+  "job_id": "4f91e568-b0f4-4839-9fd5-83b947e1b8b4",
+  "location": "us-central1",
+  "maximum_bytes_billed": 268435456,
+  "mismatch_rows": 0,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "status": "PASS"
+}

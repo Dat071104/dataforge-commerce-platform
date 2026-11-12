@@ -1,0 +1,186 @@
+name: DataForge Week 7 CI (local and read-only compile)
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/p7-*'
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'cloud/jobs/week7/**'
+      - 'cloud/sql_bigquery/week7/**'
+      - 'cloud/terraform/dev/**'
+      - 'cloud/workflows/**'
+      - 'dbt/dataforge/**'
+      - 'docs/cloud/week7/**'
+      - 'labs/airflow_reference/**'
+      - '.dockerignore'
+      - '.gitignore'
+      - 'pyproject.toml'
+      - 'requirements-py311.lock'
+      - '.github/workflows/week7-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'cloud/jobs/week7/**'
+      - 'cloud/sql_bigquery/week7/**'
+      - 'cloud/terraform/dev/**'
+      - 'cloud/workflows/**'
+      - 'dbt/dataforge/**'
+      - 'docs/cloud/week7/**'
+      - 'labs/airflow_reference/**'
+      - '.dockerignore'
+      - '.gitignore'
+      - 'pyproject.toml'
+      - 'requirements-py311.lock'
+      - '.github/workflows/week7-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  python-regression:
+    name: Python offline regression
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dataforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dataforge"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/dataforge
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Install the local project
+        run: python -m pip install -c requirements-py311.lock -e '.[dev,powerbi,gcp]'
+      - name: Ruff and compile
+        run: |
+          ruff check src tests scripts dashboards/P5 labs/airflow_reference
+          python -m compileall -q src tests scripts dashboards/P5 labs/airflow_reference
+      - name: Run offline and isolated PostgreSQL suites
+        run: |
+          python -m pytest -q tests dashboards/P5/tests
+          RUN_POSTGRES_TESTS=1 python -m pytest -q -o faulthandler_timeout=60 tests dashboards/P5/tests
+      - name: Prepare deterministic synthetic Gold export
+        run: |
+          dataforge generate --orders 3000 --seed 42
+          dataforge ingest
+          dataforge db-init
+          dataforge db-load
+          dataforge db-build
+          dataforge db-check --synthetic > db_check.json
+          python -c "import json; from pathlib import Path; checks=json.loads(Path('db_check.json').read_text()); failures={name:value for name,value in checks.items() if value != 0}; assert not failures, failures"
+          python scripts/verify_financial_controls.py
+          python scripts/export_powerbi_gold.py --excel
+      - name: Check dependency consistency and Power BI pack
+        run: |
+          python -m pip check
+          python dashboards/P5/validate_source_pack.py
+          python scripts/week7_secret_scan.py
+
+  dbt-static-and-image:
+    name: dbt parse and immutable image build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Install the locked dbt runtime
+        run: python -m pip install -r cloud/jobs/week7/requirements.lock
+      - name: Parse dbt without cloud credentials
+        working-directory: dbt/dataforge
+        run: |
+          cp profiles.example.yml profiles.yml
+          dbt parse --project-dir . --profiles-dir . --target offline
+      - name: Build and smoke-test the finite dbt image without network
+        run: |
+          docker build --file cloud/jobs/week7/Dockerfile --tag dataforge-week7-dbt:ci .
+          docker run --rm --network none dataforge-week7-dbt:ci --version
+          docker run --rm --network none dataforge-week7-dbt:ci --target offline parse
+
+  dbt-read-only-compile:
+    name: dbt compile (keyless, read-only)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/feature/p7-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    needs: dbt-static-and-image
+    env:
+      DBT_DATAFORGE_PROJECT_ID: dataforge-p7-lab-d0f725
+      DBT_DATAFORGE_LOCATION: us-central1
+      DBT_DATAFORGE_SOURCE_DATASET: silver
+      DBT_DATAFORGE_CONTROL_DATASET: ops
+      DBT_DATAFORGE_TARGET_DATASET: dbt_week7
+      DBT_DATAFORGE_FULL_REFRESH_DATASET: dbt_week7_full
+      DBT_DATAFORGE_GOLD_DATASET: gold_week7
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt/dataforge
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: dataforge-p7-lab-d0f725
+          workload_identity_provider: projects/955038620072/locations/global/workloadIdentityPools/dataforge-week7-ci/providers/github-actions
+          service_account: dataforge-week7-ci-compile@dataforge-p7-lab-d0f725.iam.gserviceaccount.com
+      - name: Install the locked dbt runtime
+        run: python -m pip install -r cloud/jobs/week7/requirements.lock
+      - name: Prepare the non-secret dbt profile
+        run: cp dbt/dataforge/profiles.example.yml dbt/dataforge/profiles.yml
+      - name: Compile against source metadata with bounded bytes
+        working-directory: dbt/dataforge
+        env:
+          DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
+          DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
+        run: dbt compile --project-dir . --profiles-dir . --target dev --no-introspect
+
+  airflow-reference:
+    name: Local Airflow reference scenarios
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate Compose and run local-only scenarios
+        shell: pwsh
+        run: |
+          docker compose --file labs/airflow_reference/compose.yaml config --quiet
+          foreach ($scenario in @('no_new_batch','local_fixture','retry_once','invalid_mode')) {
+            .\labs\airflow_reference\ci.ps1 -Scenario $scenario
+            if ($LASTEXITCODE -ne 0) { throw "Airflow scenario $scenario failed" }
+          }
+
+  terraform-static:
+    name: Terraform static validation (never apply)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: '1.17.1'
+          terraform_wrapper: false
+      - name: Format check, initialize without backend, and validate
+        working-directory: cloud/terraform/dev
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate

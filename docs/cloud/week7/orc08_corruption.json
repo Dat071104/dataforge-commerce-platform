@@ -1,0 +1,29 @@
+{
+  "after": {
+    "candidate_collected_amount": "15001",
+    "candidate_sha256": "58bcada6cc4f181565e148fe7599c0fd480f809ee73a8b2340f0519acc9fc7ec",
+    "pointer_version": 3,
+    "published_collected_amount": "15000"
+  },
+  "after_bytes_billed": 31457280,
+  "after_job_id": "d462a4aa-475d-448a-8963-5446ced5dc1d",
+  "before": {
+    "candidate_collected_amount": "15000",
+    "candidate_sha256": "58bcada6cc4f181565e148fe7599c0fd480f809ee73a8b2340f0519acc9fc7ec",
+    "pointer_version": 3,
+    "published_collected_amount": "15000"
+  },
+  "before_bytes_billed": 0,
+  "before_job_id": "c2a3c6d7-d5ee-41cb-923e-5d41ea42c440",
+  "maximum_bytes_billed": 67108864,
+  "order_id": "W5O0004",
+  "pointer_unchanged": true,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "published_view_unchanged": true,
+  "region": "us-central1",
+  "status": "FAULT_INJECTED_AND_FENCED",
+  "update_bytes_billed": 10485760,
+  "update_job_id": "e49a50b5-1d31-4ccd-acfe-d8310cd5dcce",
+  "update_rows": 1
+}

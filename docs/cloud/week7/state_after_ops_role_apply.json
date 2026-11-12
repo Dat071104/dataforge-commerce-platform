@@ -1,0 +1,54 @@
+{
+  "bytes_billed": 62914560,
+  "bytes_processed": 412,
+  "label": "after_ops_role_apply",
+  "maximum_bytes_billed": 67108864,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "query_job_id": "60bffabd-8726-46c4-8881-da527aa47500",
+  "region": "us-central1",
+  "slot_ms": 354,
+  "state": {
+    "checkpoint": {
+      "committed_seq": 20,
+      "last_batch_id": "a107b47471ff130cece65af2dea2f97d2731ecb0b4ca543b83ba3f5019226c63",
+      "manifest_generation": 1794292196689069,
+      "source_id": "dataforge-operational-v1"
+    },
+    "publication_lock": {
+      "lock_version": 0,
+      "owned_rows": 0,
+      "row_count": 1
+    },
+    "publication_pointer": {
+      "batch_id": null,
+      "candidate_dataset": null,
+      "candidate_row_count": null,
+      "candidate_sha256": null,
+      "manifest_generation": null,
+      "pointer_version": 0,
+      "publication_id": null,
+      "published_at": null,
+      "published_run_id": null,
+      "published_run_mode": null,
+      "source_checkpoint_seq": null,
+      "upper_seq": null
+    },
+    "silver_orders": {
+      "max_effective_seq": 18,
+      "row_count": 4,
+      "tombstone_count": 1
+    },
+    "silver_payments": {
+      "active_successes": 3,
+      "max_effective_seq": 20,
+      "row_count": 4,
+      "tombstone_count": 1
+    },
+    "week5_gold": {
+      "collected_amount": "344000",
+      "delivered_sales_proxy": "263000",
+      "row_count": 4
+    }
+  }
+}

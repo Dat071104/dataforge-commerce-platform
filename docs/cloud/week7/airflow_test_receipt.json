@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "runtime_image": "apache/airflow:3.4.0-python3.11@sha256:be92e15d57c5be726fc39a91cd09cce8f7488483b67979e0fb74c1a2c7cfb4e2",
+  "docker_server_version": "29.9.3",
+  "network_mode": "none",
+  "metadata_database": "temporary SQLite in container",
+  "scenarios": [
+    {
+      "name": "no_new_batch",
+      "status": "PASS",
+      "dag_run": "success",
+      "publication": "NO_NEW_BATCH_PREVIOUS_GOLD_PRESERVED"
+    },
+    {
+      "name": "local_fixture",
+      "status": "PASS",
+      "dag_run": "success",
+      "row_count": 1,
+      "payment_aggregation": "two successful payment events were pre-aggregated",
+      "publication": "LOCAL_FIXTURE_VALIDATED_NOT_PUBLISHED"
+    },
+    {
+      "name": "retry_once",
+      "status": "PASS",
+      "dag_run": "success",
+      "recovery": "transient task error retried once and completed"
+    },
+    {
+      "name": "invalid_mode",
+      "status": "PASS_EXPECTED_FAILURE",
+      "dag_run": "failed as expected",
+      "exception": "AirflowFailException",
+      "failure_hook": "DATAFORGE_AIRFLOW_FAILURE_ALERT LOCAL_LOG_ONLY",
+      "retry": false
+    }
+  ],
+  "unit_tests": {
+    "tests_per_scenario": 6,
+    "scenario_invocations": 4,
+    "result": "all passed"
+  },
+  "cloud_writes": false,
+  "scheduler_deployed": false
+}

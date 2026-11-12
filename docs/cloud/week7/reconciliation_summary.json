@@ -1,0 +1,50 @@
+{
+  "checkpoint_job": {
+    "bytes_billed": 10485760,
+    "bytes_processed": 34,
+    "committed_seq": 30,
+    "job_id": "week5_checkpoint_15ca7ad771324a868b16b7ef",
+    "maximum_bytes_billed": 268435456,
+    "source_id": "dataforge-operational-v1"
+  },
+  "checkpoint_seq": 30,
+  "collections_total_including_tombstoned_orders": "352000.00",
+  "comparison_rows": 144,
+  "delivered_sales_proxy_total": "268000.00",
+  "gold_order_control_count": 5,
+  "mismatch_count": 0,
+  "oracle_order_count": 5,
+  "oracle_payment_event_count": 6,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "reconciliation_csv": "docs/cloud/week7/week5_decimal_reconciliation_final.csv",
+  "region": "us-central1",
+  "silver_order_count": 5,
+  "silver_payment_event_count": 6,
+  "source_event_count": 29,
+  "source_event_max_seq": 30,
+  "source_identity": "dataforge-operational-v1",
+  "status": "RECONCILED",
+  "table_query_jobs": [
+    {
+      "bytes_billed": 10485760,
+      "bytes_processed": 823,
+      "job_id": "week5_reconcile_silver_orders_391c767918b1",
+      "slot_ms": 19,
+      "table": "silver_orders"
+    },
+    {
+      "bytes_billed": 10485760,
+      "bytes_processed": 1001,
+      "job_id": "week5_reconcile_silver_payments_b67509747a9b",
+      "slot_ms": 5,
+      "table": "silver_payments"
+    },
+    {
+      "bytes_billed": 10485760,
+      "bytes_processed": 473,
+      "job_id": "week5_reconcile_gold_controls_c1e3470fb8f1",
+      "slot_ms": 17,
+      "table": "gold_controls"
+    }
+  ]
+}

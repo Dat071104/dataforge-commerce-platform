@@ -1,0 +1,16 @@
+{
+  "bytes_billed": 20971520,
+  "bytes_processed": 2159,
+  "candidate_row_count": 5,
+  "candidate_sha256": "01cc998a59a5272200175ada457541188a3935b144442a5333b5b180c17e1cc0",
+  "expected_current": true,
+  "maximum_bytes_billed": 67108864,
+  "pointer_version": 6,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "public_view_row_count": 5,
+  "publication_is_current": true,
+  "query_job_id": "12028177-4be5-4669-ba2e-94470048adfd",
+  "region": "us-central1",
+  "status": "PASS"
+}

@@ -84,3 +84,75 @@ variable "week5_job_enabled" {
   type        = bool
   default     = true
 }
+
+variable "week7_artifact_registry_enabled" {
+  description = "Whether to create a private, immutable-tag Week-7 dbt image repository. Keep disabled until the Week-7 release is approved."
+  type        = bool
+  default     = false
+}
+
+variable "week7_orchestration_enabled" {
+  description = "Whether to create the finite Week-7 dbt Cloud Run Job, Workflows, service accounts, and their scoped IAM. Requires a digest-pinned Week-7 image."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.week7_orchestration_enabled || (var.week5_job_enabled && var.week7_artifact_registry_enabled)
+    error_message = "Week-7 orchestration requires the existing Week-5 job and the Terraform-managed Week-7 image repository to be enabled."
+  }
+}
+
+variable "week7_dbt_image" {
+  description = "Digest-pinned dbt runner image in the dedicated Week-7 Artifact Registry repository. Required only when Week-7 orchestration is enabled."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = var.week7_dbt_image == null ? !var.week7_orchestration_enabled : can(regex(
+      "^${var.region}-docker\\.pkg\\.dev/${var.project_id}/dataforge-week7/dbt@sha256:[0-9a-f]{64}$",
+      var.week7_dbt_image
+    ))
+    error_message = "week7_dbt_image must be a digest-pinned image in this project's ${var.region} dataforge-week7 repository when Week-7 orchestration is enabled."
+  }
+}
+
+variable "week7_scheduler_paused" {
+  description = "Whether an explicitly enabled Week-7 Cloud Scheduler job remains paused. Keep true unless recurring execution is separately accepted."
+  type        = bool
+  default     = true
+}
+
+variable "week7_scheduler_enabled" {
+  description = "Whether to create the one Week-7 Cloud Scheduler job. Keep false by default to avoid any recurring job charge; enable only after manual E2E/recovery succeeds."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.week7_scheduler_enabled || var.week7_orchestration_enabled
+    error_message = "week7_scheduler_enabled requires Week-7 orchestration to be enabled."
+  }
+}
+
+variable "week7_schedule" {
+  description = "Cloud Scheduler cron expression. This job sends an empty no-new-batch request and is paused by default because the source bridge is local."
+  type        = string
+  default     = "0 2 * * *"
+
+  validation {
+    condition     = length(trimspace(var.week7_schedule)) > 0
+    error_message = "week7_schedule must be a non-empty cron expression."
+  }
+}
+
+variable "week7_scheduler_creator_member" {
+  description = "Optional operator principal allowed to attach the dedicated scheduler service account when Terraform creates the paused trigger."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.week7_scheduler_creator_member == null || can(regex("^(user|serviceAccount|group):[^ ]+$", var.week7_scheduler_creator_member))
+    error_message = "week7_scheduler_creator_member must be a user:, serviceAccount:, or group: IAM member."
+  }
+}

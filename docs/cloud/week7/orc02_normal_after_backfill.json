@@ -1,0 +1,33 @@
+{
+  "argument": {
+    "batch_id": "48c6864955895c3d1b96633e720659a9c267fbe426dd79070e2deab788fcdbe9",
+    "manifest_generation": "1794406440265146",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/manifests/week5/batch_id=48c6864955895c3d1b96633e720659a9c267fbe426dd79070e2deab788fcdbe9/manifest.json",
+    "run_mode": "normal",
+    "test_fail_after_merge_once": false,
+    "test_fail_before_publish": false,
+    "test_fail_dbt_build": false,
+    "test_hold_after_lock_seconds": 0,
+    "trigger": "manual"
+  },
+  "duration_seconds": 513.219,
+  "end_time": "2026-11-11T14:22:43.917921657Z",
+  "error": null,
+  "result": {
+    "acquire_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/77399867-19d0-4006-956f-d6695e47c252",
+    "batch_id": "48c6864955895c3d1b96633e720659a9c267fbe426dd79070e2deab788fcdbe9",
+    "checkpoint_upper_seq": 26,
+    "dbt_build_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/37fd009d-713c-4be0-bcb4-dd4faa01d88b",
+    "manifest_generation": "1794406440265146",
+    "publish_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/6213b538-a11e-4edc-897d-bf37f1223ad8",
+    "release_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/cf339d01-dc85-49a5-b85b-d886df740e33",
+    "silver_operation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/operations/bb1ccfbe-7907-45c1-8f84-5d516dcbc1d9",
+    "status": "PUBLISHED",
+    "workflow_execution_name": "a2e35226-a2b2-4150-9154-3f8fa8439536",
+    "workflow_run_id": "a2e35226-a2b2-4150-9154-3f8fa8439536"
+  },
+  "start_time": "2026-11-11T14:14:15.180112453Z",
+  "state": "SUCCEEDED",
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/a2e35226-a2b2-4150-9154-3f8fa8439536",
+  "workflow_name": "projects/dataforge-p7-lab-d0f725/locations/us-central1/workflows/dataforge-week7-orchestrator"
+}

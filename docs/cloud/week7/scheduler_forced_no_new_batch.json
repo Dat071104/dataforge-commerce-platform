@@ -1,0 +1,31 @@
+{
+  "argument": {
+    "no_new_batch": true,
+    "trigger": "scheduler"
+  },
+  "cleanup_pending": false,
+  "cleanup_verified_at_utc": "2026-11-11T16:21:35.111228+00:00",
+  "end_time": "2026-11-11T16:17:18.278612721Z",
+  "initial_scheduler_state": "PAUSED",
+  "next_scheduled_time_utc": "2026-11-12T02:00:00Z",
+  "no_cloud_run_or_bq_data_write": true,
+  "paused_force_request_created_no_attempt": true,
+  "paused_force_request_http_status": 400,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "region": "us-central1",
+  "result": {
+    "message": "No complete immutable GCS manifest was supplied; the local PostgreSQL source is not reachable from Cloud Run.",
+    "status": "NO_NEW_BATCH",
+    "workflow_execution_name": "e90ef2e3-4d24-4406-95dd-94335cdb8d4b",
+    "workflow_run_id": "e90ef2e3-4d24-4406-95dd-94335cdb8d4b"
+  },
+  "schedule": "0 2 * * *",
+  "scheduler_cleanup_receipt": "scheduler_cleanup_receipt.json",
+  "scheduler_job": "dataforge-week7-no-new-batch",
+  "scheduler_job_absent_after_cleanup": true,
+  "scheduler_state_during_run": "ENABLED_TEMPORARILY",
+  "start_time": "2026-11-11T16:17:17.913411249Z",
+  "temporary_enable_for_one_forced_run": true,
+  "workflow_execution_name": "projects/955038620072/locations/us-central1/workflows/dataforge-week7-orchestrator/executions/e90ef2e3-4d24-4406-95dd-94335cdb8d4b",
+  "workflow_state": "SUCCEEDED"
+}

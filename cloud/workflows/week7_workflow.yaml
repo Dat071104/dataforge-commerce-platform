@@ -1,0 +1,402 @@
+main:
+  params: [args]
+  steps:
+    - initialize:
+        assign:
+          - workflow_execution_name: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+          - workflow_execution_parts: ${text.split(workflow_execution_name, "/")}
+          - workflow_run_id: ${workflow_execution_parts[len(workflow_execution_parts) - 1]}
+          - project_id: ${sys.get_env("DATAFORGE_PROJECT_ID")}
+          - region: ${sys.get_env("DATAFORGE_REGION")}
+          - bronze_bucket: ${sys.get_env("DATAFORGE_BRONZE_BUCKET")}
+          - week5_job: ${sys.get_env("DATAFORGE_WEEK5_JOB")}
+          - dbt_job: ${sys.get_env("DATAFORGE_WEEK7_DBT_JOB")}
+          - manifest_uri: ${default(map.get(args, "manifest_uri"), "")}
+          - manifest_generation: ${default(map.get(args, "manifest_generation"), "")}
+          - expected_batch_id: ${default(map.get(args, "batch_id"), "")}
+          - no_new_batch: ${default(map.get(args, "no_new_batch"), false)}
+          - run_mode: ${default(map.get(args, "run_mode"), "normal")}
+          # Development-only controls. Production/scheduler defaults stay safe.
+          - test_fail_after_merge_once: ${default(map.get(args, "test_fail_after_merge_once"), false)}
+          - test_fail_dbt_build: ${default(map.get(args, "test_fail_dbt_build"), false)}
+          - test_fail_before_publish: ${default(map.get(args, "test_fail_before_publish"), false)}
+          - test_hold_after_lock_seconds: ${default(map.get(args, "test_hold_after_lock_seconds"), 0)}
+    - handle_no_new_batch_or_invalid_input:
+        switch:
+          - condition: ${get_type(test_fail_after_merge_once) != "boolean"}
+            next: invalid_test_input
+          - condition: ${get_type(test_fail_dbt_build) != "boolean"}
+            next: invalid_test_input
+          - condition: ${get_type(test_fail_before_publish) != "boolean"}
+            next: invalid_test_input
+          - condition: ${(test_fail_after_merge_once and test_fail_dbt_build) or (test_fail_after_merge_once and test_fail_before_publish) or (test_fail_dbt_build and test_fail_before_publish)}
+            next: invalid_test_input
+          - condition: ${get_type(test_hold_after_lock_seconds) != "integer"}
+            next: invalid_test_input
+          - condition: ${test_hold_after_lock_seconds < 0 or test_hold_after_lock_seconds > 30}
+            next: invalid_test_input
+          - condition: ${not text.match_regex(workflow_run_id, "^[A-Za-z0-9_-]{1,128}$")}
+            next: invalid_workflow_execution_id
+          - condition: ${no_new_batch == true and (manifest_uri != "" or manifest_generation != "" or expected_batch_id != "")}
+            next: invalid_input
+          - condition: ${no_new_batch == true}
+            next: prepare_no_new_batch_log
+          - condition: ${manifest_uri == "" and manifest_generation == "" and expected_batch_id == ""}
+            next: prepare_no_new_batch_log
+          - condition: ${manifest_uri == "" or manifest_generation == "" or expected_batch_id == ""}
+            next: invalid_input
+    - validate_input_shape:
+        switch:
+          - condition: ${run_mode != "normal" and run_mode != "backfill"}
+            next: invalid_input
+          - condition: ${get_type(manifest_generation) != "string" or len(manifest_generation) == 0}
+            next: invalid_input
+          - condition: ${not text.match_regex(expected_batch_id, "^[0-9a-f]{64}$")}
+            next: invalid_input
+          - condition: ${manifest_uri != "gs://" + bronze_bucket + "/manifests/week5/batch_id=" + expected_batch_id + "/manifest.json"}
+            next: invalid_input
+    - load_exact_manifest_generation:
+        call: googleapis.storage.v1.objects.get
+        args:
+          bucket: ${bronze_bucket}
+          object: ${text.url_encode("manifests/week5/batch_id=" + expected_batch_id + "/manifest.json")}
+          generation: ${manifest_generation}
+          alt: media
+        result: manifest_response
+    - decode_manifest:
+        assign:
+          - manifest: ${manifest_response}
+          - manifest_generation_number: ${int(manifest_generation)}
+    - validate_manifest_contract:
+        switch:
+          - condition: ${manifest.status != "COMPLETE" or manifest.source_identity != "dataforge-operational-v1" or manifest.schema_version != 1 or manifest.batch_id != expected_batch_id or manifest.source_run_id != "dataforge-operational-v1:" + expected_batch_id}
+            next: invalid_manifest
+          - condition: ${manifest.row_count <= 0 or manifest.lower_seq <= 0 or manifest.upper_seq < manifest.lower_seq or manifest.parquet.generation <= 0}
+            next: invalid_manifest
+          - condition: ${not text.match_regex(manifest.parquet.sha256, "^[0-9a-f]{64}$") or not text.match_regex(manifest.row_value_sha256, "^[0-9a-f]{64}$")}
+            next: invalid_manifest
+    - run_dbt_publication_subworkflow:
+        call: run_dbt_publication
+        args:
+          workflow_run_id: ${workflow_run_id}
+          project_id: ${project_id}
+          region: ${region}
+          week5_job: ${week5_job}
+          dbt_job: ${dbt_job}
+          manifest_uri: ${manifest_uri}
+          manifest_generation_text: ${manifest_generation}
+          run_mode: ${run_mode}
+          test_fail_after_merge_once: ${test_fail_after_merge_once}
+          test_fail_dbt_build: ${test_fail_dbt_build}
+          test_fail_before_publish: ${test_fail_before_publish}
+          test_hold_after_lock_seconds: ${test_hold_after_lock_seconds}
+          batch_id: ${manifest.batch_id}
+          manifest_generation: ${manifest_generation_number}
+          upper_seq: ${manifest.upper_seq}
+        result: dbt_result
+    - branch_publication_outcome:
+        switch:
+          - condition: ${dbt_result.status == "OVERLAP_SKIPPED"}
+            next: return_overlap_skipped
+    - return_published:
+        return:
+          status: ${dbt_result.status}
+          workflow_run_id: ${workflow_run_id}
+          workflow_execution_name: ${workflow_execution_name}
+          batch_id: ${manifest.batch_id}
+          manifest_generation: ${manifest_generation}
+          checkpoint_upper_seq: ${manifest.upper_seq}
+          acquire_operation: ${dbt_result.acquire_operation}
+          dbt_build_operation: ${dbt_result.dbt_build_operation}
+          publish_operation: ${dbt_result.publish_operation}
+          release_operation: ${dbt_result.release_operation}
+          silver_operation: ${dbt_result.silver_operation}
+    - prepare_no_new_batch_log:
+        assign:
+          - no_batch_log:
+              status: NO_NEW_BATCH
+              workflow_run_id: ${workflow_run_id}
+              workflow_execution_name: ${workflow_execution_name}
+          - no_batch_log_text: ${json.encode_to_string(no_batch_log)}
+    - return_no_new_batch:
+        call: sys.log
+        args:
+          severity: INFO
+          text: ${no_batch_log_text}
+        next: no_new_batch_result
+    - no_new_batch_result:
+        return:
+          status: NO_NEW_BATCH
+          workflow_run_id: ${workflow_run_id}
+          workflow_execution_name: ${workflow_execution_name}
+          message: "No complete immutable GCS manifest was supplied; the local PostgreSQL source is not reachable from Cloud Run."
+    - return_overlap_skipped:
+        return:
+          status: OVERLAP_SKIPPED
+          workflow_run_id: ${workflow_run_id}
+          workflow_execution_name: ${workflow_execution_name}
+          batch_id: ${manifest.batch_id}
+          message: "Another workflow owns the atomic Week-7 publication lease; this execution did not build or publish Gold."
+          acquire_operation: ${dbt_result.acquire_operation}
+    - invalid_input:
+        raise: "INVALID_WEEK7_WORKFLOW_INPUT: supply a complete manifest_uri, string manifest_generation, batch_id, and normal/backfill run_mode."
+    - invalid_workflow_execution_id:
+        raise: "INVALID_WORKFLOW_EXECUTION_ID: expected a 1-128 character alphanumeric, underscore, or hyphen execution ID."
+    - invalid_test_input:
+        raise: "INVALID_WEEK7_TEST_INPUT: failure injection must be boolean; overlap hold must be integer seconds from 0 to 30."
+    - invalid_manifest:
+        raise: "INVALID_WEEK5_COMPLETE_MANIFEST: status, schema, batch identity, sequence range, or digest failed validation."
+
+run_dbt_publication:
+  params: [workflow_run_id, project_id, region, week5_job, dbt_job, manifest_uri, manifest_generation_text, run_mode, batch_id, manifest_generation, upper_seq, test_fail_after_merge_once, test_fail_dbt_build, test_fail_before_publish, test_hold_after_lock_seconds]
+  steps:
+    - prepare_arguments:
+        assign:
+          - dbt_args_map:
+              workflow_run_id: ${workflow_run_id}
+              batch_id: ${batch_id}
+              manifest_generation: ${manifest_generation}
+              upper_seq: ${upper_seq}
+              run_mode: ${run_mode}
+              test_fail_dbt_build: ${test_fail_dbt_build}
+          - publish_args_map:
+              workflow_run_id: ${workflow_run_id}
+              batch_id: ${batch_id}
+              manifest_generation: ${manifest_generation}
+              upper_seq: ${upper_seq}
+              run_mode: ${run_mode}
+              test_fail_before_publish: ${test_fail_before_publish}
+          - lock_args_map:
+              workflow_run_id: ${workflow_run_id}
+              lease_seconds: 2400
+              batch_id: ${batch_id}
+              manifest_generation: ${manifest_generation}
+              upper_seq: ${upper_seq}
+              run_mode: ${run_mode}
+          - release_args_map:
+              workflow_run_id: ${workflow_run_id}
+          - dbt_args: ${json.encode_to_string(dbt_args_map)}
+          - publish_args: ${json.encode_to_string(publish_args_map)}
+          - lock_args: ${json.encode_to_string(lock_args_map)}
+          - release_args: ${json.encode_to_string(release_args_map)}
+          - week7_events_table_name: ${"`" + project_id + ".ops.week7_publish_events`"}
+          - week7_pointer_table_name: ${"`" + project_id + ".gold_week7.week7_publication_pointer`"}
+          - publication_query_status_part: ${"SELECT COALESCE((ARRAY_AGG(status ORDER BY event_at DESC LIMIT 1))[SAFE_OFFSET(0)], 'MISSING') AS publication_status"}
+          - publication_query_current_part: ${", COALESCE((SELECT CAST(publication_is_current AS STRING) FROM " + week7_pointer_table_name + " WHERE pointer_name = 'current_order_reconciliation'), 'false') AS publication_is_current"}
+          - publication_query_event_part: ${" FROM " + week7_events_table_name + " WHERE event_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)"}
+          - publication_query_filter_part: ${" AND workflow_run_id = @workflow_run_id AND status IN ('PUBLISHED', 'NO_OP')"}
+    - lock_build_test_publish_release:
+        try:
+          steps:
+            - acquire_week7_publication_lock:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "run-operation"
+                            - "acquire_week7_lock"
+                            - "--args"
+                            - ${lock_args}
+                            - "--target"
+                            - "dev"
+                result: acquire_operation
+            - read_lock_result_from_event_ledger:
+                call: googleapis.bigquery.v2.jobs.query
+                args:
+                  projectId: ${project_id}
+                  body:
+                    query: ${"SELECT COALESCE((ARRAY_AGG(status ORDER BY event_at DESC LIMIT 1))[SAFE_OFFSET(0)], 'MISSING') AS acquisition_status FROM `" + project_id + ".ops.week7_publish_events` WHERE event_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) AND workflow_run_id = @workflow_run_id AND status IN ('ACQUIRED', 'OVERLAP_SKIPPED')"}
+                    useLegacySql: false
+                    location: ${region}
+                    timeoutMs: 30000
+                    maximumBytesBilled: "268435456"
+                    queryParameters:
+                      - name: workflow_run_id
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${workflow_run_id}
+                result: lock_query
+            - set_acquisition_status:
+                assign:
+                  - acquisition_status: ${lock_query.rows[0].f[0].v}
+            - prepare_acquisition_status_log:
+                assign:
+                  - acquisition_status_log:
+                      workflow_run_id: ${workflow_run_id}
+                      status: ${acquisition_status}
+                  - acquisition_status_log_text: ${json.encode_to_string(acquisition_status_log)}
+            - log_acquisition_status:
+                call: sys.log
+                args:
+                  severity: INFO
+                  text: ${acquisition_status_log_text}
+            - branch_lock_result:
+                switch:
+                  - condition: ${acquisition_status == "OVERLAP_SKIPPED"}
+                    next: return_overlap_skipped
+                  - condition: ${acquisition_status == "ACQUIRED"}
+                    next: maybe_hold_for_overlap_test
+            - raise_invalid_lock_result:
+                raise: "INVALID_WEEK7_LOCK_RESULT: event ledger did not confirm ACQUIRED or OVERLAP_SKIPPED."
+            - maybe_hold_for_overlap_test:
+                switch:
+                  - condition: ${test_hold_after_lock_seconds > 0}
+                    next: hold_after_lock_for_overlap_test
+                next: prepare_week5_arguments
+            - hold_after_lock_for_overlap_test:
+                call: sys.sleep
+                args:
+                  seconds: ${test_hold_after_lock_seconds}
+                next: prepare_week5_arguments
+            - prepare_week5_arguments:
+                assign:
+                  - week5_args:
+                      - ${"--manifest-uri=" + manifest_uri}
+                      - ${"--manifest-generation=" + manifest_generation_text}
+                      - ${"--run-mode=" + run_mode}
+            - maybe_add_week5_retry_injection:
+                switch:
+                  - condition: ${test_fail_after_merge_once}
+                    assign:
+                      - week5_args: ${list.concat(week5_args, "--fail-after-merge-once")}
+            - run_week5_silver_consumer:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + week5_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - args: ${week5_args}
+                result: silver_operation
+            - run_dbt_build_and_tests:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "build"
+                            - "--target"
+                            - "dev"
+                            - "--vars"
+                            - ${dbt_args}
+                result: dbt_build_operation
+            - publish_verified_gold_pointer:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "run-operation"
+                            - "publish_week7"
+                            - "--args"
+                            - ${publish_args}
+                            - "--target"
+                            - "dev"
+                result: publish_operation
+            - read_publication_result_from_event_ledger:
+                call: googleapis.bigquery.v2.jobs.query
+                args:
+                  projectId: ${project_id}
+                  body:
+                    query: ${publication_query_status_part + publication_query_current_part + publication_query_event_part + publication_query_filter_part}
+                    useLegacySql: false
+                    location: ${region}
+                    timeoutMs: 30000
+                    maximumBytesBilled: "268435456"
+                    queryParameters:
+                      - name: workflow_run_id
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${workflow_run_id}
+                result: publication_query
+            - set_publication_status:
+                assign:
+                  - publication_status: ${publication_query.rows[0].f[0].v}
+                  - publication_is_current: ${publication_query.rows[0].f[1].v}
+            - branch_publication_status:
+                switch:
+                  - condition: ${(publication_status == "PUBLISHED" or publication_status == "NO_OP") and publication_is_current == "true"}
+                    next: release_week7_publication_lock
+                  - condition: ${publication_status != "PUBLISHED" or publication_status != "NO_OP" or publication_is_current != "true"}
+                    next: raise_invalid_publication_result
+            - raise_invalid_publication_result:
+                raise: "INVALID_WEEK7_PUBLICATION_RESULT: expected PUBLISHED or NO_OP; event ledger returned no recognized result."
+            - release_week7_publication_lock:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "run-operation"
+                            - "release_week7_lock"
+                            - "--args"
+                            - ${release_args}
+                            - "--target"
+                            - "dev"
+                result: release_operation
+            - return_publication_result:
+                return:
+                  status: ${publication_status}
+                  acquire_operation: ${acquire_operation.name}
+                  dbt_build_operation: ${dbt_build_operation.name}
+                  publish_operation: ${publish_operation.name}
+                  release_operation: ${release_operation.name}
+                  silver_operation: ${silver_operation.name}
+        except:
+          as: workflow_error
+          steps:
+            - best_effort_release_after_error:
+                try:
+                  steps:
+                    - release_lock_after_error:
+                        call: googleapis.run.v2.projects.locations.jobs.run
+                        args:
+                          name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                          body:
+                            overrides:
+                              containerOverrides:
+                                - name: "dbt"
+                                  args:
+                                    - "run-operation"
+                                    - "release_week7_lock"
+                                    - "--args"
+                                    - ${release_args}
+                                    - "--target"
+                                    - "dev"
+                        result: error_release_operation
+                except:
+                  as: release_error
+                  steps:
+                    - prepare_release_error_log:
+                        assign:
+                          - release_error_log:
+                              status: LOCK_RELEASE_FAILED
+                              workflow_run_id: ${workflow_run_id}
+                              error_type: ${get_type(release_error)}
+                          - release_error_log_text: ${json.encode_to_string(release_error_log)}
+                    - log_release_error:
+                        call: sys.log
+                        args:
+                          severity: WARNING
+                          text: ${release_error_log_text}
+            - rethrow_original_error:
+                raise: ${workflow_error}
+    - return_overlap_skipped:
+        return:
+          status: OVERLAP_SKIPPED
+          acquire_operation: ${acquire_operation.name}

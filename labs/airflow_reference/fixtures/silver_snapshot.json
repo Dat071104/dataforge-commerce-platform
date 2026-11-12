@@ -1,0 +1,31 @@
+{
+  "fixture_name": "week7-silver-snapshot-v1",
+  "source_high_watermark": 2,
+  "orders": [
+    {
+      "order_id": "LOCAL-W7-ORDER-0001",
+      "order_status": "delivered",
+      "order_net_amount": "100.00",
+      "is_deleted": false,
+      "effective_seq": 1
+    }
+  ],
+  "payment_events": [
+    {
+      "payment_id": "LOCAL-W7-PAYMENT-0001",
+      "order_id": "LOCAL-W7-ORDER-0001",
+      "amount": "80.00",
+      "payment_status": "success",
+      "is_deleted": false,
+      "effective_seq": 1
+    },
+    {
+      "payment_id": "LOCAL-W7-PAYMENT-0002",
+      "order_id": "LOCAL-W7-ORDER-0001",
+      "amount": "20.00",
+      "payment_status": "success",
+      "is_deleted": false,
+      "effective_seq": 2
+    }
+  ]
+}

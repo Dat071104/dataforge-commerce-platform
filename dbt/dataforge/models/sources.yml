@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: week5_silver
+    description: Current-state BigQuery Silver tables published by the Week-5 atomic consumer.
+    database: "{{ target.database }}"
+    schema: silver
+    tables:
+      - name: week5_orders
+        description: One current row per order_id; deletes are soft tombstones.
+      - name: week5_payment_events
+        description: One current row per payment_id; deletes are soft tombstones.
+
+  - name: week5_ops
+    description: Week-5 append-only operational events and source checkpoints.
+    database: "{{ target.database }}"
+    schema: ops
+    tables:
+      - name: week5_run_events
+        description: Run status events emitted by the Week-5 consumer and publisher.
+      - name: pipeline_checkpoints
+        description: Committed source sequence checkpoint for the operational journal.
+
+  - name: week5_gold
+    description: Week-5 published order controls used as an independent same-snapshot comparison.
+    database: "{{ target.database }}"
+    schema: gold
+    tables:
+      - name: week5_order_controls
+        description: Atomic Week-5 current per-order control, including soft-deleted orders.
