@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("no_new_batch", "local_fixture", "retry_once", "invalid_mode")]
+    [ValidateSet("no_new_batch", "local_fixture", "retry_once", "invalid_mode", "scheduler_harness")]
     [string]$Scenario = "no_new_batch"
 )
 
@@ -10,6 +10,13 @@ $logicalDate = "2026-11-11T06:00:00+00:00"
 if ($Scenario -eq "no_new_batch") {
     docker compose --file $composeFile run --rm airflow-reference-test
     exit $LASTEXITCODE
+}
+
+if ($Scenario -eq "scheduler_harness") {
+    $output = docker compose --file $composeFile run --rm airflow-scheduler-harness 2>&1
+    $exitCode = $LASTEXITCODE
+    $output | Write-Output
+    exit $exitCode
 }
 
 $conf = switch ($Scenario) {

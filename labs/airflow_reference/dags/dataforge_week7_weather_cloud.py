@@ -1,8 +1,8 @@
 """Opt-in Airflow 3 integration DAG for the Mini-project 3 weather slice.
 
-The DAG is paused on creation and performs no cloud access unless a DagRun is
-explicitly started with ``{"mode": "cloud_integration"}``. The local fixture
-DAG remains isolated and unchanged.
+Scheduled and manual dates come from validated Airflow Params. Cloud execution
+also requires the independent DATAFORGE_WEATHER_CLOUD_ENABLED=true runtime
+switch; the local fixture DAG remains isolated and unchanged.
 """
 
 from __future__ import annotations
@@ -16,17 +16,23 @@ from datetime import timedelta
 from typing import Any
 
 import pendulum
-from airflow.sdk import BaseSensorOperator, dag, get_current_context, task
-from airflow.sdk.exceptions import AirflowException, AirflowFailException
+from airflow.sdk import Param, dag, get_current_context, task
+from airflow.sdk.exceptions import AirflowException, AirflowFailException, AirflowSkipException
 from dataforge_week7_weather_logic import (
     BRONZE_BUCKET,
     PROJECT_ID,
     PROVINCES,
     REGION,
     ContractError,
+    ReceiptNotFound,
+    ReceiptTimeout,
+    cloud_opt_in_enabled,
     invocation_receipt_object,
+    is_retryable_cloud_operation_error,
+    is_retryable_http_status,
     resolve_request,
     validate_execution_receipt,
+    wait_for_execution_receipt,
     weather_dbt_vars_argument,
 )
 
@@ -43,10 +49,36 @@ _CLOUD_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 _CLOUD_RUN_TASK_TIMEOUT = timedelta(minutes=40)
 _CLOUD_RUN_POLL_SECONDS = 10
 _CLOUD_RUN_POLL_TIMEOUT_SECONDS = 35 * 60
+_CLOUD_RUN_POLL_TRANSIENT_RETRIES = 2
+_CLOUD_RUN_OPERATION_PREFIX = f"projects/{PROJECT_ID}/locations/{REGION}/operations/"
 _ALLOWED_JOB_NAMES = {INGEST_JOB, DBT_JOB}
 _AIRFLOW_CALLER = re.compile(
     rf"^dataforge-week7-airflow@{re.escape(PROJECT_ID)}\.iam\.gserviceaccount\.com$"
 )
+
+
+def _require_cloud_authorization() -> None:
+    """Enforce an independent, explicit runtime opt-in and fixed target identity."""
+    try:
+        enabled = cloud_opt_in_enabled(os.environ.get("DATAFORGE_WEATHER_CLOUD_ENABLED"))
+    except ContractError as exc:
+        raise AirflowFailException(str(exc)) from exc
+    if not enabled:
+        raise AirflowSkipException(
+            "DISABLED: cloud execution is off; this scheduled/manual run made no cloud API calls"
+        )
+
+    configured_project = os.environ.get("DATAFORGE_WEATHER_PROJECT_ID", PROJECT_ID)
+    configured_region = os.environ.get("DATAFORGE_WEATHER_REGION", REGION)
+    if configured_project != PROJECT_ID or configured_region != REGION:
+        raise AirflowFailException("cloud execution target is outside the approved project/region")
+    target_principal = os.environ.get("DATAFORGE_AIRFLOW_IMPERSONATION_SERVICE_ACCOUNT", "")
+    if not _AIRFLOW_CALLER.fullmatch(target_principal):
+        raise AirflowFailException("the configured Airflow caller identity is not approved")
+    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") != GOOGLE_APPLICATION_CREDENTIALS_PATH:
+        raise AirflowFailException("cloud mode requires the explicit read-only keyless ADC mount")
+    if not os.path.isfile(GOOGLE_APPLICATION_CREDENTIALS_PATH):
+        raise AirflowFailException("the explicit keyless ADC file is unavailable")
 
 
 def local_failure_log(context: dict[str, Any]) -> None:
@@ -55,12 +87,14 @@ def local_failure_log(context: dict[str, Any]) -> None:
     dag_run = context.get("dag_run")
     exception = context.get("exception")
     receipt = {
-        "hook": "LOCAL_AIRFLOW_LOG_ONLY",
+        "event_type": "PIPELINE_FAILED",
+        "terminal_state": "FAILED",
         "dag_id": getattr(dag_run, "dag_id", None),
-        "run_id": getattr(dag_run, "run_id", None),
+        "workflow_run_id": getattr(dag_run, "run_id", None),
         "task_id": getattr(task_instance, "task_id", None),
         "try_number": getattr(task_instance, "try_number", None),
-        "exception_type": type(exception).__name__ if exception is not None else None,
+        "error_class": type(exception).__name__ if exception is not None else None,
+        "event_destination": "local_airflow_log_only",
         "external_notification_sent": False,
     }
     _LOGGER.error("DATAFORGE_AIRFLOW_WEATHER_FAILURE %s", json.dumps(receipt, sort_keys=True))
@@ -68,17 +102,8 @@ def local_failure_log(context: dict[str, Any]) -> None:
 
 def _impersonated_credentials():
     """Load one explicitly mounted keyless ADC source and impersonate the scoped caller."""
-    configured_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-    if configured_path != GOOGLE_APPLICATION_CREDENTIALS_PATH:
-        raise AirflowFailException(
-            "cloud mode requires the explicit read-only keyless ADC mount"
-        )
-    if not os.path.isfile(GOOGLE_APPLICATION_CREDENTIALS_PATH):
-        raise AirflowFailException("the explicit keyless ADC file is unavailable")
-
+    _require_cloud_authorization()
     target_principal = os.environ.get("DATAFORGE_AIRFLOW_IMPERSONATION_SERVICE_ACCOUNT", "")
-    if not _AIRFLOW_CALLER.fullmatch(target_principal):
-        raise AirflowFailException("the configured Airflow caller identity is not approved")
 
     try:
         import google.auth
@@ -106,6 +131,45 @@ def _authorized_session():
     return AuthorizedSession(_impersonated_credentials())
 
 
+def _raise_cloud_http_failure(action: str, status_code: int) -> None:
+    message = f"{action} failed (HTTP {status_code})"
+    if is_retryable_http_status(status_code):
+        raise AirflowException(message)
+    raise AirflowFailException(message)
+
+
+def _raise_google_api_failure(action: str, error: Exception) -> None:
+    """Map Google API transport/service errors to bounded Airflow retry classes."""
+    from google.api_core.exceptions import (
+        DeadlineExceeded,
+        GatewayTimeout,
+        GoogleAPICallError,
+        InternalServerError,
+        RetryError,
+        ServiceUnavailable,
+        TooManyRequests,
+    )
+    from requests.exceptions import RequestException
+
+    message = f"{action} failed; inspect the task log for its redacted contract status"
+    if isinstance(
+        error,
+        (
+            DeadlineExceeded,
+            GatewayTimeout,
+            InternalServerError,
+            RetryError,
+            ServiceUnavailable,
+            TooManyRequests,
+            RequestException,
+        ),
+    ):
+        raise AirflowException(message) from error
+    if isinstance(error, GoogleAPICallError):
+        raise AirflowFailException(message) from error
+    raise AirflowFailException(f"{action} failed with a terminal configuration or contract error") from error
+
+
 def _verify_cloud_scheduler_is_inactive() -> dict[str, str]:
     """Require the GCP schedule to be paused or absent before Airflow invokes jobs."""
     resource = (
@@ -118,9 +182,7 @@ def _verify_cloud_scheduler_is_inactive() -> dict[str, str]:
         _LOGGER.info("DATAFORGE_AIRFLOW_WEATHER_SCHEDULER_PREFLIGHT %s", json.dumps(result))
         return result
     if response.status_code != 200:
-        raise AirflowFailException(
-            f"could not verify the GCP schedule is inactive (HTTP {response.status_code})"
-        )
+        _raise_cloud_http_failure("GCP schedule inactivity check", response.status_code)
     try:
         state = response.json().get("state")
     except (AttributeError, ValueError) as exc:
@@ -144,107 +206,184 @@ def _execute_cloud_run_job(job_name: str, args: list[str]) -> dict[str, str]:
     session = _authorized_session()
     resource = f"projects/{PROJECT_ID}/locations/{REGION}/jobs/{job_name}"
     run_url = f"https://run.googleapis.com/v2/{resource}:run"
-    response = session.post(
-        run_url,
-        json={"overrides": {"containerOverrides": [{"args": args}]}},
-        timeout=(10, 60),
-    )
-    if response.status_code not in {200, 201}:
-        raise AirflowException(
-            f"Cloud Run job start failed for {job_name} (HTTP {response.status_code})"
+    try:
+        from google.auth.exceptions import GoogleAuthError
+        from requests.exceptions import RequestException
+
+        response = session.post(
+            run_url,
+            json={"overrides": {"containerOverrides": [{"args": args}]}},
+            timeout=(10, 60),
         )
+    except RequestException as exc:
+        # Cloud Run's run endpoint has no caller-supplied idempotency token. The
+        # Airflow retry reuses the same invocation/run identity, so committed
+        # data is replay safe, but the service may have accepted the prior POST.
+        raise AirflowException(
+            "Cloud Run job start had a transient transport failure; retry uses the stable run identity"
+        ) from exc
+    except GoogleAuthError as exc:
+        raise AirflowFailException("Cloud Run credentials or impersonation failed") from exc
+    except AirflowFailException:
+        raise
+    if response.status_code not in {200, 201}:
+        _raise_cloud_http_failure(f"Cloud Run job start for {job_name}", response.status_code)
     try:
         operation = response.json()
         operation_name = operation["name"]
-    except (AttributeError, KeyError, ValueError) as exc:
-        raise AirflowException("Cloud Run returned a malformed operation identity") from exc
-    if not isinstance(operation_name, str) or not operation_name.startswith(
-        f"projects/{PROJECT_ID}/locations/{REGION}/operations/"
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        raise AirflowFailException("Cloud Run returned a malformed operation identity") from exc
+    if not isinstance(operation, dict):
+        raise AirflowFailException("Cloud Run operation response is not a JSON object")
+    if (
+        not isinstance(operation_name, str)
+        or not operation_name.startswith(_CLOUD_RUN_OPERATION_PREFIX)
+        or not operation_name.removeprefix(_CLOUD_RUN_OPERATION_PREFIX)
+        or "/" in operation_name.removeprefix(_CLOUD_RUN_OPERATION_PREFIX)
     ):
         raise AirflowFailException("Cloud Run operation is outside the approved project/region")
 
     operation_url = f"https://run.googleapis.com/v2/{operation_name}"
     deadline = time.monotonic() + _CLOUD_RUN_POLL_TIMEOUT_SECONDS
+    transient_poll_failures = 0
     while time.monotonic() < deadline:
-        poll = session.get(operation_url, timeout=(10, 30))
+        try:
+            from google.auth.exceptions import GoogleAuthError
+            from requests.exceptions import RequestException
+
+            poll = session.get(operation_url, timeout=(10, 30))
+        except RequestException as exc:
+            transient_poll_failures += 1
+            if transient_poll_failures > _CLOUD_RUN_POLL_TRANSIENT_RETRIES:
+                raise AirflowFailException(
+                    "Cloud Run operation polling exhausted bounded transport retries; inspect the execution before replay"
+                ) from exc
+            time.sleep(min(_CLOUD_RUN_POLL_SECONDS, 2**transient_poll_failures))
+            continue
+        except GoogleAuthError as exc:
+            raise AirflowFailException("Cloud Run credentials or impersonation failed while polling") from exc
         if poll.status_code != 200:
-            raise AirflowException(
-                f"Cloud Run operation read failed (HTTP {poll.status_code})"
-            )
+            if is_retryable_http_status(poll.status_code):
+                transient_poll_failures += 1
+                if transient_poll_failures > _CLOUD_RUN_POLL_TRANSIENT_RETRIES:
+                    raise AirflowFailException(
+                        "Cloud Run operation polling exhausted bounded HTTP retries; inspect the execution before replay"
+                    )
+                time.sleep(min(_CLOUD_RUN_POLL_SECONDS, 2**transient_poll_failures))
+                continue
+            _raise_cloud_http_failure("Cloud Run operation read", poll.status_code)
+        transient_poll_failures = 0
         try:
             operation_state = poll.json()
-        except ValueError as exc:
-            raise AirflowException("Cloud Run returned malformed operation state") from exc
+        except (AttributeError, ValueError) as exc:
+            raise AirflowFailException("Cloud Run returned malformed operation state") from exc
+        if not isinstance(operation_state, dict):
+            raise AirflowFailException("Cloud Run operation state is not a JSON object")
+        if not isinstance(operation_state.get("done"), bool):
+            raise AirflowFailException("Cloud Run operation state has no boolean done flag")
         if operation_state.get("done") is True:
             if operation_state.get("error"):
-                raise AirflowException(
-                    f"Cloud Run job {job_name} failed; inspect its execution in Cloud Logging"
+                if is_retryable_cloud_operation_error(operation_state["error"]):
+                    raise AirflowException(
+                        f"Cloud Run job {job_name} failed with a transient operation status; retry uses the stable run identity"
+                    )
+                raise AirflowFailException(
+                    f"Cloud Run job {job_name} failed with a terminal operation status; inspect its execution in Cloud Logging"
                 )
-            execution_name = operation_state.get("response", {}).get("name", "")
-            if execution_name and not execution_name.startswith(
+            execution_response = operation_state.get("response")
+            if not isinstance(execution_response, dict):
+                raise AirflowFailException("Cloud Run completion response is malformed")
+            execution_name = execution_response.get("name", "")
+            expected_execution_prefix = (
                 f"projects/{PROJECT_ID}/locations/{REGION}/jobs/{job_name}/executions/"
+            )
+            if (
+                not isinstance(execution_name, str)
+                or not execution_name.startswith(expected_execution_prefix)
+                or not execution_name.removeprefix(expected_execution_prefix)
+                or "/" in execution_name.removeprefix(expected_execution_prefix)
             ):
                 raise AirflowFailException("Cloud Run execution identity is out of scope")
             result = {
                 "job_name": job_name,
                 "operation_name": operation_name,
-                "execution_name": execution_name or operation_name,
+                "execution_name": execution_name,
             }
             _LOGGER.info("DATAFORGE_AIRFLOW_WEATHER_CLOUD_RUN %s", json.dumps(result))
             return result
         time.sleep(_CLOUD_RUN_POLL_SECONDS)
-    raise AirflowException(
-        f"Cloud Run job {job_name} exceeded the bounded operation wait"
+    raise AirflowFailException(
+        f"Cloud Run job {job_name} exceeded the bounded operation wait; inspect the execution before replay"
     )
 
 
-class GCSInvocationReceiptSensor(BaseSensorOperator):
-    """Reschedule sensor for one immutable Mini3 invocation receipt in private GCS."""
-
-    template_fields = ("invocation_id",)
-
-    def __init__(
-        self,
-        *,
-        invocation_id: str,
-        bucket: str = BRONZE_BUCKET,
-        **kwargs: Any,
-    ) -> None:
-        if bucket != BRONZE_BUCKET:
-            raise ValueError("sensor bucket must match the approved private Bronze bucket")
-        # Airflow merges DAG default_args into **kwargs before calling custom
-        # operators; assign these values instead of passing duplicate keywords.
-        kwargs.update(
-            {
-                "mode": "reschedule",
-                "poke_interval": 20,
-                "timeout": 20 * 60,
-                "execution_timeout": timedelta(seconds=45),
-                "exponential_backoff": True,
-                "max_wait": 90,
-            }
+def _read_cloud_execution_receipt(request: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Read the immutable completion object, with a bounded post-job visibility wait."""
+    try:
+        from google.api_core.exceptions import (
+            DeadlineExceeded,
+            GatewayTimeout,
+            GoogleAPICallError,
+            InternalServerError,
+            NotFound,
+            RetryError,
+            ServiceUnavailable,
+            TooManyRequests,
         )
-        super().__init__(**kwargs)
-        self.invocation_id = invocation_id
-        self.bucket = bucket
+        from google.cloud import storage
+        from requests.exceptions import RequestException
 
-    def poke(self, context: dict[str, Any]) -> bool:
-        del context
+        client = storage.Client(
+            project=PROJECT_ID,
+            credentials=_impersonated_credentials(),
+        )
+        blob = client.bucket(BRONZE_BUCKET).blob(
+            invocation_receipt_object(request["invocation_id"])
+        )
+    except (AirflowFailException, AirflowSkipException):
+        raise
+    except Exception as exc:
+        raise AirflowFailException("keyless GCS receipt client setup failed") from exc
+
+    def read_exact_object() -> tuple[dict[str, Any], int]:
         try:
-            from google.api_core.exceptions import NotFound
-            from google.cloud import storage
-
-            client = storage.Client(
-                project=PROJECT_ID,
-                credentials=_impersonated_credentials(),
-            )
-            blob = client.bucket(self.bucket).blob(
-                invocation_receipt_object(self.invocation_id)
-            )
             blob.reload(timeout=30)
-            return blob.generation is not None
-        except NotFound:
-            return False
+        except NotFound as exc:
+            raise ReceiptNotFound from exc
+        except (DeadlineExceeded, GatewayTimeout, InternalServerError, RetryError,
+                ServiceUnavailable, TooManyRequests, RequestException) as exc:
+            raise AirflowException("transient error while reading the GCS execution receipt") from exc
+        except GoogleAPICallError as exc:
+            raise AirflowFailException("GCS execution receipt read was rejected") from exc
+
+        if blob.generation is None:
+            raise AirflowFailException("GCS execution receipt has no object generation")
+        try:
+            generation = int(blob.generation)
+        except (TypeError, ValueError) as exc:
+            raise AirflowFailException("GCS execution receipt generation is malformed") from exc
+        try:
+            content = blob.download_as_text(
+                if_generation_match=generation,
+                timeout=30,
+            )
+            value = json.loads(content)
+        except (DeadlineExceeded, GatewayTimeout, InternalServerError, RetryError,
+                ServiceUnavailable, TooManyRequests, RequestException) as exc:
+            raise AirflowException("transient error while downloading the GCS execution receipt") from exc
+        except GoogleAPICallError as exc:
+            raise AirflowFailException("exact-generation GCS receipt download was rejected") from exc
+        except (TypeError, ValueError) as exc:
+            raise AirflowFailException("GCS execution receipt is not valid JSON") from exc
+        return value, generation
+
+    try:
+        return wait_for_execution_receipt(read_exact_object)
+    except ReceiptTimeout as exc:
+        # Retrying this read task cannot re-submit the completed Cloud Run job.
+        raise AirflowException(str(exc)) from exc
+    except ContractError as exc:
+        raise AirflowFailException(str(exc)) from exc
 
 
 @dag(
@@ -257,6 +396,14 @@ class GCSInvocationReceiptSensor(BaseSensorOperator):
     max_active_tasks=4,
     dagrun_timeout=timedelta(hours=2),
     is_paused_upon_creation=True,
+    params={
+        "mode": Param("scheduled", type="string", enum=["scheduled", "manual"]),
+        "observation_date": Param(
+            None,
+            type=["null", "string"],
+            pattern=r"^\d{4}-\d{2}-\d{2}$",
+        ),
+    },
     default_args={
         "owner": "dataforge-week7-reference",
         "depends_on_past": False,
@@ -277,16 +424,14 @@ def dataforge_week7_weather_cloud():
         context = get_current_context()
         dag_run = context["dag_run"]
         logical_date = context["logical_date"].in_timezone(TIMEZONE)
-        latest_safe_date = pendulum.now(TIMEZONE).date() - timedelta(
-            days=7
-        )
+        data_interval_end = context["data_interval_end"].in_timezone(TIMEZONE)
         try:
             request = resolve_request(
-                conf=getattr(dag_run, "conf", None) or {},
+                params=context.get("params", {}),
                 dag_id=DAG_ID,
                 run_id=dag_run.run_id,
                 logical_date=logical_date,
-                latest_safe_date=latest_safe_date,
+                data_interval_end=data_interval_end,
             )
         except ContractError as exc:
             raise AirflowFailException(str(exc)) from exc
@@ -298,14 +443,41 @@ def dataforge_week7_weather_cloud():
                     "provinces": request["provinces"],
                     "invocation_id": request["invocation_id"],
                     "source_settling_lag_days": 7,
-                    "mode": "cloud_integration",
+                    "mode": request["mode"],
                 },
                 sort_keys=True,
             ),
         )
         return request
 
-    @task(task_id="verify_gcp_schedule_paused", retries=0)
+    @task(task_id="authorize_cloud_execution", retries=0)
+    def authorize_cloud_execution(request: dict[str, Any]) -> dict[str, str]:
+        try:
+            _require_cloud_authorization()
+        except AirflowSkipException:
+            _LOGGER.info(
+                "DATAFORGE_AIRFLOW_WEATHER_NO_OP %s",
+                json.dumps(
+                    {
+                        "status": "DISABLED",
+                        "mode": request["mode"],
+                        "observation_date": request["observation_date"],
+                        "invocation_id": request["invocation_id"],
+                        "reason": "DATAFORGE_WEATHER_CLOUD_ENABLED is false or unset",
+                    },
+                    sort_keys=True,
+                ),
+            )
+            raise
+        result = {
+            "status": "AUTHORIZED",
+            "project_id": PROJECT_ID,
+            "region": REGION,
+        }
+        _LOGGER.info("DATAFORGE_AIRFLOW_WEATHER_AUTHORIZED %s", json.dumps(result))
+        return result
+
+    @task(task_id="verify_gcp_schedule_paused", retries=1)
     def verify_gcp_schedule_paused() -> dict[str, str]:
         return _verify_cloud_scheduler_is_inactive()
 
@@ -326,29 +498,7 @@ def dataforge_week7_weather_cloud():
 
     @task(task_id="read_execution_receipt")
     def read_execution_receipt(request: dict[str, Any]) -> dict[str, Any]:
-        try:
-            from google.cloud import storage
-
-            client = storage.Client(
-                project=PROJECT_ID,
-                credentials=_impersonated_credentials(),
-            )
-            blob = client.bucket(BRONZE_BUCKET).blob(
-                invocation_receipt_object(request["invocation_id"])
-            )
-            blob.reload(timeout=30)
-            if blob.generation is None:
-                raise AirflowFailException("GCS execution receipt has no object generation")
-            generation = int(blob.generation)
-            content = blob.download_as_text(
-                if_generation_match=generation,
-                timeout=30,
-            )
-            value = json.loads(content)
-        except AirflowFailException:
-            raise
-        except Exception as exc:
-            raise AirflowException("could not read the exact GCS execution receipt") from exc
+        value, generation = _read_cloud_execution_receipt(request)
 
         try:
             receipt = validate_execution_receipt(
@@ -407,21 +557,6 @@ def dataforge_week7_weather_cloud():
             DBT_JOB,
             [
                 "build",
-                "--target",
-                "weather_prod",
-                "--select",
-                "tag:weather_mini3",
-                "--vars",
-                weather_dbt_vars_argument(request["observation_date"]),
-            ],
-        )
-
-    @task(task_id="dbt_weather_test", execution_timeout=_CLOUD_RUN_TASK_TIMEOUT)
-    def dbt_weather_test(request: dict[str, Any]) -> dict[str, str]:
-        return _execute_cloud_run_job(
-            DBT_JOB,
-            [
-                "test",
                 "--target",
                 "weather_prod",
                 "--select",
@@ -497,7 +632,7 @@ def dataforge_week7_weather_cloud():
             )
             row = next(iter(job.result(timeout=180)))
         except Exception as exc:
-            raise AirflowException("published weather Gold verification query failed") from exc
+            _raise_google_api_failure("published weather Gold verification query", exc)
 
         result = {
             "query_job_id": job.job_id,
@@ -525,7 +660,6 @@ def dataforge_week7_weather_cloud():
         landing: dict[str, str],
         landing_reconciliation: dict[str, str],
         dbt_build: dict[str, str],
-        dbt_test: dict[str, str],
         publish: dict[str, str],
         gold: dict[str, Any],
     ) -> dict[str, Any]:
@@ -551,7 +685,6 @@ def dataforge_week7_weather_cloud():
                 "landing": landing["execution_name"],
                 "landing_reconciliation": landing_reconciliation["execution_name"],
                 "dbt_build": dbt_build["execution_name"],
-                "dbt_test": dbt_test["execution_name"],
                 "publish": publish["execution_name"],
             },
             "gold_verification": gold,
@@ -571,24 +704,18 @@ def dataforge_week7_weather_cloud():
         }
 
     request = resolve_cloud_request()
+    authorization = authorize_cloud_execution(request)
     scheduler_state = verify_gcp_schedule_paused()
     ingest = execute_api_ingest(request)
     scheduler_state >> ingest
-
-    wait_for_invocation_receipt = GCSInvocationReceiptSensor(
-        task_id="wait_for_gcs_invocation_receipt",
-        invocation_id="{{ ti.xcom_pull(task_ids='resolve_cloud_request')['invocation_id'] }}",
-        bucket=BRONZE_BUCKET,
-    )
-    request >> wait_for_invocation_receipt
-    ingest >> wait_for_invocation_receipt
+    authorization >> scheduler_state
 
     manifest = read_execution_receipt(request)
-    wait_for_invocation_receipt >> manifest
+    request >> manifest
+    ingest >> manifest
     landing = load_bigquery_landing(manifest)
     landing_reconciliation = verify_landing_reconciliation(manifest)
     build = dbt_weather_build(request)
-    test = dbt_weather_test(request)
     publish = publish_weather_gold(request)
     gold = verify_published_gold(request)
     execution_receipt = record_airflow_execution_receipt(
@@ -599,12 +726,11 @@ def dataforge_week7_weather_cloud():
         landing,
         landing_reconciliation,
         build,
-        test,
         publish,
         gold,
     )
 
-    landing >> landing_reconciliation >> build >> test >> publish >> gold
+    landing >> landing_reconciliation >> build >> publish >> gold
     gold >> execution_receipt
 
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 import sys
 import unittest
 from copy import deepcopy
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dags"))
 
@@ -14,10 +15,16 @@ from dataforge_week7_weather_logic import (
     PROVINCES,
     WEATHER_PREFIX,
     ContractError,
+    ReceiptNotFound,
+    ReceiptTimeout,
+    cloud_opt_in_enabled,
     invocation_receipt_object,
+    is_retryable_cloud_operation_error,
+    is_retryable_http_status,
     make_invocation_id,
     resolve_request,
     validate_execution_receipt,
+    wait_for_execution_receipt,
     weather_dbt_vars_argument,
 )
 
@@ -57,74 +64,166 @@ class WeatherRequestContractTests(unittest.TestCase):
             ):
                 weather_dbt_vars_argument(invalid)
 
-    def test_cloud_mode_requires_explicit_opt_in_and_rejects_extra_configuration(self) -> None:
-        now = datetime(2026, 11, 12, 2, tzinfo=timezone.utc)
-        with self.assertRaisesRegex(ContractError, "cloud_integration"):
-            resolve_request(
-                conf={},
-                dag_id="dataforge_week7_weather_cloud",
-                run_id="manual__offline",
-                logical_date=now,
-                latest_safe_date=date(2026, 11, 5),
-            )
+    def test_scheduled_empty_params_are_valid_and_unsupported_keys_fail_closed(self) -> None:
+        interval_end = datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+        request = resolve_request(
+            params={},
+            dag_id="dataforge_week7_weather_cloud",
+            run_id="scheduled__2026-11-12T09:00:00+07:00",
+            logical_date=interval_end,
+            data_interval_end=interval_end,
+        )
+        self.assertEqual(request["mode"], "scheduled")
+        self.assertEqual(request["observation_date"], "2026-11-06")
+
         with self.assertRaisesRegex(ContractError, "unsupported keys"):
             resolve_request(
-                conf={"mode": "cloud_integration", "credentials": "never-allowed"},
+                params={"mode": "manual", "credentials": "never-allowed"},
                 dag_id="dataforge_week7_weather_cloud",
                 run_id="manual__offline",
-                logical_date=now,
-                latest_safe_date=date(2026, 11, 5),
+                logical_date=interval_end,
+                data_interval_end=interval_end,
             )
 
-    def test_safe_request_uses_fixed_project_allowlist_and_stable_path_safe_id(self) -> None:
+    def test_manual_date_override_uses_fixed_project_allowlist_and_stable_id(self) -> None:
+        interval_end = datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+        params = {"mode": "manual", "observation_date": "2026-11-05"}
         request = resolve_request(
-            conf={"mode": "cloud_integration", "observation_date": "2026-11-05"},
+            params=params,
             dag_id="dataforge_week7_weather_cloud",
             run_id="manual__airflow-test",
-            logical_date=datetime(2026, 11, 12, 2, tzinfo=timezone.utc),
-            latest_safe_date=date(2026, 11, 5),
+            logical_date=interval_end,
+            data_interval_end=interval_end,
+        )
+        replay = resolve_request(
+            params=params,
+            dag_id="dataforge_week7_weather_cloud",
+            run_id="manual__airflow-test",
+            logical_date=interval_end,
+            data_interval_end=interval_end,
         )
         self.assertEqual(request["project_id"], "dataforge-p7-lab-d0f725")
         self.assertEqual(request["region"], "us-central1")
         self.assertEqual(request["provinces"], list(PROVINCES))
         self.assertEqual(request["observation_date"], "2026-11-05")
-        self.assertEqual(request["invocation_id"], make_invocation_id(
-            "dataforge_week7_weather_cloud", "manual__airflow-test"
-        ))
-        self.assertEqual(len(request), 7)
+        self.assertEqual(request["invocation_id"], replay["invocation_id"])
+        self.assertEqual(
+            request["invocation_id"],
+            make_invocation_id("dataforge_week7_weather_cloud", "manual__airflow-test"),
+        )
+        self.assertEqual(len(request), 8)
         self.assertEqual(
             invocation_receipt_object(request["invocation_id"]),
             f"{WEATHER_PREFIX}/executions/invocation_id={request['invocation_id']}.json",
         )
-
-    def test_default_date_uses_settled_logical_date_and_requires_timezone(self) -> None:
-        request = resolve_request(
-            conf={"mode": "cloud_integration"},
+        duplicate = resolve_request(
+            params=params,
             dag_id="dataforge_week7_weather_cloud",
-            run_id="scheduled__hcm",
-            logical_date=datetime(2026, 11, 12, 9, tzinfo=timezone.utc),
-            latest_safe_date=date(2026, 11, 5),
+            run_id="manual__airflow-test__duplicate",
+            logical_date=interval_end,
+            data_interval_end=interval_end,
         )
-        self.assertEqual(request["observation_date"], "2026-11-05")
+        self.assertNotEqual(request["invocation_id"], duplicate["invocation_id"])
+
+    def test_default_date_uses_fixed_interval_end_not_wall_clock(self) -> None:
+        interval_end = datetime(2026, 11, 13, 2, tzinfo=timezone.utc)
+        request = resolve_request(
+            params={"mode": "scheduled"},
+            dag_id="dataforge_week7_weather_cloud",
+            run_id="scheduled__fixed-interval",
+            logical_date=interval_end,
+            data_interval_end=interval_end,
+        )
+        self.assertEqual(request["observation_date"], "2026-11-06")
         with self.assertRaisesRegex(ContractError, "timezone-aware"):
             resolve_request(
-                conf={"mode": "cloud_integration"},
+                params={"mode": "scheduled"},
                 dag_id="dataforge_week7_weather_cloud",
                 run_id="scheduled__bad-timezone",
                 logical_date=datetime(2026, 11, 12, 9),
-                latest_safe_date=date(2026, 11, 5),
+                data_interval_end=interval_end,
             )
 
-    def test_date_validation_fails_closed_for_new_or_noncanonical_dates(self) -> None:
-        for raw_date in ("2026-11-06", "2026-2-05", "not-a-date", "1939-12-31"):
-            with self.subTest(raw_date=raw_date), self.assertRaises(ContractError):
+    def test_dates_fail_closed_for_scheduled_override_new_and_noncanonical_values(self) -> None:
+        interval_end = datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+        for params in (
+            {"mode": "scheduled", "observation_date": "2026-11-05"},
+            {"mode": "invalid"},
+            {"mode": []},
+            {"mode": "manual", "project_id": "other-project"},
+            {"mode": "manual", "bucket": "public-bucket"},
+            {"mode": "manual", "observation_date": "2026-11-07"},
+            {"mode": "manual", "observation_date": "2026-2-05"},
+            {"mode": "manual", "observation_date": "not-a-date"},
+            {"mode": "manual", "observation_date": "1939-12-31"},
+        ):
+            with self.subTest(params=params), self.assertRaises(ContractError):
                 resolve_request(
-                    conf={"mode": "cloud_integration", "observation_date": raw_date},
+                    params=params,
                     dag_id="dataforge_week7_weather_cloud",
                     run_id="manual__invalid-date",
-                    logical_date=datetime(2026, 11, 12, 2, tzinfo=timezone.utc),
-                    latest_safe_date=date(2026, 11, 5),
+                    logical_date=interval_end,
+                    data_interval_end=interval_end,
                 )
+
+
+class RuntimeSafetyContractTests(unittest.TestCase):
+    def test_cloud_authorization_defaults_off_and_rejects_ambiguous_values(self) -> None:
+        for value in (None, "", "false", "FALSE"):
+            with self.subTest(value=value):
+                self.assertFalse(cloud_opt_in_enabled(value))
+        self.assertTrue(cloud_opt_in_enabled("true"))
+        with self.assertRaisesRegex(ContractError, "must be exactly"):
+            cloud_opt_in_enabled("yes")
+
+    def test_http_retry_classifier_only_retries_transient_statuses(self) -> None:
+        for status in (408, 429, 500, 503, 599):
+            with self.subTest(status=status):
+                self.assertTrue(is_retryable_http_status(status))
+        for status in (200, 400, 401, 403, 404, 422, 600):
+            with self.subTest(status=status):
+                self.assertFalse(is_retryable_http_status(status))
+        self.assertFalse(is_retryable_http_status(True))
+
+    def test_cloud_operation_retry_classifier_uses_only_transient_rpc_codes(self) -> None:
+        for code in (4, 8, 13, 14):
+            with self.subTest(code=code):
+                self.assertTrue(is_retryable_cloud_operation_error({"code": code}))
+        for error in ({"code": 3}, {"code": 7}, {"code": "14"}, None, "error"):
+            with self.subTest(error=error):
+                self.assertFalse(is_retryable_cloud_operation_error(error))
+
+    def test_receipt_wait_handles_delayed_object_with_bounded_polls(self) -> None:
+        clock = Mock(side_effect=[0, 0, 1, 1, 2])
+        sleeper = Mock()
+        read = Mock(side_effect=[ReceiptNotFound(), ReceiptNotFound(), {"status": "COMPLETE"}])
+        result = wait_for_execution_receipt(
+            read,
+            timeout_seconds=5,
+            poll_interval_seconds=1,
+            monotonic=clock,
+            sleep=sleeper,
+        )
+        self.assertEqual(result, {"status": "COMPLETE"})
+        self.assertEqual(read.call_count, 3)
+        self.assertEqual(sleeper.call_count, 2)
+
+    def test_missing_receipt_times_out_and_unexpected_reader_errors_are_not_retried(self) -> None:
+        ticks = iter([0.0, 1.0, 2.0, 3.0])
+        missing = Mock(side_effect=ReceiptNotFound())
+        with self.assertRaisesRegex(ReceiptTimeout, "timed out"):
+            wait_for_execution_receipt(
+                missing,
+                timeout_seconds=2,
+                poll_interval_seconds=1,
+                monotonic=lambda: next(ticks),
+                sleep=lambda _seconds: None,
+            )
+
+        corrupt = Mock(side_effect=ValueError("bad JSON"))
+        with self.assertRaisesRegex(ValueError, "bad JSON"):
+            wait_for_execution_receipt(corrupt, monotonic=lambda: 0.0, sleep=lambda _: None)
+        self.assertEqual(corrupt.call_count, 1)
 
 
 class InvocationReceiptTests(unittest.TestCase):
@@ -164,6 +263,8 @@ class InvocationReceiptTests(unittest.TestCase):
             ("provinces", ["HCM", "HN", "OTHER"]),
             ("manifest_generation", -1),
             ("manifest_uri", "gs://public-bucket/manifest.json"),
+            ("request_id", "not-a-digest"),
+            ("source_sha256", "not-a-digest"),
         ):
             candidate = deepcopy(base)
             candidate[field] = value

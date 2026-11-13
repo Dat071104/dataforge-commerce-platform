@@ -14,9 +14,10 @@ def test_controlled_alert_failure_is_manual_and_happens_before_publication() -> 
     assert 'test_fail_before_publish: ${default(map.get(args, "test_fail_before_publish"), false)}' in workflow
     assert '${test_fail_before_publish and trigger != "manual"}' in workflow
     assert '${test_fail_before_publish and no_new_batch}' in workflow
-    assert workflow.index("invoke_explicit_dbt_tests") < workflow.index(
+    assert workflow.index("invoke_dbt_weather_build_and_tests") < workflow.index(
         "branch_controlled_failure_test"
     )
+    assert "invoke_explicit_dbt_tests" not in workflow
     assert workflow.index("branch_controlled_failure_test") < workflow.index(
         "invoke_guarded_weather_publication"
     )

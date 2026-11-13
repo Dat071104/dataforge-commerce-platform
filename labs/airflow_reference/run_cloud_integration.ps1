@@ -25,7 +25,7 @@ if (-not [string]::IsNullOrWhiteSpace($ObservationDate) -and
     throw "ObservationDate must use YYYY-MM-DD."
 }
 
-$conf = @{ mode = "cloud_integration" }
+$conf = @{ mode = "manual" }
 if (-not [string]::IsNullOrWhiteSpace($ObservationDate)) {
     $conf.observation_date = $ObservationDate
 }
@@ -61,6 +61,7 @@ try {
         "--env", "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////tmp/airflow/airflow.db",
         "--env", "PYTHONPATH=/workspace/dags",
         "--env", "GOOGLE_APPLICATION_CREDENTIALS=$containerAdc",
+        "--env", "DATAFORGE_WEATHER_CLOUD_ENABLED=true",
         "--env", "DATAFORGE_AIRFLOW_IMPERSONATION_SERVICE_ACCOUNT=$callerServiceAccount",
         "--mount", "type=bind,source=$dagsDirectory,target=/workspace/dags,readonly",
         "--mount", "type=bind,source=$resolvedAdc,target=$containerAdc,readonly",
