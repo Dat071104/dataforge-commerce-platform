@@ -1,0 +1,85 @@
+{
+  "authoritative_week5_tables_touched": false,
+  "current_version_count": 1,
+  "dbt_phases": [
+    {
+      "action": "snapshot",
+      "exit_code": 0,
+      "phase": "initial"
+    },
+    {
+      "action": "snapshot",
+      "exit_code": 0,
+      "phase": "status_update"
+    },
+    {
+      "action": "snapshot",
+      "exit_code": 0,
+      "phase": "soft_delete_tombstone"
+    },
+    {
+      "action": "test",
+      "exit_code": 0,
+      "phase": "history_assertions"
+    },
+    {
+      "action": "snapshot",
+      "exit_code": 0,
+      "phase": "unchanged_replay"
+    },
+    {
+      "action": "test",
+      "exit_code": 0,
+      "phase": "unchanged_replay_assertions"
+    }
+  ],
+  "executed_at_utc": "2026-11-12T08:39:06.663814+00:00",
+  "expected_versions": 3,
+  "input_table": "dataforge-p7-lab-d0f725.dbt_scd2_proof_input.orders",
+  "location": "us-central1",
+  "observed_versions": [
+    {
+      "business_effective_at": "2024-01-01T00:00:00+00:00",
+      "dbt_valid_from": "2024-01-01T00:00:00+00:00",
+      "dbt_valid_to": "2024-01-02T00:00:00+00:00",
+      "is_deleted": false,
+      "order_amount": "100",
+      "order_status": "CREATED",
+      "updated_at": "2024-01-01T00:00:00+00:00"
+    },
+    {
+      "business_effective_at": "2024-01-02T00:00:00+00:00",
+      "dbt_valid_from": "2024-01-02T00:00:00+00:00",
+      "dbt_valid_to": "2024-01-03T00:00:00+00:00",
+      "is_deleted": false,
+      "order_amount": "100",
+      "order_status": "PROCESSING",
+      "updated_at": "2024-01-02T00:00:00+00:00"
+    },
+    {
+      "business_effective_at": "2024-01-03T00:00:00+00:00",
+      "dbt_valid_from": "2024-01-03T00:00:00+00:00",
+      "dbt_valid_to": null,
+      "is_deleted": true,
+      "order_amount": "100",
+      "order_status": "CANCELLED",
+      "updated_at": "2024-01-03T00:00:00+00:00"
+    }
+  ],
+  "overlap_count": 0,
+  "project_id": "dataforge-p7-lab-d0f725",
+  "query_job_ids": [
+    "8669f4e2-d727-4684-be17-a7399184eb33",
+    "0f2b3d3f-b37c-4a7f-81bd-05d3ba54eae0",
+    "a62b2960-5937-4a30-bdea-c6cd0c24aec3",
+    "685d0ae9-7f57-4986-964f-2bba2798ed64",
+    "f002933f-4294-4efa-9c35-4744c26ba631",
+    "e2876aff-afd3-47b0-9daa-67df7ff4414f"
+  ],
+  "snapshot_table": "dataforge-p7-lab-d0f725.dbt_scd2_proof_history.week7_scd2_proof_history",
+  "source_is_synthetic": true,
+  "source_load_job_id": "ff164a95-a0d2-4cc7-82cb-1ccd28bad8e7",
+  "status": "PASS",
+  "unchanged_replay_added_version": false,
+  "validity_windows_verified": true
+}

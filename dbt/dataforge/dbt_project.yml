@@ -14,6 +14,11 @@ clean-targets:
   - "dbt_packages"
   - "logs"
 
+vars:
+  # Orchestrators override this with the exact settled date before each
+  # weather build. The default intentionally selects no source partitions.
+  weather_observation_date: "1970-01-01"
+
 models:
   dataforge:
     staging:
@@ -25,3 +30,26 @@ models:
     marts:
       +materialized: view
       +tags: ["week7", "marts"]
+    weather:
+      staging:
+        +materialized: view
+        +tags: ["weather_mini3", "staging"]
+      intermediate:
+        +materialized: incremental
+        +incremental_strategy: merge
+        +unique_key: [province_id, observation_date, source, model]
+        +on_schema_change: fail
+        +partition_by:
+          field: observation_date
+          data_type: date
+        +cluster_by: [province_id, source, model]
+        +tags: ["weather_mini3", "silver"]
+      marts:
+        +materialized: view
+        +tags: ["weather_mini3", "gold"]
+
+snapshots:
+  dataforge:
+    week7_scd2_proof_history:
+      +target_schema: dbt_scd2_proof_history
+      +tags: ["week7", "scd2_proof"]

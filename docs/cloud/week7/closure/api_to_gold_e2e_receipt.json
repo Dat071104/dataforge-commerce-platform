@@ -1,0 +1,148 @@
+{
+  "schema_version": "dataforge.week7.p7_4_1.api-to-gold-receipt.v1",
+  "status": "PASS",
+  "recorded_at_local": "2026-11-12",
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "region": "us-central1",
+  "observation_date": "2026-11-05",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "settling_lag_days": 7,
+  "provinces": ["HCM", "HN", "DN"],
+  "provider": "Open-Meteo Historical Weather API",
+  "attribution": "Weather data from Open-Meteo.com Historical Weather API, model ERA5. Selected daily values were transformed to province-level rows.",
+  "source_smoke": {
+    "status": "PASS",
+    "execution_location": "local isolated temporary directory using the Mini1 adapter",
+    "http_statuses": [200, 200, 200],
+    "row_count": 3,
+    "response_sha256_by_province": {
+      "HCM": "83f1e6d0a396e398b02fd1c57eaebbd85db790b565b86c60eb29496e4f4568f2",
+      "HN": "f74ec988d5d851a9cf362a8b0b17b8a35e222e304f592888eddcd9bdc7d583ce",
+      "DN": "61dead04a808febb26456c86af53e3b38b0a17f50403564e1e08f6245c72cc3e"
+    },
+    "canonical_typed_csv_sha256": "f74c63032538326ae82643e18b7b5fce3ebbc65aeb2fb58837c5c90ce8fae107",
+    "raw_local_artifacts_retained": false
+  },
+  "successful_manual_workflow": {
+    "workflow_execution_id": "7e6faf3b-cb65-4347-9c79-ca64ac93cbdb",
+    "state": "SUCCEEDED",
+    "started_at_utc": "2026-11-12T08:09:10.870721867Z",
+    "ended_at_utc": "2026-11-12T08:18:18.185606121Z",
+    "trigger": "manual",
+    "request_id": "3c146fd3c18423804a73969f99f635b12f827f3fd81512607bde09c1f5fc58cf",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/weather_mini3/v1/manifests/observation_date=2026-11-05/request_id=3c146fd3c18423804a73969f99f635b12f827f3fd81512607bde09c1f5fc58cf/manifest.json",
+    "manifest_generation": "1794471054122722",
+    "source_sha256": "12a9d1147c45587852c8ad8e07994ca936bbd5fa7b5859c889cd3d287318b962",
+    "row_count": 3,
+    "publication_version": 2,
+    "published_sha256": "f806e16c6e4da72a654b537bcd640a7c1d2f9b612dd9bb7599fd1ed7d8e67d7a",
+    "ledger_query_job_id": "job_MkV3SoMz-uaw8NDRoTH9AgClN5-C"
+  },
+  "automatic_scheduler_workflow": {
+    "workflow_execution_id": "5028cbfb-e5a2-4596-b663-6d0d964a8c56",
+    "state": "SUCCEEDED",
+    "trigger": "scheduler",
+    "request_id": "4c0e9e5515056720a8bfe10a8f4ed59bffea7e595ca9d9b260aa6a36169e43e7",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/weather_mini3/v1/manifests/observation_date=2026-11-05/request_id=4c0e9e5515056720a8bfe10a8f4ed59bffea7e595ca9d9b260aa6a36169e43e7/manifest.json",
+    "manifest_generation": "1794473792244378",
+    "row_count": 3,
+    "publication_version": 3,
+    "published_sha256": "e9654b9d8e572e70ec4235ecf9f007c62e7b39e9dd313224f110cd8d2ebd47b",
+    "ledger_query_job_id": "job_wMis2rLjA2vRyCtRD0AKx-nDCWfE",
+    "timed_dispatch_receipt": "scheduler_execution_receipt.json"
+  },
+  "airflow_cloud_integration": {
+    "dag_id": "dataforge_week7_weather_cloud",
+    "airflow_run_id": "manual__2026-11-12T09:17:10.037023+00:00",
+    "airflow_receipt_id": "44dcf9562a79445bf7bf460a0508164beecca0bc1833b3bcaef62f668b45ac82",
+    "state": "SUCCESS",
+    "hosting": "Airflow 3.4.0 one-shot Docker run locally; GCP data-plane tasks executed as the dedicated keyless Airflow service account",
+    "request_id": "f0c61c7a30afdd501bf77f3a669d2a842a6bea08d1dd791374dfaa6dc04a4139",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/weather_mini3/v1/manifests/observation_date=2026-11-05/request_id=f0c61c7a30afdd501bf77f3a669d2a842a6bea08d1dd791374dfaa6dc04a4139/manifest.json",
+    "manifest_generation": "1794475149037958",
+    "landing_reconciliation": "3 rows, 3 provinces, 0 duplicate province/date grains",
+    "cloud_run_execution_names": {
+      "ingest": "dataforge-week7-weather-ingest-7xxlh",
+      "landing": "dataforge-week7-weather-ingest-lhxdv",
+      "landing_reconciliation": "dataforge-week7-weather-ingest-mksf9",
+      "dbt_build": "dataforge-week7-weather-dbt-4psv8",
+      "dbt_test": "dataforge-week7-weather-dbt-pqjn8",
+      "publish": "dataforge-week7-weather-dbt-tpdjd"
+    },
+    "gold_verification_query_job_id": "639425cf-3d4a-4edf-a68a-9929ea45c244",
+    "publication_version": 4,
+    "published_sha256": "acdadfc3d1cd8a8d391aea010acf547a73ef47b1e9fa8608c0c01a00d7e2afde",
+    "scheduler_preflight": "ABSENT"
+  },
+  "incremental_full_refresh_parity": {
+    "status": "PASS",
+    "full_refresh_cloud_run_execution": "dataforge-week7-weather-dbt-gsrjg",
+    "full_refresh_target_dataset": "dbt_weather_mini3_full",
+    "incremental_target_dataset": "dbt_weather_mini3",
+    "comparison_observation_date": "2026-11-05",
+    "incremental_rows": 3,
+    "full_refresh_rows": 3,
+    "incremental_only_rows": 0,
+    "full_refresh_only_rows": 0,
+    "comparison_scope": "All 12 published weather model columns; exact row set comparison using EXCEPT DISTINCT in both directions."
+  },
+  "exact_manifest_replay": {
+    "status": "PASS",
+    "cloud_run_execution": "dataforge-week7-weather-ingest-c8rcx",
+    "replayed_request_id": "f0c61c7a30afdd501bf77f3a669d2a842a6bea08d1dd791374dfaa6dc04a4139",
+    "replayed_manifest_generation": "1794475149037958",
+    "landing_rows_after_replay": 3,
+    "distinct_provinces_after_replay": 3,
+    "duplicate_grain_rows_after_replay": 0,
+    "gold_publication_version_after_replay": 4
+  },
+  "controlled_failure": {
+    "workflow_execution_id": "355edf21-c024-4749-af17-c8e53c746581",
+    "status": "FAILED_AS_INJECTED",
+    "request_id": "175ebb6797e6442e2ce9272d2259d85d19b866f7bfd9ce6675fc4afa1368ae6a",
+    "manifest_generation": "1794476447454177",
+    "ledger_error_category": "controlled_failure_test",
+    "injected_after": "dbt build and tests",
+    "stopped_before": "Gold publication",
+    "notification_receipt": "notification_delivery_receipt.md",
+    "gold_version_before_and_after": 4
+  },
+  "live_fail_closed_probes": {
+    "unsettled_observation_date": {
+      "cloud_run_execution": "dataforge-week7-weather-ingest-g4mml",
+      "status": "FAILED_AS_EXPECTED",
+      "input_date": "2026-11-12",
+      "failure_boundary": "date validation before provider request and before invocation receipt creation",
+      "gcs_invocation_receipt_created": false,
+      "gold_pointer_changed": false
+    },
+    "wrong_manifest_generation": {
+      "cloud_run_execution": "dataforge-week7-weather-ingest-6xx87",
+      "status": "FAILED_AS_EXPECTED",
+      "request_id": "f0c61c7a30afdd501bf77f3a669d2a842a6bea08d1dd791374dfaa6dc04a4139",
+      "actual_manifest_generation": "1794475149037958",
+      "requested_generation": "1794475149037959",
+      "failure_boundary": "exact-generation GCS read; Cloud Logging recorded that requested generation 1794475149037959 does not exist for the exact manifest object",
+      "gold_pointer_changed": false
+    }
+  },
+  "current_gold_verification": {
+    "publication_version": 4,
+    "publication_run_id": "airflow-44dcf9562a79445bf7bf460a0508164beecca0bc1833b3bc",
+    "published_sha256": "acdadfc3d1cd8a8d391aea010acf547a73ef47b1e9fa8608c0c01a00d7e2afde",
+    "observation_date": "2026-11-05",
+    "row_count": 3,
+    "province_count": 3,
+    "invalid_metric_count": 0,
+    "verification": "Read-only BigQuery query after the controlled failure, exact replay, and two fail-closed cloud probes."
+  },
+  "source_sha256": "12a9d1147c45587852c8ad8e07994ca936bbd5fa7b5859c889cd3d287318b962",
+  "provider_attribution_url": "https://open-meteo.com/",
+  "limitations": [
+    "The workload demonstrates an educational three-province ERA5 batch, not production-scale or real-time operations.",
+    "The Airflow scheduler and UI were local Docker; the GCP data plane was real.",
+    "Full-refresh parity and exact replay were verified for the bounded observation date, not a multi-year backfill.",
+    "Actual billing-account charges remain unknown; cost estimates are in iam_cost_cleanup.md."
+  ]
+}

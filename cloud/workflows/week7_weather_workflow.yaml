@@ -1,0 +1,458 @@
+main:
+  params: [args]
+  steps:
+    - initialize:
+        assign:
+          - workflow_execution_name: ${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}
+          - workflow_execution_parts: ${text.split(workflow_execution_name, "/")}
+          - workflow_run_id: ${workflow_execution_parts[len(workflow_execution_parts) - 1]}
+          - project_id: ${sys.get_env("DATAFORGE_PROJECT_ID")}
+          - region: ${sys.get_env("DATAFORGE_REGION")}
+          - bronze_bucket: ${sys.get_env("DATAFORGE_BRONZE_BUCKET")}
+          - ingest_job: ${sys.get_env("DATAFORGE_WEATHER_INGEST_JOB")}
+          - dbt_job: ${sys.get_env("DATAFORGE_WEATHER_DBT_JOB")}
+          - trigger: ${default(map.get(args, "trigger"), "manual")}
+          - no_new_batch: ${default(map.get(args, "no_new_batch"), false)}
+          - test_fail_before_publish: ${default(map.get(args, "test_fail_before_publish"), false)}
+          - requested_date: ${default(map.get(args, "observation_date"), "")}
+          - settled_epoch: ${sys.now() - 604800}
+          - settled_timestamp: ${time.format(settled_epoch, "Asia/Ho_Chi_Minh")}
+          - settled_date: ${text.substring(settled_timestamp, 0, 10)}
+          - observation_date: ${if(requested_date == "", settled_date, requested_date)}
+          - invocation_id: ${workflow_run_id}
+          - ledger_table: ${"`" + project_id + ".weather_mini3.weather_execution_ledger`"}
+          - ledger_insert_prefix: ${"INSERT INTO " + ledger_table + " (event_at, workflow_run_id, workflow_execution_name, trigger, observation_date, status, "}
+          - ledger_insert_middle: "request_id, manifest_uri, manifest_generation, source_sha256, row_count, publication_version, published_sha256, error_category) VALUES ("
+          - no_new_batch_ledger_values: ${"CURRENT_TIMESTAMP(), @workflow_run_id, @workflow_execution_name, @trigger, DATE(@observation_date), 'NO_NEW_BATCH', NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL)"}
+          - invocation_receipt: {}
+    - validate_trigger_and_date:
+        switch:
+          - condition: ${trigger != "manual" and trigger != "scheduler"}
+            next: invalid_trigger
+          - condition: ${get_type(no_new_batch) != "boolean"}
+            next: invalid_input
+          - condition: ${get_type(test_fail_before_publish) != "boolean"}
+            next: invalid_input
+          - condition: ${test_fail_before_publish and trigger != "manual"}
+            next: invalid_test_input
+          - condition: ${test_fail_before_publish and no_new_batch}
+            next: invalid_test_input
+          - condition: ${not text.match_regex(observation_date, "^[0-9]{4}-[0-9]{2}-[0-9]{2}$")}
+            next: invalid_input
+          - condition: ${no_new_batch}
+            next: prepare_no_new_batch_log
+    - run_weather_pipeline:
+        try:
+          steps:
+            - prepare_ingest_arguments:
+                assign:
+                  - ingest_args:
+                      - "ingest"
+                      - "--observation-date"
+                      - ${observation_date}
+                      - "--provinces"
+                      - "HCM,HN,DN"
+                      - "--invocation-id"
+                      - ${invocation_id}
+            - invoke_open_meteo_bronze_job:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + ingest_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "weather-ingest"
+                          args: ${ingest_args}
+                result: ingest_operation
+            - read_invocation_receipt:
+                call: googleapis.storage.v1.objects.get
+                args:
+                  bucket: ${bronze_bucket}
+                  object: ${text.url_encode("weather_mini3/v1/executions/invocation_id=" + invocation_id + ".json")}
+                  alt: media
+                result: invocation_receipt
+            - validate_invocation_receipt:
+                switch:
+                  - condition: ${invocation_receipt.schema_version != "dataforge.weather.mini3.execution.v1" or invocation_receipt.status != "COMPLETE" or invocation_receipt.invocation_id != invocation_id or invocation_receipt.observation_date != observation_date or invocation_receipt.row_count != 3 or invocation_receipt.provider != "Open-Meteo" or invocation_receipt.model != "era5" or invocation_receipt.settling_lag_days < 7}
+                    next: invalid_invocation_receipt
+                  - condition: ${len(invocation_receipt.provinces) != 3 or invocation_receipt.provinces[0] != "HCM" or invocation_receipt.provinces[1] != "HN" or invocation_receipt.provinces[2] != "DN"}
+                    next: invalid_invocation_receipt
+                  - condition: ${not text.match_regex(invocation_receipt.request_id, "^[0-9a-f]{64}$") or not text.match_regex(invocation_receipt.source_sha256, "^[0-9a-f]{64}$")}
+                    next: invalid_invocation_receipt
+                  - condition: '${invocation_receipt.manifest_generation <= 0 or not text.match_regex(invocation_receipt.manifest_uri, "^gs://" + bronze_bucket + "/weather_mini3/v1/manifests/.*")}'
+                    next: invalid_invocation_receipt
+            - prepare_landing_arguments:
+                assign:
+                  - landing_args:
+                      - "land"
+                      - "--manifest-uri"
+                      - ${invocation_receipt.manifest_uri}
+                      - "--manifest-generation"
+                      - ${string(invocation_receipt.manifest_generation)}
+            - invoke_typed_bigquery_landing:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + ingest_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "weather-ingest"
+                          args: ${landing_args}
+                result: landing_operation
+            - prepare_weather_dbt_vars:
+                assign:
+                  - weather_dbt_vars:
+                      weather_observation_date: ${observation_date}
+            - encode_weather_dbt_vars:
+                assign:
+                  - weather_dbt_vars_argument: ${json.encode_to_string(weather_dbt_vars)}
+            - invoke_dbt_weather_build_and_tests:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "build"
+                            - "--target"
+                            - "weather_prod"
+                            - "--select"
+                            - "tag:weather_mini3"
+                            - "--vars"
+                            - ${weather_dbt_vars_argument}
+                result: dbt_build_operation
+            - invoke_explicit_dbt_tests:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "test"
+                            - "--target"
+                            - "weather_prod"
+                            - "--select"
+                            - "tag:weather_mini3"
+                            - "--vars"
+                            - ${weather_dbt_vars_argument}
+                result: dbt_test_operation
+            - branch_controlled_failure_test:
+                switch:
+                  - condition: ${test_fail_before_publish}
+                    next: raise_controlled_failure_test
+            - prepare_publication_arguments:
+                assign:
+                  - publication_argument_map:
+                      workflow_run_id: ${workflow_run_id}
+                  - publication_arguments: ${json.encode_to_string(publication_argument_map)}
+            - invoke_guarded_weather_publication:
+                call: googleapis.run.v2.projects.locations.jobs.run
+                args:
+                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
+                  body:
+                    overrides:
+                      containerOverrides:
+                        - name: "dbt"
+                          args:
+                            - "run-operation"
+                            - "publish_weather_mini3"
+                            - "--target"
+                            - "weather_prod"
+                            - "--args"
+                            - ${publication_arguments}
+                result: publication_operation
+            - prepare_gold_verification_query:
+                assign:
+                  - gold_pointer_table: ${"`" + project_id + ".gold_weather_mini3.weather_publication_pointer`"}
+                  - gold_view: ${"`" + project_id + ".gold_weather_mini3.published_weather_daily`"}
+            - prepare_gold_verification_query_parts:
+                assign:
+                  - gold_query_prefix: ${"WITH pointer AS (SELECT publication_version, publication_run_id, published_sha256, published_row_count, publication_is_current FROM " + gold_pointer_table + " WHERE singleton_id = 1), "}
+                  - gold_query_current_rows: ${"current_date_rows AS (SELECT province_id, observation_date, precipitation_mm, temp_max_c FROM " + gold_view + " WHERE observation_date = @observation_date) "}
+                  - gold_query_select: 'SELECT pointer.publication_version, pointer.publication_run_id, pointer.published_sha256, pointer.published_row_count, CAST(pointer.publication_is_current AS STRING) AS publication_is_current, '
+                  - gold_query_counts: "COUNT(current_date_rows.province_id) AS row_count, COUNT(DISTINCT current_date_rows.province_id) AS province_count, "
+                  - gold_query_tail: "COUNTIF(current_date_rows.precipitation_mm < 0 OR current_date_rows.precipitation_mm > 2000 OR current_date_rows.temp_max_c < -90 OR current_date_rows.temp_max_c > 70) AS invalid_metric_rows FROM pointer LEFT JOIN current_date_rows ON TRUE GROUP BY pointer.publication_version, pointer.publication_run_id, pointer.published_sha256, pointer.published_row_count, pointer.publication_is_current"
+            - assemble_gold_verification_query:
+                assign:
+                  - gold_verification_query: ${gold_query_prefix + gold_query_current_rows + gold_query_select + gold_query_counts + gold_query_tail}
+            - query_published_weather_gold:
+                call: googleapis.bigquery.v2.jobs.query
+                args:
+                  projectId: ${project_id}
+                  body:
+                    query: ${gold_verification_query}
+                    useLegacySql: false
+                    location: ${region}
+                    timeoutMs: 30000
+                    maximumBytesBilled: "268435456"
+                    queryParameters:
+                      - name: observation_date
+                        parameterType:
+                          type: DATE
+                        parameterValue:
+                          value: ${observation_date}
+                result: gold_query
+            - validate_published_gold:
+                switch:
+                  - condition: ${len(gold_query.rows) != 1 or gold_query.rows[0].f[4].v != "true" or int(gold_query.rows[0].f[5].v) != 3 or int(gold_query.rows[0].f[6].v) != 3 or int(gold_query.rows[0].f[7].v) != 0 or int(gold_query.rows[0].f[3].v) < 3}
+                    next: invalid_gold_publication
+            - prepare_success_ledger_query:
+                assign:
+                  - success_ledger_values: ${"CURRENT_TIMESTAMP(), @workflow_run_id, @workflow_execution_name, @trigger, DATE(@observation_date), 'PUBLISHED', @request_id, @manifest_uri, @manifest_generation, @source_sha256, @row_count, @publication_version, @published_sha256, NULL)"}
+                  - success_ledger_query: ${ledger_insert_prefix + ledger_insert_middle + success_ledger_values}
+            - append_success_execution_ledger:
+                call: googleapis.bigquery.v2.jobs.query
+                args:
+                  projectId: ${project_id}
+                  body:
+                    query: ${success_ledger_query}
+                    useLegacySql: false
+                    location: ${region}
+                    timeoutMs: 30000
+                    maximumBytesBilled: "268435456"
+                    queryParameters:
+                      - name: workflow_run_id
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${workflow_run_id}
+                      - name: workflow_execution_name
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${workflow_execution_name}
+                      - name: trigger
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${trigger}
+                      - name: observation_date
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${observation_date}
+                      - name: request_id
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${invocation_receipt.request_id}
+                      - name: manifest_uri
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${invocation_receipt.manifest_uri}
+                      - name: manifest_generation
+                        parameterType:
+                          type: INT64
+                        parameterValue:
+                          value: ${string(invocation_receipt.manifest_generation)}
+                      - name: source_sha256
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${invocation_receipt.source_sha256}
+                      - name: row_count
+                        parameterType:
+                          type: INT64
+                        parameterValue:
+                          value: ${string(int(gold_query.rows[0].f[5].v))}
+                      - name: publication_version
+                        parameterType:
+                          type: INT64
+                        parameterValue:
+                          value: ${gold_query.rows[0].f[0].v}
+                      - name: published_sha256
+                        parameterType:
+                          type: STRING
+                        parameterValue:
+                          value: ${gold_query.rows[0].f[2].v}
+                result: ledger_job
+            - return_published:
+                return:
+                  status: "PUBLISHED"
+                  trigger: ${trigger}
+                  workflow_run_id: ${workflow_run_id}
+                  workflow_execution_name: ${workflow_execution_name}
+                  observation_date: ${observation_date}
+                  request_id: ${invocation_receipt.request_id}
+                  manifest_uri: ${invocation_receipt.manifest_uri}
+                  manifest_generation: ${invocation_receipt.manifest_generation}
+                  source_sha256: ${invocation_receipt.source_sha256}
+                  row_count: ${gold_query.rows[0].f[5].v}
+                  publication_version: ${gold_query.rows[0].f[0].v}
+                  published_sha256: ${gold_query.rows[0].f[2].v}
+                  ingest_operation: ${ingest_operation.name}
+                  landing_operation: ${landing_operation.name}
+                  dbt_build_operation: ${dbt_build_operation.name}
+                  dbt_test_operation: ${dbt_test_operation.name}
+                  publication_operation: ${publication_operation.name}
+                  ledger_job_id: ${ledger_job.jobReference.jobId}
+            - invalid_invocation_receipt:
+                raise: "INVALID_WEATHER_INVOCATION_RECEIPT: manifest receipt failed schema, identity, date, provenance, or generation validation."
+            - invalid_gold_publication:
+                raise: "INVALID_WEATHER_GOLD_PUBLICATION: published pointer or candidate reconciliation failed."
+            - raise_controlled_failure_test:
+                raise: "CONTROLLED_MINI3_ALERT_TEST: failure injected after dbt tests and before Gold publication."
+        except:
+          as: workflow_error
+          steps:
+            - prepare_failure_log:
+                assign:
+                  - failure_log:
+                      event: ${if(test_fail_before_publish, "DATAFORGE_WEATHER_CONTROLLED_ALERT_TEST", "DATAFORGE_WEATHER_WORKFLOW_FAILED")}
+                      workflow_run_id: ${workflow_run_id}
+                      workflow_execution_name: ${workflow_execution_name}
+                      observation_date: ${observation_date}
+                      error_type: ${get_type(workflow_error)}
+            - log_failure:
+                call: sys.log
+                args:
+                  severity: ERROR
+                  json: ${failure_log}
+            - prepare_failure_ledger_query:
+                assign:
+                  - failure_ledger_values: ${"CURRENT_TIMESTAMP(), @workflow_run_id, @workflow_execution_name, @trigger, DATE(@observation_date), 'FAILED', @request_id, @manifest_uri, @manifest_generation, @source_sha256, @row_count, NULL, NULL, @error_category)"}
+                  - failure_ledger_query: ${ledger_insert_prefix + ledger_insert_middle + failure_ledger_values}
+            - best_effort_failure_ledger:
+                try:
+                  steps:
+                    - insert_failure_event:
+                        call: googleapis.bigquery.v2.jobs.query
+                        args:
+                          projectId: ${project_id}
+                          body:
+                            query: ${failure_ledger_query}
+                            useLegacySql: false
+                            location: ${region}
+                            timeoutMs: 30000
+                            maximumBytesBilled: "268435456"
+                            queryParameters:
+                              - name: workflow_run_id
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${workflow_run_id}
+                              - name: workflow_execution_name
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${workflow_execution_name}
+                              - name: trigger
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${trigger}
+                              - name: observation_date
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${observation_date}
+                              - name: request_id
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${default(map.get(invocation_receipt, "request_id"), "")}
+                              - name: manifest_uri
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${default(map.get(invocation_receipt, "manifest_uri"), "")}
+                              - name: manifest_generation
+                                parameterType:
+                                  type: INT64
+                                parameterValue:
+                                  value: ${string(default(map.get(invocation_receipt, "manifest_generation"), 0))}
+                              - name: source_sha256
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${default(map.get(invocation_receipt, "source_sha256"), "")}
+                              - name: row_count
+                                parameterType:
+                                  type: INT64
+                                parameterValue:
+                                  value: ${string(default(map.get(invocation_receipt, "row_count"), 0))}
+                              - name: error_category
+                                parameterType:
+                                  type: STRING
+                                parameterValue:
+                                  value: ${if(test_fail_before_publish, "controlled_failure_test", get_type(workflow_error))}
+                        result: failure_ledger_job
+                except:
+                  as: ledger_error
+                  steps:
+                    - prepare_ledger_failure_log:
+                        assign:
+                          - ledger_failure_log:
+                              event: "DATAFORGE_WEATHER_LEDGER_WRITE_FAILED"
+                              workflow_run_id: ${workflow_run_id}
+                              error_type: ${get_type(ledger_error)}
+                    - log_ledger_failure:
+                        call: sys.log
+                        args:
+                          severity: WARNING
+                          json: ${ledger_failure_log}
+            - rethrow_failure:
+                raise: ${workflow_error}
+    - prepare_no_new_batch_log:
+        assign:
+          - no_new_batch_log:
+              event: "DATAFORGE_WEATHER_NO_NEW_BATCH"
+              workflow_run_id: ${workflow_run_id}
+              trigger: ${trigger}
+    - record_no_new_batch:
+        call: sys.log
+        args:
+          severity: INFO
+          json: ${no_new_batch_log}
+        next: write_no_new_batch_ledger
+    - write_no_new_batch_ledger:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project_id}
+          body:
+            query: ${ledger_insert_prefix + ledger_insert_middle + no_new_batch_ledger_values}
+            useLegacySql: false
+            location: ${region}
+            timeoutMs: 30000
+            maximumBytesBilled: "268435456"
+            queryParameters:
+              - name: workflow_run_id
+                parameterType:
+                  type: STRING
+                parameterValue:
+                  value: ${workflow_run_id}
+              - name: workflow_execution_name
+                parameterType:
+                  type: STRING
+                parameterValue:
+                  value: ${workflow_execution_name}
+              - name: trigger
+                parameterType:
+                  type: STRING
+                parameterValue:
+                  value: ${trigger}
+              - name: observation_date
+                parameterType:
+                  type: STRING
+                parameterValue:
+                  value: ${observation_date}
+        result: no_batch_ledger_job
+    - no_new_batch_result:
+        return:
+          status: "NO_NEW_BATCH"
+          trigger: ${trigger}
+          workflow_run_id: ${workflow_run_id}
+          workflow_execution_name: ${workflow_execution_name}
+          ledger_job_id: ${no_batch_ledger_job.jobReference.jobId}
+          message: "No new weather source request was selected; no Cloud Run or dbt job was invoked."
+    - invalid_trigger:
+        raise: "INVALID_WEATHER_TRIGGER: expected manual or scheduler."
+    - invalid_input:
+        raise: "INVALID_WEATHER_INPUT: expected a boolean no_new_batch flag and YYYY-MM-DD observation date."
+    - invalid_test_input:
+        raise: "INVALID_WEATHER_TEST_INPUT: controlled alert injection is allowed only in manual runs with no_new_batch=false."

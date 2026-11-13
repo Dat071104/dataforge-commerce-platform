@@ -1,0 +1,4 @@
+# Runtime SDKs used by the opt-in DAG tasks. Airflow itself stays pinned in the base image.
+google-auth==2.62.0
+google-cloud-bigquery==3.47.0
+google-cloud-storage==3.17.1

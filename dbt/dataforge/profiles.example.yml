@@ -33,3 +33,43 @@ dataforge:
       threads: 2
       priority: interactive
       maximum_bytes_billed: 268435456
+
+    weather_dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATAFORGE_WEATHER_DATASET', 'dbt_weather_mini3') }}"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 1
+      priority: interactive
+      maximum_bytes_billed: 268435456
+
+    weather_prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATAFORGE_WEATHER_DATASET', 'dbt_weather_mini3') }}"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 1
+      priority: interactive
+      maximum_bytes_billed: 268435456
+
+    weather_full:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "{{ env_var('DBT_DATAFORGE_WEATHER_FULL_DATASET', 'dbt_weather_mini3_full') }}"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 1
+      priority: interactive
+      maximum_bytes_billed: 268435456
+
+    scd2_proof:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_DATAFORGE_PROJECT_ID') }}"
+      dataset: "dbt_scd2_proof_history"
+      location: "{{ env_var('DBT_DATAFORGE_LOCATION', 'us-central1') }}"
+      threads: 1
+      priority: interactive
+      maximum_bytes_billed: 33554432
