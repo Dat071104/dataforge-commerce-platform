@@ -36,8 +36,10 @@ def test_mini3_weather_orchestrators_pass_one_partition_date():
 
     assert "where observation_date = date('{{ weather_observation_date }}')" in staging_model
     assert "weather_observation_date: ${observation_date}" in workflow
-    assert workflow.count('"--vars"') >= 2
-    assert airflow.count('"--vars"') >= 2
+    assert workflow.count('"--vars"') == 1
+    assert airflow.count('"--vars"') == 1
+    assert "invoke_explicit_dbt_tests" not in workflow
+    assert "dbt_weather_test" not in airflow
     assert 'weather_dbt_vars_argument(request["observation_date"])' in airflow
     assert "observation_date >= DATE '1940-01-01'" in publication_macro
     assert "CAST(NULL AS STRING) AS batch_key" in publication_macro

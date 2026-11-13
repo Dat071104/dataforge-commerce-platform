@@ -123,23 +123,6 @@ main:
                             - "--vars"
                             - ${weather_dbt_vars_argument}
                 result: dbt_build_operation
-            - invoke_explicit_dbt_tests:
-                call: googleapis.run.v2.projects.locations.jobs.run
-                args:
-                  name: ${"projects/" + project_id + "/locations/" + region + "/jobs/" + dbt_job}
-                  body:
-                    overrides:
-                      containerOverrides:
-                        - name: "dbt"
-                          args:
-                            - "test"
-                            - "--target"
-                            - "weather_prod"
-                            - "--select"
-                            - "tag:weather_mini3"
-                            - "--vars"
-                            - ${weather_dbt_vars_argument}
-                result: dbt_test_operation
             - branch_controlled_failure_test:
                 switch:
                   - condition: ${test_fail_before_publish}
@@ -288,7 +271,6 @@ main:
                   ingest_operation: ${ingest_operation.name}
                   landing_operation: ${landing_operation.name}
                   dbt_build_operation: ${dbt_build_operation.name}
-                  dbt_test_operation: ${dbt_test_operation.name}
                   publication_operation: ${publication_operation.name}
                   ledger_job_id: ${ledger_job.jobReference.jobId}
             - invalid_invocation_receipt:
@@ -296,7 +278,7 @@ main:
             - invalid_gold_publication:
                 raise: "INVALID_WEATHER_GOLD_PUBLICATION: published pointer or candidate reconciliation failed."
             - raise_controlled_failure_test:
-                raise: "CONTROLLED_MINI3_ALERT_TEST: failure injected after dbt tests and before Gold publication."
+                raise: "CONTROLLED_MINI3_ALERT_TEST: failure injected after dbt build/tests and before Gold publication."
         except:
           as: workflow_error
           steps:

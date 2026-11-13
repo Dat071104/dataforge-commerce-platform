@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 from datetime import date, datetime, timedelta
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
+from zoneinfo import ZoneInfo
 
 PROJECT_ID = "dataforge-p7-lab-d0f725"
 REGION = "us-central1"
@@ -14,6 +16,7 @@ BRONZE_BUCKET = "dataforge-p7-lab-d0f725-bronze"
 WEATHER_PREFIX = "weather_mini3/v1"
 PROVINCES = ("HCM", "HN", "DN")
 SOURCE_SETTLING_LAG_DAYS = 7
+PIPELINE_TIMEZONE = "Asia/Ho_Chi_Minh"
 EXECUTION_RECEIPT_SCHEMA = "dataforge.weather.mini3.execution.v1"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _INVOCATION_ID = re.compile(r"^[0-9a-f]{64}$")
@@ -21,6 +24,67 @@ _INVOCATION_ID = re.compile(r"^[0-9a-f]{64}$")
 
 class ContractError(ValueError):
     """Raised when an Airflow configuration or cloud receipt is out of contract."""
+
+
+class ReceiptNotFound(LookupError):
+    """Raised by a receipt reader while the immutable object is not yet visible."""
+
+
+class ReceiptTimeout(ContractError):
+    """Raised after the bounded post-job receipt visibility window expires."""
+
+
+def cloud_opt_in_enabled(value: str | None) -> bool:
+    """Parse the separate deployment authorization switch; missing means OFF."""
+    if value is None or not value.strip():
+        return False
+    normalized = value.strip().lower()
+    if normalized == "false":
+        return False
+    if normalized == "true":
+        return True
+    raise ContractError("DATAFORGE_WEATHER_CLOUD_ENABLED must be exactly 'true' or 'false'")
+
+
+def is_retryable_http_status(status_code: int) -> bool:
+    """Only classify standard transient request statuses as retryable."""
+    if isinstance(status_code, bool) or not isinstance(status_code, int):
+        return False
+    return status_code in {408, 429} or 500 <= status_code <= 599
+
+
+def is_retryable_cloud_operation_error(error: Any) -> bool:
+    """Classify retryable google.rpc.Status codes without exposing provider text."""
+    if not isinstance(error, Mapping):
+        return False
+    code = error.get("code")
+    if isinstance(code, bool) or not isinstance(code, int):
+        return False
+    return code in {4, 8, 13, 14}  # DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, INTERNAL, UNAVAILABLE
+
+
+def wait_for_execution_receipt(
+    read: Callable[[], Any],
+    *,
+    timeout_seconds: float = 120,
+    poll_interval_seconds: float = 2,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Any:
+    """Boundedly wait for the post-job receipt without Airflow occupying a sensor slot."""
+    if timeout_seconds <= 0 or poll_interval_seconds <= 0:
+        raise ContractError("receipt wait bounds must be positive")
+    deadline = monotonic() + timeout_seconds
+    while True:
+        try:
+            return read()
+        except ReceiptNotFound as exc:
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise ReceiptTimeout(
+                    "timed out waiting for the completed invocation receipt"
+                ) from exc
+            sleep(min(poll_interval_seconds, remaining))
 
 
 def make_invocation_id(dag_id: str, run_id: str) -> str:
@@ -55,25 +119,40 @@ def invocation_receipt_object(invocation_id: str) -> str:
 
 def resolve_request(
     *,
-    conf: Mapping[str, Any],
+    params: Mapping[str, Any],
     dag_id: str,
     run_id: str,
     logical_date: datetime,
-    latest_safe_date: date,
+    data_interval_end: datetime | None = None,
 ) -> dict[str, Any]:
-    """Validate opt-in cloud mode and return only small immutable identifiers."""
-    if not isinstance(conf, Mapping):
-        raise ContractError("DagRun configuration must be a JSON object")
-    if set(conf) - {"mode", "observation_date"}:
-        raise ContractError("DagRun configuration contains unsupported keys")
-    if conf.get("mode") != "cloud_integration":
-        raise ContractError("mode must be explicitly set to 'cloud_integration'")
+    """Resolve a manual or scheduled run from validated Params and fixed run dates.
 
-    raw_date = conf.get("observation_date")
+    ``data_interval_end`` is the schedule boundary. It is fixed for a DagRun and
+    therefore makes retries resolve the same settled date even when they happen
+    on a later wall-clock day. A manual date is an explicit input override.
+    """
+    if not isinstance(params, Mapping):
+        raise ContractError("Airflow Params must be a JSON object")
+    if set(params) - {"mode", "observation_date"}:
+        raise ContractError("Airflow Params contain unsupported keys")
+
+    mode = params.get("mode", "scheduled")
+    if not isinstance(mode, str) or mode not in {"scheduled", "manual"}:
+        raise ContractError("mode must be either 'scheduled' or 'manual'")
+    raw_date = params.get("observation_date")
+    if mode == "scheduled" and raw_date is not None:
+        raise ContractError("scheduled runs cannot override observation_date; use manual mode")
+
+    anchor = data_interval_end or logical_date
+    if not isinstance(logical_date, datetime) or not isinstance(anchor, datetime):
+        raise ContractError("Airflow logical and interval dates must be datetimes")
+    if anchor.tzinfo is None or logical_date.tzinfo is None:
+        raise ContractError("Airflow logical and interval dates must be timezone-aware")
+    anchor_date = anchor.astimezone(ZoneInfo(PIPELINE_TIMEZONE)).date()
+    latest_safe_date = anchor_date - timedelta(days=SOURCE_SETTLING_LAG_DAYS)
+
     if raw_date is None:
-        if logical_date.tzinfo is None:
-            raise ContractError("logical date must be timezone-aware")
-        observation_date = logical_date.date() - timedelta(days=SOURCE_SETTLING_LAG_DAYS)
+        observation_date = latest_safe_date
     elif isinstance(raw_date, str):
         try:
             observation_date = date.fromisoformat(raw_date)
@@ -90,6 +169,7 @@ def resolve_request(
         raise ContractError("observation_date is newer than the seven-day source-settling limit")
 
     return {
+        "mode": mode,
         "project_id": PROJECT_ID,
         "region": REGION,
         "bucket": BRONZE_BUCKET,

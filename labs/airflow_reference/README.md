@@ -1,6 +1,6 @@
 # Airflow reference and Mini3 integration
 
-The lab keeps the offline Airflow reference DAG and adds a separate, opt-in Mini-project 3 cloud integration DAG. The fixture remains isolated; the integration proof ran Airflow locally in Docker while its data-plane tasks used the approved GCP resources.
+The lab keeps the offline Airflow reference DAG and adds a separate, opt-in Mini-project 3 cloud integration DAG. The fixture remains isolated. A historical one-shot integration ran Airflow locally in Docker while its data-plane tasks used the approved GCP resources. P7.5's DAG contract tests passed with the Airflow 3.4.0 Python 3.11 package in an isolated Windows virtual environment; the pinned Linux container and CLI DagRun were not run because Docker was unavailable, and Airflow warns that native Windows is unsupported.
 
 ## Offline fixture DAG
 
@@ -36,7 +36,9 @@ To inspect or change the DAG, edit `dags/dataforge_week7_reference.py`. Pure tra
 
 ## Opt-in Mini-project 3 cloud integration
 
-`dags/dataforge_week7_weather_cloud.py` is a distinct integration DAG. The recorded one-shot Airflow 3.4.0 DagRun invoked the weather Cloud Run jobs, sensed and verified the immutable GCS invocation receipt, loaded and reconciled the BigQuery landing table, ran weather dbt build/tests/publication, and verified the three-row Gold result. It used keyless ADC mounted read-only and an explicitly scoped Airflow service account. It did not use a static service-account key or start a persistent Airflow scheduler.
+`dags/dataforge_week7_weather_cloud.py` is a distinct integration DAG. The historical one-shot Airflow 3.4.0 DagRun is recorded in `../cloud/week7/closure/airflow_integration_receipt.md`. That earlier implementation invoked the weather Cloud Run jobs, then checked the immutable GCS receipt with a sensor after the blocking Cloud Run operation had completed. It did not demonstrate asynchronous sensor waiting. The run loaded and reconciled BigQuery landing, ran weather dbt build/tests/publication, and verified the three-row Gold result using read-only mounted keyless ADC and a scoped Airflow service account. It did not use a static service-account key or start a persistent Airflow scheduler.
+
+The current P7.5 DAG accepts validated `mode=scheduled` or `mode=manual` Params and derives scheduled observation dates from the fixed DagRun interval. Cloud access has a separate `DATAFORGE_WEATHER_CLOUD_ENABLED` switch that defaults OFF; the DAG is paused on creation. The launcher passes `mode=manual` and sets the opt-in only inside its container. Invoking it starts real Cloud Run jobs and can write GCS and BigQuery, so it must not be run without fresh, explicit authorization. The earlier impersonation grant was removed. The current DAG and launcher changes have not been exercised against GCP.
 
 The runner requires an explicitly selected isolated ADC file and the approved Airflow caller identity. The one-time impersonation grant was removed after the demonstration, so rerunning the live integration requires a reviewed temporary grant and cleanup:
 
@@ -47,7 +49,7 @@ $env:DATAFORGE_AIRFLOW_IMPERSONATION_SERVICE_ACCOUNT = 'dataforge-week7-airflow@
 .\labs\airflow_reference\run_cloud_integration.ps1 -ObservationDate 2026-11-05
 ```
 
-The runner uses `airflow dags test` for one DagRun; the integration DAG also checks that the GCP Scheduler job is paused or absent before starting. The Airflow failure callback remains a local redacted log only. External delivery evidence belongs to the separate Cloud Monitoring receipt under `docs/cloud/week7/closure/`.
+The runner uses `airflow dags test` for one DagRun; the integration DAG also checks that the GCP Scheduler job is paused or absent before starting. The current Airflow failure callback writes a redacted local log event only. It does not send email or create a Monitoring policy. The separate Cloud Monitoring receipt is historical evidence of one earlier controlled notification, not a current delivery path.
 
 ## Runtime and compatibility
 
