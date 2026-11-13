@@ -174,6 +174,22 @@ jobs:
             .\labs\airflow_reference\ci.ps1 -Scenario $scenario
             if ($LASTEXITCODE -ne 0) { throw "Airflow scenario $scenario failed" }
           }
+      - name: Run Airflow scheduler-managed Mini3 retry and negative controls
+        shell: pwsh
+        run: |
+          $evidencePath = Join-Path $env:RUNNER_TEMP 'airflow-scheduler-harness.log'
+          Set-Content -LiteralPath $evidencePath -Value 'Airflow scheduler harness output'
+          .\labs\airflow_reference\ci.ps1 -Scenario scheduler_harness 2>&1 |
+            Tee-Object -FilePath $evidencePath -Append
+          if ($LASTEXITCODE -ne 0) { throw 'Airflow scheduler harness failed' }
+      - name: Upload Airflow scheduler evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: airflow-scheduler-harness
+          path: ${{ runner.temp }}/airflow-scheduler-harness.log
+          if-no-files-found: error
+          retention-days: 14
 
   terraform-static:
     name: Terraform static validation (never apply)
