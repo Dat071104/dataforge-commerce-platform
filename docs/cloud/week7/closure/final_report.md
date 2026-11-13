@@ -1,7 +1,7 @@
 # P7.4.1 Week 7 syllabus closure — final evidence report
 
 **Evidence date:** 2026-11-13 (Asia/Bangkok).
-**Status:** independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; live demonstrations are complete, two recovery requirements remain partial, and hosted PR CI is pending.
+**Status:** independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; PR #6 merged after exact-head hosted CI passed. Two recovery requirements remain partial.
 **Branch:** `feature/p7-week7-syllabus-closure`, based on accepted `main` SHA `765324c6e9cd798b5080fcd977465b1d3ac843b0`.
 **Scope:** isolated Mini-project 3 weather pipeline. Accepted Week 4/5/6/7 releases and commerce data remain unchanged.
 
@@ -39,4 +39,4 @@ The offline repository regression most recently completed with **194 passed and 
 
 The isolated gcloud configuration still names the School account and approved project, but its CLI credential currently asks for interactive refresh. The ADC-backed Resource Manager read returned HTTP 200 with the expected project number and ACTIVE state, and Terraform refreshed successfully through ADC. This is a credential-refresh issue, not a project IAM denial; no cloud write was attempted through the failing CLI session.
 
-The one independent controller returned `CLOUD_GO_WEEK7_SYLLABUS` and permits the feature PR. The branch is not yet committed or pushed; exact-head hosted CI and merge remain pending. Historical `CLOUD_GO_WEEK7` remains intact and separate from P7.4.1. Merge is permitted only after exact-head CI passes.
+The one independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`. PR [#6](https://github.com/Dat071104/dataforge-commerce-platform/pull/6) merged at `4939d1d887555528d6622400b4a8c9ab16bec86c`. Exact-head CI ran on `e1c0f00eec4ebbff0bbf5371e066b0bd18cb6443`: GitHub reported 12/12 checks successful or skipped (11 successful, one skipped dbt compile job because pull-request workflows receive no GCP identity). Local `main` was fast-forwarded to the merge commit and contains the feature commit. Historical `CLOUD_GO_WEEK7` remains intact and separate from P7.4.1.

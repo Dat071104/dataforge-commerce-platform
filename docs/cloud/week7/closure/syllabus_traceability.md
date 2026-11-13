@@ -16,6 +16,6 @@ The user reported that the mentor approved GCP as the Azure/Fabric alternative. 
 | dbt SCD2 history | Synthetic isolated source and dbt snapshot; three versions, valid windows, one current row, no overlaps, unchanged replay; dbt_scd2_history_receipt.json | MET for synthetic proof; authoritative Week 5 history untouched |
 | Negative tests and recovery | Live unsettled-date rejection, wrong-generation rejection, exact replay, and pre-publication controlled failure; local contract tests cover malformed data, hash/schema corruption, and pointer guards | PARTIAL: live GCS tamper, bad BQ schema, bad dbt candidate, Airflow retry, and duplicate-trigger injection were not run |
 | IAM and cost review | Scoped service identities, temporary IAM cleanup, no-change refreshed plan, query/Cloud Run usage, retained storage estimates; iam_cost_cleanup.md | MET with billing-account charges and free-tier use marked unknown |
-| Public release | Independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; feature PR is permitted | PENDING: exact-head hosted CI and merge |
+| Public release | Independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; PR #6 merged and local main synchronized | MET: exact-head CI on `e1c0f00` reported 12/12 successful or skipped (11 pass, one policy skip) |
 
 For the complete acceptance boundary, exact cloud IDs, and limitations, see acceptance_matrix.md and final_report.md. Historical Week 4/5/6/7 releases remain unchanged.

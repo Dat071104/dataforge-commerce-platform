@@ -1,6 +1,6 @@
 # P7.4.1 Week 7 syllabus closure — architecture decision
 
-**Status:** bounded Mini3 implementation and live demonstration completed; independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; exact-head hosted CI is pending.
+**Status:** bounded Mini3 implementation and live demonstration completed; independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; PR #6 merged after exact-head hosted CI passed.
 **Date:** 2026-11-12.
 **Scope:** one weather observation slice only. Accepted Week 4/5/6/7 pipelines remain separate.
 
