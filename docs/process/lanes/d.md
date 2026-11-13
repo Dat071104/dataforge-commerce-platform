@@ -11,7 +11,7 @@
 - Added the fixed eight-row orders fixture and three-province dimension fixture. Both pipelines read CSV, filter delivered rows, join on `province_id`, group by province, and write/read Parquet.
 - `tests/learning/test_parity_pipeline.py` asserts the Pandas result, Polars result, and their Parquet round-trips equal the same expected rows.
 - Seven timed repeats after one warm-up reported local medians/standard deviations: Pandas **25.146 ± 1.076 ms**, Polars **8.489 ± 0.619 ms**. This is an eight-row local smoke measurement only, not a speedup claim.
-- Timing environment was system Python 3.13.9, Pandas 3.0.6, Polars 1.36.1. The supported project venv has Pandas 2.3.3 but no Polars. `pyproject.toml` and `requirements-py311.lock` also omit Polars; the integrator was notified that a minimal pinned dependency/lock update is required before exact CI can run this test. No package was installed by this lane.
+- Timing environment was system Python 3.13.9, Pandas 3.0.6, Polars 1.36.1. The integrator pinned Polars 1.36.1 and `polars-runtime-32` in the dev dependency/lock for reproducible CI. The 1.x cap keeps the lab on the tested API; Polars 2.x changes lazy execution defaults and needs separate compatibility review. No package was installed by Lane D.
 
 ### D2 — q10 EXPLAIN plans
 
@@ -50,7 +50,7 @@
 
 ## Open risks
 
-- Polars is not in the project dependency lock yet; D1's CI result is blocked on the integrator-owned dependency update. The lane did not install packages or edit dependency files.
+- The integrator added `polars>=1.36.1,<2` to the dev extra and pinned `polars==1.36.1` plus `polars-runtime-32==1.36.1` in the Python 3.11 lock. The parity suite passed in the supported Python 3.11 venv after this update; exact-head CI remains pending after rebase/push. Lane D did not install packages or edit dependency files.
 - D2 was exercised against the local loopback Postgres service; its CI Postgres summary remains pending.
 - D4's shell execution is Linux-only and was not run on Windows; exact CI must pass before this item is complete.
 - No timing result justifies a library migration; use real workload measurements before changing the production dependency.
