@@ -10,6 +10,7 @@ on:
       - 'tests/**'
       - 'scripts/**'
       - 'cloud/jobs/week7/**'
+      - 'cloud/jobs/week7_weather/**'
       - 'cloud/sql_bigquery/week7/**'
       - 'cloud/terraform/dev/**'
       - 'cloud/workflows/**'
@@ -29,6 +30,7 @@ on:
       - 'tests/**'
       - 'scripts/**'
       - 'cloud/jobs/week7/**'
+      - 'cloud/jobs/week7_weather/**'
       - 'cloud/sql_bigquery/week7/**'
       - 'cloud/terraform/dev/**'
       - 'cloud/workflows/**'
@@ -116,6 +118,10 @@ jobs:
           docker build --file cloud/jobs/week7/Dockerfile --tag dataforge-week7-dbt:ci .
           docker run --rm --network none dataforge-week7-dbt:ci --version
           docker run --rm --network none dataforge-week7-dbt:ci --target offline parse
+      - name: Build and smoke-test the Mini3 weather image without network
+        run: |
+          docker build --file cloud/jobs/week7_weather/Dockerfile --tag dataforge-week7-weather:ci .
+          docker run --rm --network none dataforge-week7-weather:ci --help
 
   dbt-read-only-compile:
     name: dbt compile (keyless, read-only)

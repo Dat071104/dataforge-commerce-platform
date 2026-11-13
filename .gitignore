@@ -30,6 +30,7 @@ data/powerbi_gold_export/
 .DS_Store
 
 # Generated or local-only artifacts
+/tmp/
 /codex/
 /.codex/
 /.local/
