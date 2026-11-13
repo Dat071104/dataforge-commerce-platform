@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - 'feature/p7-*'
+      - 'feat/w7-*'
+      - 'feat/w1-w6-*'
     paths:
       - 'src/**'
       - 'tests/**'
@@ -13,10 +15,14 @@ on:
       - 'cloud/jobs/week7_weather/**'
       - 'cloud/sql_bigquery/week7/**'
       - 'cloud/terraform/dev/**'
+      - 'cloud/terraform/week7_ops/**'
+      - 'cloud/terraform/airflow_vm/**'
+      - 'cloud/terraform/state_backend_bucket/**'
       - 'cloud/workflows/**'
       - 'dbt/dataforge/**'
       - 'docs/cloud/week7/**'
       - 'labs/airflow_reference/**'
+      - 'deploy/airflow_vm/**'
       - '.dockerignore'
       - '.gitignore'
       - 'pyproject.toml'
@@ -33,10 +39,14 @@ on:
       - 'cloud/jobs/week7_weather/**'
       - 'cloud/sql_bigquery/week7/**'
       - 'cloud/terraform/dev/**'
+      - 'cloud/terraform/week7_ops/**'
+      - 'cloud/terraform/airflow_vm/**'
+      - 'cloud/terraform/state_backend_bucket/**'
       - 'cloud/workflows/**'
       - 'dbt/dataforge/**'
       - 'docs/cloud/week7/**'
       - 'labs/airflow_reference/**'
+      - 'deploy/airflow_vm/**'
       - '.dockerignore'
       - '.gitignore'
       - 'pyproject.toml'
@@ -75,8 +85,8 @@ jobs:
         run: python -m pip install -c requirements-py311.lock -e '.[dev,powerbi,gcp]'
       - name: Ruff and compile
         run: |
-          ruff check src tests scripts dashboards/P5 labs/airflow_reference
-          python -m compileall -q src tests scripts dashboards/P5 labs/airflow_reference
+          ruff check src tests scripts dashboards/P5 labs/airflow_reference deploy/airflow_vm
+          python -m compileall -q src tests scripts dashboards/P5 labs/airflow_reference deploy/airflow_vm
       - name: Run offline and isolated PostgreSQL suites
         run: |
           python -m pytest -q tests dashboards/P5/tests
@@ -191,9 +201,56 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  airflow-vm-runtime:
+    name: Airflow VM runtime build and static checks
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_IMAGE: dataforge-airflow-runtime:ci
+      DATAFORGE_GCP_PROJECT_ID: dataforge-p7-lab-d0f725
+      DATAFORGE_AIRFLOW_SERVICE_ACCOUNT: dataforge-week7-airflow@dataforge-p7-lab-d0f725.iam.gserviceaccount.com
+      DATAFORGE_WEATHER_CLOUD_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run bootstrap unit tests and validate startup script syntax
+        run: |
+          python -m unittest discover -s deploy/airflow_vm/tests -v
+          bash -n deploy/airflow_vm/startup.sh
+      - name: Prepare disposable secret-source placeholders for Compose validation
+        run: |
+          secret_dir="$RUNNER_TEMP/airflow-secret-placeholders"
+          install -d -m 0700 "$secret_dir"
+          python - "$secret_dir" <<'PY'
+          import base64
+          import pathlib
+          import sys
+          directory = pathlib.Path(sys.argv[1])
+          (directory / "fernet_key").write_text(base64.urlsafe_b64encode(b"f" * 32).decode())
+          (directory / "metadata_db_password").write_text("ci-placeholder-db-password-0123456789")
+          (directory / "admin_password").write_text("ci-placeholder-admin-password-0123456789")
+          PY
+          chmod 0440 "$secret_dir"/*
+          echo "DATAFORGE_SECRET_DIR=$secret_dir" >> "$GITHUB_ENV"
+      - name: Validate the Compose model without starting services
+        run: python deploy/airflow_vm/tests/compose_config_smoke.py
+      - name: Build the digest-based Airflow runtime image
+        run: docker build --file deploy/airflow_vm/Dockerfile --tag dataforge-airflow-runtime:ci .
+      - name: Smoke-test the Airflow runtime without network access
+        run: |
+          docker run --rm --network none dataforge-airflow-runtime:ci airflow version
+          docker run --rm --network none dataforge-airflow-runtime:ci python -c "from importlib.metadata import version; from airflow.providers.fab.auth_manager.fab_auth_manager import FabAuthManager; print(version('apache-airflow-providers-fab'), FabAuthManager.__name__)"
+          docker run --rm --network none --tmpfs /run/secrets:rw,mode=0700,uid=50000,gid=0 --env AIRFLOW_HOME=/tmp/airflow --env AIRFLOW__CORE__AUTH_MANAGER=airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager --env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////tmp/airflow/airflow.db --env DATAFORGE_TEST_ADMIN_PASSWORD=ci-placeholder-admin-password-0123456789 dataforge-airflow-runtime:ci python /opt/dataforge/airflow_vm/tests/fab_admin_smoke.py
+
   terraform-static:
     name: Terraform static validation (never apply)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root:
+          - dev
+          - week7_ops
+          - airflow_vm
+          - state_backend_bucket
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
@@ -201,8 +258,12 @@ jobs:
           terraform_version: '1.17.1'
           terraform_wrapper: false
       - name: Format check, initialize without backend, and validate
-        working-directory: cloud/terraform/dev
         run: |
-          terraform fmt -check -recursive
-          terraform init -backend=false
-          terraform validate
+          root_dir="cloud/terraform/${{ matrix.root }}"
+          if [ ! -f "$root_dir/main.tf" ]; then
+            echo "Terraform root is not part of this lane branch; it will be validated when that lane is integrated."
+            exit 0
+          fi
+          terraform -chdir="$root_dir" fmt -check -recursive
+          terraform -chdir="$root_dir" init -backend=false
+          terraform -chdir="$root_dir" validate

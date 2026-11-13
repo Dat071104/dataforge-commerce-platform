@@ -1,0 +1,157 @@
+version: "3.9"
+
+x-airflow-common: &airflow-common
+  image: ${AIRFLOW_IMAGE:-dataforge-airflow-runtime:unset}
+  user: "50000:0"
+  environment: &airflow-environment
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Ho_Chi_Minh
+    AIRFLOW__CORE__FERNET_KEY_CMD: python /opt/dataforge/airflow_vm/secret_command.py fernet-key
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN_CMD: python /opt/dataforge/airflow_vm/secret_command.py database-url
+    AIRFLOW__API__SECRET_KEY_CMD: python /opt/dataforge/airflow_vm/secret_command.py api-secret
+    AIRFLOW__API_AUTH__JWT_SECRET_CMD: python /opt/dataforge/airflow_vm/secret_command.py jwt-secret
+    DATAFORGE_WEATHER_CLOUD_ENABLED: ${DATAFORGE_WEATHER_CLOUD_ENABLED:-false}
+    DATAFORGE_WEATHER_PROJECT_ID: ${DATAFORGE_GCP_PROJECT_ID:-}
+    DATAFORGE_WEATHER_REGION: us-central1
+    DATAFORGE_AIRFLOW_IDENTITY_MODE: attached_service_account
+    DATAFORGE_AIRFLOW_ATTACHED_SERVICE_ACCOUNT: ${DATAFORGE_AIRFLOW_SERVICE_ACCOUNT:-}
+  volumes:
+    - airflow-logs:/opt/airflow/logs
+  secrets:
+    - fernet_key
+    - metadata_db_password
+  logging:
+    driver: gcplogs
+    options:
+      gcp-project: ${DATAFORGE_GCP_PROJECT_ID:-invalid-project}
+      labels: container_name,application,phase
+
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD_FILE: /run/secrets/metadata_db_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    secrets:
+      - metadata_db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    labels:
+      container_name: airflow-postgres
+      application: dataforge
+      phase: week7
+    logging:
+      driver: gcplogs
+      options:
+        gcp-project: ${DATAFORGE_GCP_PROJECT_ID:-invalid-project}
+        labels: container_name,application,phase
+
+  airflow-init:
+    <<: *airflow-common
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *airflow-environment
+      DATAFORGE_AIRFLOW_ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+    secrets:
+      - fernet_key
+      - metadata_db_password
+      - admin_password
+    command:
+      - bash
+      - -ec
+      - |
+        airflow db migrate
+        airflow pools set cloud_run_submissions 1 "Bounded Cloud Run job submissions"
+        python /opt/dataforge/airflow_vm/fab_admin_bootstrap.py
+    labels:
+      container_name: airflow-init
+      application: dataforge
+      phase: week7
+
+  airflow-api-server:
+    <<: *airflow-common
+    command: ["api-server", "--host", "0.0.0.0", "--port", "8080"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v2/monitor/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    labels:
+      container_name: airflow-api-server
+      application: dataforge
+      phase: week7
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: ["scheduler"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    labels:
+      container_name: airflow-scheduler
+      application: dataforge
+      phase: week7
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: ["dag-processor"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    labels:
+      container_name: airflow-dag-processor
+      application: dataforge
+      phase: week7
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: ["triggerer"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    labels:
+      container_name: airflow-triggerer
+      application: dataforge
+      phase: week7
+
+volumes:
+  airflow-logs:
+  postgres-data:
+
+secrets:
+  fernet_key:
+    file: ${DATAFORGE_SECRET_DIR:-/run/dataforge-airflow-secrets}/fernet_key
+  metadata_db_password:
+    file: ${DATAFORGE_SECRET_DIR:-/run/dataforge-airflow-secrets}/metadata_db_password
+  admin_password:
+    file: ${DATAFORGE_SECRET_DIR:-/run/dataforge-airflow-secrets}/admin_password

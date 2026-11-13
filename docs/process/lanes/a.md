@@ -298,3 +298,38 @@ The A1–A4 implementation commit is `d96a790cf7602402d8ec9e6a0b9689972fe5f329`.
 - **Root cause:** scenario assertions index `method` on all ledger rows rather than filtering mixed ledger rows with a safe lookup.
 - **Fix:** use `call.get("method") == "POST"` for every scenario POST filter; preserve the ledger's non-HTTP evidence rows.
 - **Guard:** rerun the combined real-scheduler suite and require all six scenarios, including retry, forbidden response, opt-out, fail-fast execution, deadline, and five-date backfill, to exit 0.
+
+
+## A5 root runtime handoff
+
+### Implemented bundle
+
+The root-owned runtime package is in deploy/airflow_vm. Its Dockerfile pins the Apache Airflow 3.4.0 Python 3.11 base by digest, verifies the existing GCP client versions, and copies the production Mini3 DAGs into the image. Compose starts PostgreSQL, API server, scheduler, DAG processor, and triggerer with LocalExecutor, paused-on-create DAGs, a one-slot Cloud Run submission pool, bounded healthchecks, and gcplogs labels. The systemd unit owns startup and shutdown.
+
+The host bootstrap verifies the project, attached service account, and digest-pinned Artifact Registry image from metadata. It fetches only the three C8 values from Secret Manager, verifies /run is tmpfs, writes root-owned 0440 files there, then starts Compose. Those files are mounted read-only only into the services that need them. Airflow reads Fernet, database URL, API signing, and JWT settings through the documented _CMD configuration interface; Postgres uses POSTGRES_PASSWORD_FILE. The FAB admin bootstrap reads its tmpfs mount and stores only the password hash in the metadata database. Compose teardown removes containers before the bootstrap removes the tmpfs secret files. No ADC file is mounted.
+
+### Local validation
+
+- Docker build with the pinned base succeeded using --pull=false. The local-only image tag dataforge-airflow-runtime:ci has manifest digest sha256:d22677d81e513035684a0624ba70602b560788f45bf6efa515c4ac78b577c48e. This is a local Docker manifest, not a published Artifact Registry image digest.
+- Pinned image smoke: Airflow version 3.4.0; startup.sh passed bash -n; the Airflow 3.4 _CMD settings resolved all four file-backed values from tmpfs; the FAB bootstrap created an active Admin and stored a valid hash; no SimpleAuthManager generated password file appeared. Docker network was none.
+- Bootstrap suite: 10 passed. Python compileall and git diff --check passed. Compose config smoke passed with disposable placeholder files and asserted their values were absent from the resolved model. Secret scan passed with 0 findings across 505 files.
+- The root Airflow scheduler harness also passed all six A1-A3 scenarios locally; its evidence log is under DataForge_D_Week7_Final/evidence/airflow-scheduler-harness-root-rerun-2026-11-13.log.
+
+### Boundaries and deployment blockers
+
+No GCP API, Secret Manager, Artifact Registry push/pull, VM, or paid action was attempted. No GitHub Actions run exists yet for this worktree. The Week 7 workflow builds and validates the image but deliberately does not publish it.
+
+The earlier R1 IAM snapshot did not show roles/artifactregistry.reader for the VM account, and the read-only CI identity is not authorized as an image publisher. Current gcloud has no active account for a fresh IAM probe. Do not apply C4 until effective image-pull permission is verified and the existing CI identity has an explicitly authorized image-publish path. The authorization file currently says C12 NO for any other cloud write; any new repository writer/reader IAM grant needs a scope change there first.
+
+The existing Airflow base license scan is docs/cloud/week7/airflow_license_scan.json. It reports an unresolved license metadata entry for openlineage-sql and transitive copyleft notices; review the applicable notices before publishing an Airflow-derived image. This is not a license conclusion.
+
+The official Airflow 3.4 configuration reference documents _CMD support for Fernet, SQLAlchemy connection, API secret key, and JWT secret: https://airflow.apache.org/docs/apache-airflow/3.4.0/configurations-ref.html. This local test does not verify metadata server access, Secret Manager IAM, gcplogs delivery, IAP, Artifact Registry access, or live VM health.
+
+
+### A5 final self-review adjustment
+
+A later self-review removed secret values from Docker container environment. The host now writes Secret Manager payloads only under root-owned /run tmpfs at mode 0440; Compose mounts each value read-only only into its required service. The resolved Compose smoke test confirms disposable values do not appear in container configuration. The Airflow configuration command smoke verifies the documented _CMD mechanism for Fernet, SQLAlchemy URL, API secret, and JWT secret. Postgres uses the _FILE mechanism. The FAB admin's tmpfs file is removed after hash verification.
+
+Systemd is the only restart supervisor. Its unit is Type=simple with Restart=on-failure. Bootstrap starts Postgres, polls health, runs airflow-init as a --rm one-off container, then keeps Compose attached to the four long-running Airflow services with abort-on-container-exit. Compose defines no restart policy, avoiding a Docker/systemd restart race before /run secrets are staged.
+
+Final local validation after that adjustment: 10 bootstrap tests passed; Docker build succeeded from the pinned Airflow base without pulling; the no-network image smoke reported Airflow 3.4.0, bash syntax success, _CMD resolution success, admin hash valid, and SimpleAuthManager password file absent. Compose config validation reported secret placeholder values absent. The local image manifest digest was sha256:d22677d81e513035684a0624ba70602b560788f45bf6efa515c4ac78b577c48e and is not a remote registry digest. No GCP call, VM, secret access, image publish, or CI run occurred.
