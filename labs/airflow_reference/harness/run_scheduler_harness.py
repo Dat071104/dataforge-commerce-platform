@@ -13,7 +13,6 @@ import tempfile
 import time
 from pathlib import Path
 
-
 DAG_ID = "dataforge_week7_weather_cloud"
 TASK_IDS = (
     "resolve_cloud_request",

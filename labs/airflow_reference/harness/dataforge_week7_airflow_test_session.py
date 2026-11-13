@@ -6,9 +6,8 @@ import json
 import os
 from pathlib import Path
 
-from requests.exceptions import ConnectionError
-
 from dataforge_week7_weather_cloud import INGEST_JOB, PROJECT_ID, REGION
+from requests.exceptions import ConnectionError
 
 
 class _Response:
