@@ -16,7 +16,8 @@ DataForge is an educational, synthetic-first order-to-cash analytics portfolio. 
 - **Week 5 (P7.2):** the separate operational journal → immutable GCS → Cloud Run Job → BigQuery Silver/Gold/checkpoint path passed live INC-01–INC-10 tests and a 100K-row synthetic snapshot/MERGE benchmark. The independent controller returned CLOUD_GO_WEEK5; exact-head hosted CI and main-branch CI passed, and implementation PR [#2](https://github.com/Dat071104/dataforge-commerce-platform/pull/2) merged.
 - **Week 6 (P7.3):** the separate local Docker Spark lab processed 13,069,067 official NYC TLC Yellow Taxi rows, with DataFrame/SQL parity, an independent daily oracle, a measured join experiment, partitioned Parquet, and a verified Delta operation. The independent controller returned `GO_WEEK6_LOCAL`; PR [#4](https://github.com/Dat071104/dataforge-commerce-platform/pull/4) merged after both hosted checks passed. Managed Spark was not run. See the [Week 6 release report](docs/cloud/week6/final_report.md).
 - **Week 7 (P7.4):** live dbt-bigquery, Workflows/Cloud Run, currentness fencing, all ten failure drills, local Airflow reference, and full-refresh parity are verified. The latest pointer is version 6 at source seq 30; the 5-row Gold view matches Week 5 and the Decimal oracle with zero mismatches. Gross BigQuery + Cloud Run list estimate is about USD 0.25; settled billing remains unknown. The independent controller returned `CLOUD_GO_WEEK7`; PR [#5](https://github.com/Dat071104/dataforge-commerce-platform/pull/5) was created in Chrome after the GitHub app API returned 403, and both PR-head workflows passed. The linked PR is the merge record. See [Week 7 evidence](docs/cloud/week7/final_report.md).
-- **Syllabus:** GCP remains a functional mapping. Mentor approval is pending; GCP work does not automatically satisfy an Azure-specific checkpoint.
+- **Week 7 syllabus closure (P7.4.1):** the separate three-province Mini-project 3 weather API → GCS Bronze → BigQuery → dbt Gold slice ran live. A real Airflow 3.4.0 local-Docker DagRun and one automatic Cloud Scheduler firing each completed API-to-Gold; isolated SCD2 history produced three valid versions; one controlled failure alert was delivered and user-confirmed. The one-shot schedule and alert resources were removed. The independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`. Several live fault injections remain partial, and cost is an estimate, not settled billing. Feature PR and exact-head hosted CI are now in progress; merge is allowed after CI passes. See [closure evidence](docs/cloud/week7/closure/).
+- **Syllabus:** the user reported that the mentor approved GCP as the Azure/Fabric alternative on 2026-11-12. No separate written approval artifact was supplied. The mapping records this approval without claiming Azure product equivalence.
 - **Legacy services:** any superseded-project inventory is read-only and documented separately.
 
 ## Architecture
@@ -67,7 +68,7 @@ Week 4’s accepted snapshot path ends at typed staging. Week 5 is a separate in
 
 Week 6 processes public TLC data in a standalone local workload; it does not feed or change commerce Silver/Gold. See the [Spark lab runbook](labs/spark_nyc_taxi/README.md) and [Week 6 report](docs/cloud/week6/final_report.md).
 
-Week 7 reads only the Week 5 orders/payment simulator. It does not claim the eleven Week 4 commerce streams, and its Airflow DAG is a local syllabus reference. The published view returns no rows while the currentness flag is false; a validated publication restores it atomically.
+Accepted P7.4 continues to read only the Week 5 orders/payment simulator; it does not claim the eleven Week 4 commerce streams. P7.4.1 adds a separate weather domain that does not join to commerce or payment facts. Its Airflow 3.4.0 runner was local Docker while its integration tasks used the real GCP data plane. The P7.4 order publication pointer and the separate weather Gold pointer remain independent.
 
 ## Local quickstart
 
@@ -114,7 +115,7 @@ Parse dbt without cloud credentials, then upload a complete Week 5 batch and pas
   --batch-id <manifest-sha256> --run-mode normal
 ~~~
 
-The Scheduler demo job is removed after its forced `NO_NEW_BATCH` verification; it does not run a recurring source feed. See the [Week 7 runbook](docs/cloud/week7/orchestration_runbook.md), [failure matrix](docs/cloud/week7/acceptance_matrix.md), and [final report](docs/cloud/week7/final_report.md).
+The accepted P7.4 Scheduler demonstration was a forced `NO_NEW_BATCH` check. Separately, P7.4.1 observed one genuine time-based Scheduler firing for the weather pipeline; that temporary job was deleted after success. See the [Week 7 runbook](docs/cloud/week7/orchestration_runbook.md), [P7.4.1 acceptance matrix](docs/cloud/week7/closure/acceptance_matrix.md), and [closure report](docs/cloud/week7/closure/final_report.md).
 
 ## Cloud preflight and smoke
 
@@ -167,14 +168,14 @@ The execute flag writes remote objects and tables. The same-source replay is ver
 | OneLake | Cloud Storage plus BigQuery | Separate services, not a unified cross-engine lake. |
 | Fabric Lakehouse | Cloud Storage plus BigLake/BigQuery interoperability | No equivalent transaction layer is deployed; native BigQuery staging is not Delta/Iceberg. |
 | Fabric Warehouse | BigQuery | Week 5 has Silver and a small per-order Gold control reference; it is not an accounting mart or full Fabric Warehouse replacement. |
-| Data Factory pipelines/triggers | Cloud Scheduler + Workflows + Cloud Run Jobs | Week 7 runs only complete uploaded manifests; the demo Scheduler sends `NO_NEW_BATCH` and was removed after one forced run. |
+| Data Factory pipelines/triggers | Cloud Scheduler + Workflows + Cloud Run Jobs | P7.4 remains manifest-driven; P7.4.1 demonstrated one automatic time-based weather run, then deleted the temporary schedule. |
 | dbt on Fabric/Synapse | dbt-bigquery on Cloud Run Jobs | Incremental models, contracts, tests, and full-refresh parity are verified for the Week 5 simulator. |
-| Airflow | Local Airflow 3 reference | Four isolated scenarios pass; Cloud Composer is not deployed. |
+| Airflow | Local Airflow 3 integration | One Airflow 3.4.0 local-Docker DagRun executed the live Mini3 GCP data plane; Composer is not deployed and no hosted Airflow claim is made. |
 | Spark Notebook | Local PySpark or Managed Service for Apache Spark | Local Spark lab is verified; a managed batch is optional, `CLOUD_SPARK_NOT_AUTHORIZED`, and `NOT_RUN`. |
 | Key Vault | Secret Manager | Not configured for this phase. |
 | Terraform with Azure provider / Bicep | Terraform with Google provider | Terraform apply completed; provider resources and behavior differ. |
 
-These are nearest learning analogies, not product equivalence. See the [full syllabus mapping](docs/cloud/syllabus_mapping.md); mentor approval is still required for any Azure-specific assessment.
+These are nearest learning analogies, not product equivalence. See the [full syllabus mapping](docs/cloud/syllabus_mapping.md), which records the user's report of mentor approval for the GCP substitution.
 
 ## Data, security, and cost controls
 
@@ -185,7 +186,7 @@ These are nearest learning analogies, not product equivalence. See the [full syl
 - Standard BigQuery reads are capped at 256 MiB billed; the Week-5 multi-statement publish is separately capped at 1 GiB. The dbt job is 1 vCPU/1 GiB, single-task, 240-second timeout, and zero automatic retries. Terraform state uses an isolated project-named workspace.
 - Runtime access is scoped and policy-inspected: Workflows can run only the two approved jobs and read its control tables; the dbt identity writes Week-7 datasets; public GCS access is prevented; user-managed service-account key inventory is zero.
 - The Week-7 USD 5 target is not a hard cap. The measured gross BigQuery + Cloud Run list estimate is about USD 0.25 before free tiers and unmetered storage. Billing API remains disabled and settled charges are unknown.
-- Week 5 and Week 7 use finite jobs and an immutable source bridge. The temporary Scheduler trigger was force-tested as `NO_NEW_BATCH` and removed; no recurring schedule, Composer, managed Spark, always-on VM, or cloud BI publication remains.
+- Week 5, P7.4, and P7.4.1 use finite jobs and isolated data domains. The P7.4.1 timed schedule and one-off alert resources were removed after demonstration; no recurring schedule, Composer, managed Spark, always-on VM, or cloud BI publication remains.
 
 ## Free Trial and cost notice
 
@@ -207,7 +208,7 @@ PostgreSQL integration tests are enabled separately with RUN_POSTGRES_TESTS=1 an
 
 - **Week 5 — Incremental batch:** live tests, benchmark, independent controller verdict, exact-head hosted CI, and merge complete; see the [final report](docs/cloud/week5/final_report.md).
 - **Week 6 — Spark:** local GO, PR #4 merged after hosted checks; managed Spark remains optional and unrun.
-- **Week 7 — dbt and orchestration:** live dbt, Workflows/Cloud Run, full-refresh parity, currentness fencing, local Airflow, and ORC-01–ORC-10 recovery drills are complete; independent controller/release is pending.
+- **Week 7 — P7.4 accepted:** live dbt, Workflows/Cloud Run, full-refresh parity, currentness fencing, local Airflow reference, and ORC-01–ORC-10 recovery drills are complete; PR #5 is merged. **P7.4.1:** the Mini3 API-to-Gold path, Airflow integration, timed cloud firing, one delivered alert, and isolated SCD2 proof have live receipts. The independent controller returned `CLOUD_GO_WEEK7_SYLLABUS`; the feature PR requires exact-head hosted CI to pass before merge.
 
 Each phase must earn its own evidence. No always-on VM, Cloud SQL, GKE, Composer, or recurring paid job is part of the current foundation.
 

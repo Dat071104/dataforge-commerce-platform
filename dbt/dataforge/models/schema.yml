@@ -210,3 +210,128 @@ models:
       - name: built_at
         data_type: TIMESTAMP
         description: BigQuery timestamp when this receipt query ran.
+
+  - name: stg_weather_mini3_landing
+    description: >-
+      Typed rows from the immutable Mini-project 3 landing table. Replays and
+      provider revisions remain identifiable through request_id and manifest provenance.
+    columns:
+      - name: province_id
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['HCM', 'HN', 'DN']
+      - name: observation_date
+        description: Local calendar date supplied by Open-Meteo in Asia/Ho_Chi_Minh.
+        data_tests: [not_null]
+      - name: precipitation_mm
+        description: Daily precipitation sum in millimetres. NULL is preserved as unknown.
+      - name: temp_max_c
+        description: Daily maximum two-metre air temperature in Celsius. NULL is preserved as unknown.
+      - name: source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['open_meteo_era5']
+      - name: model
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['era5']
+      - name: request_id
+        data_tests: [not_null]
+      - name: source_sha256
+        data_tests: [not_null]
+      - name: manifest_uri
+        data_tests: [not_null]
+      - name: manifest_generation
+        data_tests: [not_null]
+      - name: landed_at
+        data_tests: [not_null]
+
+  - name: int_weather_daily
+    description: >-
+      Latest observed request for each (province, local date, provider, model).
+      A later manifest generation replaces an earlier provider revision for this
+      same observation key; provenance for the selected version stays attached.
+    columns:
+      - name: province_id
+        data_tests: [not_null]
+      - name: observation_date
+        data_tests: [not_null]
+      - name: source
+        data_tests: [not_null]
+      - name: model
+        data_tests: [not_null]
+      - name: request_id
+        data_tests: [not_null]
+      - name: source_sha256
+        data_tests: [not_null]
+      - name: manifest_generation
+        data_tests: [not_null]
+      - name: landed_at
+        data_tests: [not_null]
+
+  - name: fct_mini3_weather_daily
+    description: >-
+      Curated daily weather Gold at province/date/source/model grain, with an
+      explicit unknown/dry/wet precipitation classification and immutable lineage.
+      This weather model has no join to Week-5 orders or payment controls.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: province_id
+        data_type: STRING
+        data_tests: [not_null]
+      - name: observation_date
+        data_type: DATE
+        data_tests: [not_null]
+      - name: precipitation_mm
+        data_type: FLOAT64
+        description: Daily precipitation sum in millimetres; null remains unknown.
+      - name: temp_max_c
+        data_type: FLOAT64
+        description: Daily maximum two-metre air temperature in Celsius; null remains unknown.
+      - name: precipitation_condition
+        data_type: STRING
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['unknown', 'dry', 'wet']
+      - name: source
+        data_type: STRING
+        data_tests: [not_null]
+      - name: model
+        data_type: STRING
+        data_tests: [not_null]
+      - name: request_id
+        data_type: STRING
+        data_tests: [not_null]
+      - name: source_sha256
+        data_type: STRING
+        data_tests: [not_null]
+      - name: manifest_uri
+        data_type: STRING
+        data_tests: [not_null]
+      - name: manifest_generation
+        data_type: INT64
+        data_tests: [not_null]
+      - name: landed_at
+        data_type: TIMESTAMP
+        data_tests: [not_null]
+
+snapshots:
+  - name: week7_scd2_proof_history
+    description: >-
+      Isolated synthetic dbt timestamp snapshot used by the guarded proof harness.
+      It is not the authoritative Week-5 production snapshot or source.
+    columns:
+      - name: order_id
+        data_tests: [not_null]
+      - name: updated_at
+        data_tests: [not_null]

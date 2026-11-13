@@ -1,9 +1,10 @@
 # DataForge Week 7 dbt project
 
-This project is a candidate BigQuery transformation layer over the already
-published Week-5 Silver tables and operational ledger. It does not replace the
-Week-5 atomic publisher and has not been run against GCP as part of local
-development.
+This dbt project contains the accepted Week-5 transformations and the separate
+P7.4.1 Mini-project 3 weather domain. The Week-5 publisher remains unchanged.
+The weather models and publisher were run against the approved GCP project as
+part of the bounded live syllabus demonstration; see the closure receipts under
+`docs/cloud/week7/closure/`.
 
 ## Models and grains
 
@@ -129,3 +130,78 @@ while the next candidate is being validated.
 Do not run `dbt build` or `dbt docs generate` with the offline target: those
 commands execute warehouse operations and the offline project is intentionally
 invalid. The generated `target/`, logs, packages, and profile are ignored.
+
+## Mini-project 3 weather domain
+
+The separate `weather_mini3` source is the typed landing relation
+`weather_mini3.weather_landing`. Its physical request grain is
+`(request_id, province_id, observation_date)`; request IDs are content hashes,
+so identical replays share one identity and revised provider responses create
+a new identity. The conformed incremental Silver grain is
+`(province_id, observation_date, source, model)`, retaining the selected
+request ID, source hash, exact manifest URI/generation, and `landed_at`. A later
+manifest generation supersedes the older provider version for that key.
+
+`fct_mini3_weather_daily` is the typed Gold candidate in
+`dbt_weather_mini3`. It preserves millimetres and Celsius, retains null metrics
+as unknown, and adds a three-state precipitation classification. It does not
+join weather to the commerce or payment models. `dbt build` only builds and
+tests this candidate; it does not publish it. After a successful build/test,
+the separate `publish_weather_mini3` operation checks source and candidate
+coverage, key uniqueness, allowed metric values, provenance, row parity and a
+stable SHA-256 before an atomic version/pointer transaction into
+`gold_weather_mini3`. The stable published relation is
+`gold_weather_mini3.published_weather_daily`; publication uses its own pointer,
+independent of the Week-7 order/payment pointer.
+
+Use only the opt-in `weather_prod` target for the finite Cloud Run dbt job;
+`weather_dev` is the same bounded target for an authorized local proof, and
+`weather_full` writes the parity comparison to a separate dataset. Credential-
+free dbt parsing remains the `offline` target:
+
+```powershell
+dbt parse --project-dir . --profiles-dir . --target offline
+
+$env:DBT_DATAFORGE_PROJECT_ID = 'dataforge-p7-lab-d0f725'
+$env:DBT_DATAFORGE_LOCATION = 'us-central1'
+dbt build --project-dir . --profiles-dir . --target weather_dev --select tag:weather_mini3
+dbt build --full-refresh --project-dir . --profiles-dir . --target weather_full --select tag:weather_mini3
+dbt run-operation publish_weather_mini3 --project-dir . --profiles-dir . --target weather_prod `
+  --args '{"workflow_run_id":"airflow-<64-character-run-hash>"}'
+```
+
+The publisher refuses a different project/dataset, empty or incomplete
+three-province dates, invalid source provenance, duplicate grain, invalid
+metrics, and any divergence between candidate Gold and Silver. The previous
+publication stays current if those checks or the transaction fail. Do not run
+the publish operation before the corresponding candidate build and its dbt
+tests complete.
+
+## Isolated SCD2 history proof
+
+`week7_scd2_proof_history` is a separate timestamp snapshot over one synthetic
+row in `dbt_scd2_proof_input`, with snapshot history in
+`dbt_scd2_proof_history`. It is not a copy of or write to the Week-5 Silver
+table. The guarded runner refuses to replace either table if it already exists,
+requires both reviewed datasets in `us-central1`, and caps each BigQuery query
+at 32 MiB. This accommodates BigQuery's 20 MiB minimum estimate for the proof
+snapshot query while keeping the synthetic workload bounded. Start with a
+read-only plan, then opt in only after checking project,
+IAM, expiration, and cost:
+
+```powershell
+python .\scripts\run_scd2_history_proof.py
+python .\scripts\run_scd2_history_proof.py --execute
+```
+
+The proof observes an initial `CREATED` state, a later `PROCESSING` state, then
+a soft-delete `CANCELLED` tombstone. It snapshots after each change and once
+more with unchanged input. It accepts only three non-overlapping versions, one
+open current interval, and no fourth version on replay. Snapshot validity
+timestamps reflect when dbt observed each source `updated_at`; they do not
+reconstruct business-effective history, nor changes that happened and were
+overwritten between snapshot runs. The live proof receipt is
+[`dbt_scd2_history_receipt.json`](../../docs/cloud/week7/closure/dbt_scd2_history_receipt.json).
+It records three observed versions, validity checks, the tombstone, and the
+unchanged replay result. This synthetic proof does not modify authoritative
+Week-5 history.

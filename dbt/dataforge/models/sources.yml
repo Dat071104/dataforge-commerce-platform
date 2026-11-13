@@ -28,3 +28,47 @@ sources:
     tables:
       - name: week5_order_controls
         description: Atomic Week-5 current per-order control, including soft-deleted orders.
+
+  - name: weather_mini3
+    description: >-
+      Immutable Mini-project 3 Open-Meteo daily observation batches landed in the
+      isolated weather domain. No commerce or payment facts are joined here.
+    database: "{{ target.database }}"
+    schema: weather_mini3
+    tables:
+      - name: weather_landing
+        description: >-
+          Typed observations loaded from one immutable request manifest. Physical
+          request rows are keyed by request_id, province_id, and observation_date;
+          the published daily grain retains the latest request per province/date/source/model.
+        columns:
+          - name: province_id
+            description: HCM, HN, or DN, mapped from the approved city-centre coordinates.
+          - name: observation_date
+            description: Local calendar date returned by Open-Meteo in Asia/Ho_Chi_Minh.
+          - name: precipitation_mm
+            description: Daily precipitation sum in millimetres; null remains unknown.
+          - name: temp_max_c
+            description: Daily maximum 2 m air temperature in Celsius; null remains unknown.
+          - name: source
+            description: Source identifier, currently open_meteo_era5.
+          - name: model
+            description: Provider model identifier, currently era5.
+          - name: request_id
+            description: Content-addressed immutable request identity; revised payloads receive a new identity.
+          - name: source_sha256
+            description: SHA-256 of the source payload or typed artifact tied to this landing row.
+          - name: manifest_uri
+            description: Immutable GCS COMPLETE manifest URI.
+          - name: manifest_generation
+            description: Exact GCS generation of the immutable manifest.
+          - name: landed_at
+            description: UTC time the typed row was first landed in BigQuery.
+
+  - name: scd2_proof_input
+    description: Disposable synthetic source for the isolated dbt SCD2 proof harness.
+    database: "{{ target.database }}"
+    schema: dbt_scd2_proof_input
+    tables:
+      - name: orders
+        description: One synthetic order row; the harness advances updated_at and sets a tombstone.

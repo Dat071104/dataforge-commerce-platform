@@ -1,0 +1,39 @@
+{
+  "schema_version": "dataforge.week7.p7_4_1.scheduler-receipt.v1",
+  "status": "PASS",
+  "recorded_at_local": "2026-11-12",
+  "project_id": "dataforge-p7-lab-d0f725",
+  "project_number": "955038620072",
+  "region": "us-central1",
+  "workflow_name": "dataforge-week7-weather-orchestrator",
+  "scheduler_job_name": "dataforge-week7-weather-daily",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "cron": "55 15 * * *",
+  "schedule_duration": "one automatic time-based firing; job paused after the trigger and deleted after completion",
+  "pre_change_scheduler_job_count": 0,
+  "automatic_trigger_observed": true,
+  "scheduler_last_attempt_time_utc": "2026-11-12T08:55:00Z",
+  "workflow_execution": {
+    "id": "5028cbfb-e5a2-4596-b663-6d0d964a8c56",
+    "state": "SUCCEEDED",
+    "started_at_utc": "2026-11-12T08:55:00.882237240Z",
+    "ended_at_utc": "2026-11-12T09:05:07.553000000Z",
+    "trigger": "scheduler",
+    "observation_date": "2026-11-05",
+    "request_id": "4c0e9e5515056720a8bfe10a8f4ed59bffea7e595ca9d9b260aa6a36169e43e7",
+    "manifest_uri": "gs://dataforge-p7-lab-d0f725-bronze/weather_mini3/v1/manifests/observation_date=2026-11-05/request_id=4c0e9e5515056720a8bfe10a8f4ed59bffea7e595ca9d9b260aa6a36169e43e7/manifest.json",
+    "manifest_generation": "1794473792244378",
+    "row_count": 3,
+    "publication_version": 3,
+    "published_sha256": "e9654b9d8e572e70ec4235ecf9f007c62e7b39e9dd313224f110cd8d2ebd47b",
+    "ledger_query_job_id": "job_wMis2rLjA2vRyCtRD0AKx-nDCWfE"
+  },
+  "cleanup": {
+    "scheduler_job_paused_after_trigger": true,
+    "scheduler_job_deleted_after_completion": true,
+    "scheduler_jobs_currently_present": 0,
+    "temporary_scheduler_service_account_role_and_iam_binding_removed": true,
+    "weekly_or_daily_schedule_left_enabled": false
+  },
+  "note": "This is a genuine time-based Scheduler dispatch, not a forced Scheduler run. Airflow was not running concurrently."
+}
