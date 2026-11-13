@@ -44,55 +44,74 @@ def _db_snapshot(database: Path, run_id: str) -> dict[str, object] | None:
         return None
     with sqlite3.connect(database, timeout=5) as connection:
         dag_run = connection.execute(
-            "SELECT state FROM dag_run WHERE dag_id=? AND run_id=?",
+            "SELECT state, run_type FROM dag_run WHERE dag_id=? AND run_id=?",
             (DAG_ID, run_id),
         ).fetchone()
         if not dag_run:
             return None
+        dag_runs = connection.execute(
+            "SELECT run_id, run_type, state FROM dag_run WHERE dag_id=? ORDER BY run_id",
+            (DAG_ID,),
+        ).fetchall()
         task_rows = connection.execute(
-            "SELECT task_id, state, try_number FROM task_instance "
-            "WHERE dag_id=? AND run_id=? ORDER BY task_id",
+            "SELECT task_id, state, try_number, working_set, archived_reason FROM task_instance "
+            "WHERE dag_id=? AND run_id=? ORDER BY task_id, try_number",
             (DAG_ID, run_id),
         ).fetchall()
+        current_tasks: dict[str, dict[str, object]] = {}
+        attempts: dict[str, list[dict[str, object]]] = {}
+        for task_id, state, try_number, working_set, archived_reason in task_rows:
+            row = {
+                "state": state,
+                "try_number": try_number,
+                "working_set": working_set,
+                "archived_reason": archived_reason,
+            }
+            if working_set == 1:
+                current_tasks[task_id] = {"state": state, "try_number": try_number}
+            else:
+                attempts.setdefault(task_id, []).append(row)
         return {
             "dag_run_state": dag_run[0],
-            "tasks": {
-                task_id: {"state": state, "try_number": try_number}
-                for task_id, state, try_number in task_rows
-            },
+            "run_type": dag_run[1],
+            "dag_runs": [
+                {"run_id": found_run_id, "run_type": run_type, "state": state}
+                for found_run_id, run_type, state in dag_runs
+            ],
+            "tasks": current_tasks,
+            "attempts": attempts,
         }
-
-
-def _task_history(database: Path, run_id: str) -> list[dict[str, object]]:
-    with sqlite3.connect(database, timeout=5) as connection:
-        tables = {
-            row[0]
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
-        table = next(
-            (name for name in ("task_instance_history", "taskinstancehistory") if name in tables),
-            None,
-        )
-        if table is None:
-            raise AssertionError("Airflow metadata DB has no task-instance history table")
-        columns = {row[1] for row in connection.execute(f'PRAGMA table_info("{table}")')}
-        required = {"dag_id", "run_id", "task_id", "state", "try_number"}
-        if not required <= columns:
-            raise AssertionError(f"unexpected task-instance history schema: {sorted(columns)}")
-        rows = connection.execute(
-            f'SELECT state, try_number FROM "{table}" '
-            "WHERE dag_id=? AND run_id=? AND task_id=? ORDER BY try_number",
-            (DAG_ID, run_id, "execute_api_ingest"),
-        ).fetchall()
-        return [{"state": state, "try_number": try_number} for state, try_number in rows]
 
 
 def _ledger(path: Path) -> list[dict[str, object]]:
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def _failure_event_payload(line: str, marker: str) -> dict[str, object] | None:
+    offset = line.find(marker)
+    if offset < 0:
+        return None
+    payload_text = line[offset + len(marker) :].lstrip()
+    candidates = [payload_text]
+    unescaped = payload_text.replace(r'\"', '"')
+    if unescaped != payload_text:
+        candidates.append(unescaped)
+    decoder = json.JSONDecoder()
+    for candidate in candidates:
+        try:
+            payload, _ = decoder.raw_decode(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+        if isinstance(payload, dict):
+            return payload
+    raise ValueError("failure event marker does not contain a JSON object")
 
 
 def _failure_events(home: Path, service_log: Path) -> list[dict[str, object]]:
@@ -107,10 +126,9 @@ def _failure_events(home: Path, service_log: Path) -> list[dict[str, object]]:
         except OSError:
             continue
         for line in lines:
-            offset = line.find(marker)
-            if offset < 0:
+            payload = _failure_event_payload(line, marker)
+            if payload is None:
                 continue
-            payload = json.loads(line[offset + len(marker) :])
             found[json.dumps(payload, sort_keys=True)] = payload
     return list(found.values())
 
@@ -257,17 +275,26 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             "dag_id": DAG_ID,
             "run_id": run_id,
             "dag_run_state": snapshot["dag_run_state"],
+            "dag_runs": snapshot["dag_runs"],
             "task_states": task_states,
             "network": "Docker network_mode=none; _authorized_session intercepted",
         }
         if scenario == "retry_once":
-            history = _task_history(database, run_id)
+            history = snapshot["attempts"].get("execute_api_ingest", [])
             posts = [call for call in calls if call["method"] == "POST"]
             args = [call["args"] for call in posts]
             if (
                 snapshot["dag_run_state"] != "success"
+                or snapshot["run_type"] != "manual"
+                or len(snapshot["dag_runs"]) != 1
                 or ingest != {"state": "success", "try_number": 2}
-                or not any(row == {"state": "up_for_retry", "try_number": 1} for row in history)
+                or not any(
+                    row["state"] == "failed"
+                    and row["try_number"] == 1
+                    and row["working_set"] is None
+                    and row["archived_reason"] == "retry"
+                    for row in history
+                )
                 or len(posts) != 2
                 or args[0] != args[1]
                 or not posts[0]["injected_transport_failure"]
@@ -287,6 +314,8 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             events = _failure_events(home, service_log)
             if (
                 snapshot["dag_run_state"] != "failed"
+                or snapshot["run_type"] != "manual"
+                or len(snapshot["dag_runs"]) != 1
                 or ingest != {"state": "failed", "try_number": 1}
                 or len(posts) != 1
                 or len(events) != 1
@@ -304,6 +333,8 @@ def _run_scenario(scenario: str) -> dict[str, object]:
         else:
             if (
                 snapshot["dag_run_state"] != "success"
+                or snapshot["run_type"] != "manual"
+                or len(snapshot["dag_runs"]) != 1
                 or task_states["authorize_cloud_execution"]["state"] != "skipped"
                 or task_states["verify_gcp_schedule_paused"]["state"] != "skipped"
                 or ingest["state"] != "skipped"

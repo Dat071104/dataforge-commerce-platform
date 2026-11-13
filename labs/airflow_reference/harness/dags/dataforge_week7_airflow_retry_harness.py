@@ -5,10 +5,27 @@ from __future__ import annotations
 from datetime import timedelta
 from unittest.mock import patch
 
-from airflow.sdk.definitions.dag import DagContext
+from airflow import sdk as airflow_sdk
+from airflow.sdk.definitions._internal.contextmanager import DagContext
 
-import dataforge_week7_weather_cloud as production
-from dataforge_week7_airflow_test_session import make_authorized_session
+_TESTED_DAG_ID = "dataforge_week7_weather_cloud"
+_original_dag_decorator = airflow_sdk.dag
+
+
+def _disable_schedule_for_test_dag(*args, **kwargs):
+    if kwargs.get("dag_id") == _TESTED_DAG_ID:
+        kwargs["schedule"] = None
+    return _original_dag_decorator(*args, **kwargs)
+
+
+# Keep the production task graph and callables, but avoid a real-time scheduled DagRun in this harness.
+airflow_sdk.dag = _disable_schedule_for_test_dag
+try:
+    import dataforge_week7_weather_cloud as production  # noqa: E402
+finally:
+    airflow_sdk.dag = _original_dag_decorator
+
+from dataforge_week7_airflow_test_session import make_authorized_session  # noqa: E402
 
 
 def _dag_from_entry(entry):
