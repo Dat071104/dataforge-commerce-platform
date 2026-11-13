@@ -4,6 +4,8 @@
 
 **Branch/base:** `feat/w7-dbt-gold-mart` from `main` `7cd204caa29e17c35137272d9ee3b406caef17eb`.
 
+**Code commit:** a5ff631e2424d3d34a43cc107400949122fd73d (eat(dbt): add province weather rolling mart).
+
 ### B1 — `mart_weather_province_daily`
 
 - Added a `province_id, observation_date` Gold view over the existing `fct_mini3_weather_daily`, restricted to the single approved `open_meteo_era5` / `era5` input so the requested grain cannot multiply across provider models.
