@@ -23,14 +23,14 @@ Persistent working record for P7.5, captured at the final local review gate befo
 | P75-05 | Failure event/notification contract is accurate and safe | PASS | Test verifies one redacted `PIPELINE_FAILED` local log event and `external_notification_sent=false`; external delivery remains unverified and unauthorized. |
 | P75-06 | Cloud Run/sensor lifecycle has bounded, non-tautological semantics | PASS | Synchronous LRO wait is bounded; redundant post-completion sensor removed; receipt delay, timeout, and validation failures are covered offline. |
 | P75-07 | Retryable and terminal failures are classified and tested | PARTIAL | Current HTTP/RPC classifiers, terminal-failure tests, stable retry-argument checks, and task retry-limit assertions pass. The retained Airflow 3.4 `retry_once` receipt is for the separate fixture DAG, not the revised Cloud Run task; no native retry transition for that task is retained or live-tested. |
-| P75-08 | Weather image and relevant paths are covered in PR CI | PARTIAL | Both Week 7 path filters and the credential-free image smoke are configured; hosted exact-head CI is pending. |
-| P75-09 | Week 1 public CSV Bash task has offline fixture tests | PARTIAL | Script, guide, and 16 offline fixture tests pass locally; PR delivery and hosted CI remain pending. |
+| P75-08 | Weather image and relevant paths are covered in PR CI | PASS | PR #8 at head `4d3eb0d`: Week 7 pull-request run `43379259123` passed Python regression, dbt parse/image smoke, Linux Airflow reference scenarios, and Terraform validation; the push-only read-only dbt compile was correctly skipped. Base CI run `43379259150` also passed. |
+| P75-09 | Week 1 public CSV Bash task has offline fixture tests | PASS | Script and guide are included in draft PR #8; 16 loopback-only fixture tests passed locally and the exact-head PR CI runs passed. This is a P7.5 contribution, not a historical Week 1 PR. |
 | P75-10 | README is a concise and accurate portfolio front door | PASS | Root reviewed the verified metrics, four separate domains, Mermaid diagram, safe quickstart, limitations, and links. |
 | P75-11 | Evidence index and syllabus map cover Weeks 1–7 / Mini1–3 | PASS | Root reviewed the code/evidence mappings, status vocabulary, and explicit limitations. Week 1 is marked PARTIAL until PR delivery. |
 | P75-12 | Mentor handoff and 15 technical defense answers are prepared | PASS | Five handoff docs are present; the defense list has exactly 15 Vietnamese answers; screenshot plan uses authentic receipts only. |
 | P75-13 | GitHub hygiene is audited; no unsafe policy mutation | PASS | Read-only settings audit found no rulesets/classic branch rules, no tags/releases, and no open PRs at the snapshot; no settings, issues, branches, or tags changed. |
 | P75-14 | FinOps claims distinguish estimate, alert, and actual invoice | PASS | Historical gross estimates are labelled as estimates; settled billing is unknown; no budget or hard cap is claimed. Billing API read returned 403. |
-| P75-15 | Exactly one independent final controller review after integration | PARTIAL | One independent reviewer returned `P75_CONDITIONAL_GO` after the local gates. No second review will be requested. The reviewer requires supported Linux Airflow evidence of a native retry transition for the revised Cloud Run task and green exact-head hosted CI before merge. |
+| P75-15 | Exactly one independent final controller review after integration | PARTIAL | One independent reviewer returned `P75_CONDITIONAL_GO`; exact-head PR CI is now green. No second review will be requested. The reviewer requires supported Linux Airflow evidence of a native retry transition for the revised Cloud Run task before merge. |
 
 ## Phase transitions and external release
 
@@ -38,7 +38,7 @@ Persistent working record for P7.5, captured at the final local review gate befo
 |---|---|---|
 | Phase A: `A_CODE_READY` | PASS | Local/code gates passed: 194 tests, 7 expected skips; pinned Airflow Docker runtime is an explicit environment skip. See `p75_airflow_correctness.md`. |
 | Phase B: `B_PORTFOLIO_READY` | PASS | Portfolio files, Week 1 implementation, path filters, local fixture tests, and documentation checks are integrated on the same branch. Hosted CI remains a separate release gate. |
-| Exact-head GitHub PR CI | NOT_RUN | Requires authenticated PR creation; record each job and run ID. |
-| Merge and main CI | NOT_RUN | Merge only if policy and review requirements permit. |
-| Prompt C decision memo | NOT_RUN | Documentation/read-only architecture and FinOps analysis only. |
+| Exact-head GitHub PR CI | PASS | Draft PR #8, head `4d3eb0d`: Week 7 PR run `43379259123` succeeded (4 jobs passed; read-only dbt compile skipped by its push-only condition); base CI PR run `43379259150` succeeded. |
+| Merge and main CI | NOT_RUN | PR #8 remains draft. Hold merge until a supported Linux Airflow-managed retry transition for the revised Cloud Run task is evidenced; then recheck merge policy. |
+| Prompt C decision memo | NOT_RUN | A+B is not released while PR #8 remains unmerged. After release, perform the authorized read-only architecture/FinOps matrix; no optional cloud writes are authorized. |
 | Cloud write / email / budget / recurring schedule | BLOCKED | NOT AUTHORIZED; no such operation is required for A+B. |
