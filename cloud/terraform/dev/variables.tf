@@ -85,10 +85,57 @@ variable "week5_job_enabled" {
   default     = true
 }
 
+variable "week5_artifact_cleanup_dry_run" {
+  description = "Keep the Week-5 Artifact Registry cleanup policy in dry-run mode until its inventory output is reviewed."
+  type        = bool
+  default     = true
+}
+
+variable "week5_artifact_cleanup_live_digests" {
+  description = "Week-5 image version IDs referenced by live or retained Cloud Run receipts; refresh from read-only inventory before reviewing cleanup."
+  type        = list(string)
+  default = [
+    "sha256:e94fe5c6a54a76568ad5760c45be4791c17aa7b4f43029aae6f081219fb1ecea",
+    "sha256:c1aeb8526abbfb03f3bef315a0cbdc64c3b450104e511a31956cc8a9b3375294",
+  ]
+
+  validation {
+    condition = length(toset(var.week5_artifact_cleanup_live_digests)) == length(var.week5_artifact_cleanup_live_digests) && alltrue([
+      for digest in var.week5_artifact_cleanup_live_digests : can(regex("^sha256:[0-9a-f]{64}$", digest))
+    ])
+    error_message = "Week-5 protected image values must be unique sha256 version IDs."
+  }
+}
+
 variable "week7_artifact_registry_enabled" {
   description = "Whether to create a private, immutable-tag Week-7 dbt image repository. Keep disabled until the Week-7 release is approved."
   type        = bool
   default     = false
+}
+
+variable "week7_artifact_cleanup_dry_run" {
+  description = "Keep Artifact Registry cleanup policies in non-destructive dry-run mode until the inventory and dry-run result are reviewed."
+  type        = bool
+  default     = true
+}
+
+variable "week7_artifact_cleanup_live_digests" {
+  description = "sha256 version IDs referenced by live Week-7 Cloud Run jobs or the Airflow VM image; refresh from a read-only workload inventory before reviewing cleanup or disabling dry run."
+  type        = list(string)
+  default = [
+    "sha256:c9272dd067815d61ae7e7f88c1e37b79fe8efe14d97aedd243dc2984e344c1f6",
+    "sha256:07d867c34a817a8e9b5d7f4a65019120e9d0f7260a4959337cad8fef1f22a65b",
+    "sha256:eb63edcaa00ef70a2d52ee880195fba0293674aa96c6ac99c443a092d62f9cbd",
+    "sha256:6fe1f06a5d3b860fe9013cbc995ba3ad6fdb5ac3821049f5b2dcb19c90e3dc39",
+  ]
+
+  validation {
+    condition = length(var.week7_artifact_cleanup_live_digests) > 0 &&
+      length(toset(var.week7_artifact_cleanup_live_digests)) == length(var.week7_artifact_cleanup_live_digests) && alltrue([
+      for digest in var.week7_artifact_cleanup_live_digests : can(regex("^sha256:[0-9a-f]{64}$", digest))
+    ])
+    error_message = "Live Week-7 digests must be explicit sha256 version IDs; refresh them from Cloud Run before any non-dry-run cleanup."
+  }
 }
 
 variable "week7_orchestration_enabled" {
