@@ -4,7 +4,7 @@
 
 **Branch/base:** `feat/w7-dbt-gold-mart` from `main` `7cd204caa29e17c35137272d9ee3b406caef17eb`.
 
-**Code commit:** a5ff631e2424d3d34a43cc107400949122fd73d (eat(dbt): add province weather rolling mart).
+**Code commit:** `aa5ff631e2424d3d34a43cc107400949122fd73d` (`feat(dbt): add province weather rolling mart`).
 
 ### B1 — `mart_weather_province_daily`
 
@@ -20,7 +20,7 @@
 
 ### B3 — static docs preparation
 
-- The pinned dbt 1.11.17 CLI accepted `dbt docs generate --no-compile --empty-catalog --static`. Using it after offline parse exited 0 and created `target/index.html` and `target/static_index.html`; the manifest contains both the mart and exposure. `target/catalog.json` is intentionally empty, so the site has no warehouse column metadata. The artifact is ignored/local and was not published to Pages.
+- The pinned dbt 1.11.17 CLI accepted `dbt docs generate --no-compile --empty-catalog --static`. Using it after offline parse exited 0 and created `dbt/dataforge/target/index.html` and `dbt/dataforge/target/static_index.html`; local absolute artifact: `D:\DATA_ENGINEER\DataForge_worktrees\lane-b\dbt\dataforge\target\static_index.html`. Manifest `dbt/dataforge/target/manifest.json` contains both the mart and exposure. `dbt/dataforge/target/catalog.json` is intentionally empty, so the site has no warehouse column metadata. The artifact is ignored/local and was not published to Pages.
 - No `.github/workflows/**` edits or GitHub Pages setting change were made; the integrator owns the Pages workflow and G7 action.
 
 ### Validation evidence
@@ -83,3 +83,43 @@
 - Root cause: the new test's import section was not normalized to the repository's Ruff/isort rules.
 - Fix: inspect Ruff's suggested diff and make the minimal import-only correction.
 - Regression guard: rerun that exact Ruff command and verify no test behavior changes.
+
+### Lane report commit-reference formatting
+
+- Symptom: the report's `Code commit` line displays control characters before the abbreviated SHA and commit subject.
+- Expected vs actual: Markdown code spans were intended; the written line contains BEL and form-feed characters.
+- Reproduction: the PowerShell report update used a double-quoted string containing backtick-plus-`a` and backtick-plus-`f` sequences.
+- Hypotheses: encoding conversion vs PowerShell escape processing; direct readback shows BEL/form-feed at those positions, confirming escape processing.
+- Root cause: PowerShell treated the Markdown backticks as escape characters inside an expandable string.
+- Fix: replace only the report line with a single-quoted here-string so Markdown backticks remain literal.
+- Regression guard: inspect the replacement line and scan the report for control characters before the final commit.
+
+### Report rewrite command parse failure
+
+- Symptom: `functions.exec` raised `SyntaxError: Unexpected token const` before launching PowerShell; no report file changed.
+- Expected vs actual: intended to repair the malformed commit line and record artifact paths; the embedded command was rejected by the JavaScript parser.
+- Reproduction: the failed `functions.exec` cell containing a PowerShell double-quoted CRLF concatenation inside a JavaScript double-quoted string.
+- Hypotheses: PowerShell parse issue vs JavaScript quoting collision; no shell output and a JavaScript SyntaxError confirm the failure occurred before PowerShell.
+- Root cause: unescaped nested double quotes closed the outer JavaScript string.
+- Fix: use `[Environment]::NewLine` for the separator and avoid nested double-quoted PowerShell strings.
+- Regression guard: keep embedded PowerShell free of unescaped double quotes; verify report readback and scan for control characters.
+
+### Second report rewrite parse failure
+
+- Symptom: the second `functions.exec` report rewrite failed with `SyntaxError: Missing initializer in const declaration` before any PowerShell ran; the report remains unchanged by that attempt.
+- Expected vs actual: the commit reference and absolute artifact path were to be corrected; no file write occurred.
+- Reproduction: the failed embedded command included a PowerShell `throw` string quoted with an unescaped double quote inside the JavaScript double-quoted command.
+- Hypotheses: PowerShell parse issue vs JavaScript string termination; the JavaScript SyntaxError confirms the shell was never launched.
+- Root cause: another nested double quote closed the JavaScript command string.
+- Fix: reissue with no double-quoted PowerShell literals; use single-quoted strings throughout.
+- Regression guard: keep the embedded command free of double quotes and confirm the report readback.
+
+### Report B3 anchor mismatch
+
+- Symptom: the PowerShell rewrite aborted with `Expected exactly one B3 result bullet`; no report file write occurred.
+- Expected vs actual: the regex expected `- No .github/workflows` after the B3 paragraph; actual Markdown includes a backtick before `.github/workflows`.
+- Reproduction: the rejected match-count-checked rewrite.
+- Hypotheses: case/path mismatch vs Markdown delimiter mismatch; readback shows the backtick delimiter caused the mismatch.
+- Root cause: the B3 paragraph boundary regex omitted the Markdown backtick.
+- Fix: replace only the unique artifact-path sentence inside the paragraph rather than matching a broader section boundary.
+- Regression guard: check the exact old sentence occurs once and inspect the full B3 paragraph after replacement.
