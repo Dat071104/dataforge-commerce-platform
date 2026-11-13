@@ -14,4 +14,4 @@ Historical `CLOUD_GO_WEEK7` remains unchanged. The verdict does not claim produc
 
 ## Release gate
 
-The verdict permits a feature branch release. Require hosted CI to pass on the exact PR head before merging; preserve the existing accepted Week 4/5/6/7 releases and synchronize local `main` only after the permitted merge.
+The verdict permitted a feature branch release. PR #6 merged after GitHub reported 12/12 exact-head checks successful or skipped (11 passed and one PR-policy skip); merge commit `4939d1d887555528d6622400b4a8c9ab16bec86c` contains head `e1c0f00eec4ebbff0bbf5371e066b0bd18cb6443`. Local `main` was fast-forwarded to the merge commit. Historical accepted Week 4/5/6/7 releases remain intact.
