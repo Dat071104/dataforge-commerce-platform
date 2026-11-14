@@ -164,8 +164,8 @@ def _authorized_credentials():
     identity_mode = _require_cloud_authorization()
     try:
         import google.auth
-        from google.auth.compute_engine import credentials as compute_engine_credentials
         from google.auth import impersonated_credentials
+        from google.auth.compute_engine import credentials as compute_engine_credentials
         from google.auth.transport.requests import Request
         from google.oauth2 import service_account
 

@@ -333,3 +333,16 @@ A later self-review removed secret values from Docker container environment. The
 Systemd is the only restart supervisor. Its unit is Type=simple with Restart=on-failure. Bootstrap starts Postgres, polls health, runs airflow-init as a --rm one-off container, then keeps Compose attached to the four long-running Airflow services with abort-on-container-exit. Compose defines no restart policy, avoiding a Docker/systemd restart race before /run secrets are staged.
 
 Final local validation after that adjustment: 10 bootstrap tests passed; Docker build succeeded from the pinned Airflow base without pulling; the no-network image smoke reported Airflow 3.4.0, bash syntax success, _CMD resolution success, admin hash valid, and SimpleAuthManager password file absent. Compose config validation reported secret placeholder values absent. The local image manifest digest was sha256:d22677d81e513035684a0624ba70602b560788f45bf6efa515c4ac78b577c48e and is not a remote registry digest. No GCP call, VM, secret access, image publish, or CI run occurred.
+
+### Root exact-head Ruff failure and correction
+
+The pushed head 300a90daa4d99290f1c3b0866eb0379384583872 ran Week 7 CI 43464217569. Job 132018870149 failed in Ruff and compile. The unauthenticated job-log API returned 403, and the public job page showed only exit code 1. To discriminate lint from compile, root recreated the pinned Python 3.11 environment and ran Ruff 0.17.3 with the exact workflow paths. It reported only three I001 import-order violations: the FAB smoke imports, google-auth imports in the production DAG, and the contract-test import list. Compileall exited 0.
+
+The correction only reorders those imports; it does not change DAG logic, test assertions, or dependency scope. Root reran Ruff 0.17.3 and compileall in the runtime worktree: both exited 0. A new exact-head push run is required; the failed run remains historical. No image publish, GCP call, or cloud write occurred.
+
+
+### Lane A exact-head Actions and Ruff RCA
+
+The first exact-head push for Lane A/A5 was head 300a90daa4d99290f1c3b0866eb0379384583872. Base CI run 43464217658/job 132018870013 succeeded. Week 7 run 43464217569 had these successful jobs: Local Airflow reference scenarios 132018870516 (artifact airflow-scheduler-harness, ID 14058921144, 2,072 bytes), Airflow VM runtime 132018870526, dbt parse/image 132018870639, and Terraform roots dev/week7_ops/state_backend_bucket/airflow_vm 132018870682/132018870755/132018870760/132018870854. The keyless dbt compile job 132020091657 was skipped by its push condition because the reviewed WIF provider permits only main and feature/p7 refs. No cloud auth request was attempted on this lane branch.
+
+Python offline regression job 132018870149 failed in the Ruff and compile step. Signed Chrome job-log inspection confirmed Ruff 0.17.3 I001 import ordering in fab_admin_smoke.py, dataforge_week7_weather_cloud.py, and test_week7_weather_dag_contract.py. A temporary Python 3.11 reproduction with Ruff 0.17.3 produced exactly those three findings; compileall passed. Root reordered only the imports in the separate runtime worktree and reran the exact Ruff command plus compileall: both passed. That fix has not yet been committed or pushed; the published head and failed run remain unchanged.

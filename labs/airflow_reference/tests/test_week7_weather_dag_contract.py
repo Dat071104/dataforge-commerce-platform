@@ -23,8 +23,8 @@ sys.path.insert(0, str(DAGS_DIR))
 
 import dataforge_week7_weather_cloud as weather_cloud  # noqa: E402
 from dataforge_week7_weather_cloud import (  # noqa: E402
-    CloudRunExecutionReceiptSensor,
     DAG_ID,
+    CloudRunExecutionReceiptSensor,
     dataforge_week7_weather_cloud,
 )
 

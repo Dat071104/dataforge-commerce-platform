@@ -10,11 +10,10 @@ import subprocess
 from pathlib import Path
 from urllib.parse import quote
 
-from werkzeug.security import check_password_hash
-
 from airflow.providers.fab.auth_manager.cli_commands.user_command import (
     get_application_builder,
 )
+from werkzeug.security import check_password_hash
 
 BOOTSTRAP = runpy.run_path(
     "/opt/dataforge/airflow_vm/fab_admin_bootstrap.py",
