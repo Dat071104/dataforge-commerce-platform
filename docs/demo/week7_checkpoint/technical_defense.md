@@ -1,48 +1,63 @@
-# Technical defense · 15 questions
+# Technical defense · 20 questions
 
-These are draft answers in Vietnamese. Personalize them before presenting and keep only claims you can personally explain from the code or receipts.
+These are rehearsal answers, not a record of a mentor interview. The first-person decision log is an AI-assisted draft and requires author review. Keep each answer within the evidence linked from the [index](../../EVIDENCE_INDEX.md).
 
-1. **DataForge giải quyết bài toán gì?**<br>
-   Đây là portfolio học Data Engineering trên dữ liệu commerce tổng hợp. Em giữ riêng local commerce, các bài tập GCP, lab Spark taxi và weather Mini3 vì grain và lifecycle khác nhau. Em không trình bày nó như một service production hay hệ thống kế toán.
+1. **Grain của từng fact và mart là gì?**
+   <code>fct_order_item</code> có grain một dòng order-item; <code>fct_payment</code> là một payment event; <code>fct_return</code> là một return line; <code>fct_shipment</code> là một shipment. Week 7 <code>fct_week7_order_reconciliation</code> có một dòng hiện tại trên mỗi <code>order_id</code>, sau khi payments được aggregate riêng. Đây là synthetic commerce data.
 
-2. **Vì sao không join trực tiếp mọi fact với nhau?**<br>
-   Một order item, payment, return và shipment là các grain khác nhau. Join ở grain thô có thể nhân bản tiền hoặc số lượng. Em aggregate/đối soát theo key có hợp đồng rõ ràng và dùng metric contract để nói đúng định nghĩa.
+2. **Pipeline idempotent ở đâu?**
+   Local ingestion dùng content hash và atomic manifest; cloud objects dùng immutable generation/precondition; BigQuery dùng <code>MERGE</code>; Gold publication có candidate check và currentness pointer. Những cơ chế này làm repeated data effects có thể kiểm soát. Chúng không đảm bảo exactly-once API submission.
 
-3. **Workflows và Airflow chịu trách nhiệm gì? Vì sao gọi Google API bằng REST?**<br>
-   Workflows điều phối finite Cloud Run Jobs cho đường GCP. Airflow 3.4 là một integration DAG chạy local Docker, không phải scheduler hosted. DAG dùng AuthorizedSession với identity keyless, resource path cố định và allowlist để giới hạn phạm vi. Cách này dễ kiểm soát nhưng em phải tự quản lý polling và phân loại lỗi; provider operator chỉ nên thay thế sau khi xác minh tương thích Airflow 3.4 và auth.
+3. **Vì sao dùng <code>change_seq</code> thay vì chỉ <code>updated_at</code>? Nêu counterexample.**
+   Hai events có thể có cùng timestamp. Nếu consumer dùng <code>updated_at &gt; cursor</code>, event đến muộn nhưng timestamp bằng cursor sẽ bị bỏ qua. <code>change_seq</code> được cấp tuần tự trong transaction nên cursor vẫn tiến; Lane D có test tái hiện counterexample.
 
-4. **Lỗi scheduled DagRun với empty conf là gì, và P7.5 sửa ra sao?**<br>
-   DAG cũ yêu cầu <code>dag_run.conf.mode=cloud_integration</code>, trong khi scheduler bình thường không gửi conf đó, nên run dừng trước ingest. P7.5 dùng Param mặc định đã validate cho mode scheduled và ngày theo interval, còn quyền chạm cloud là cờ deployment riêng, mặc định OFF. Manual date vẫn phải qua validation. 32 contract tests chạy với package Airflow 3.4.0 trong virtualenv cô lập; pinned Linux Docker test chưa chạy được vì Docker engine unavailable và Airflow không hỗ trợ native Windows.
+4. **GCS generation dùng để làm gì?**
+   Generation ghim chính xác version object mà manifest và downstream receipt đã đọc. Kết hợp SHA-256 để xác minh bytes và phát hiện generation mismatch. Generation không tự chứng minh rằng manifest đáng tin nếu cùng actor có thể sửa cả hai.
 
-5. **Sensor trong receipt cũ có thực sự chờ bất đồng bộ không?**<br>
-   Không. Task gọi Cloud Run đã poll operation đến terminal state rồi sensor mới chạy. Vì vậy sensor thường chỉ xác nhận receipt sau khi job xong; nó không chứng minh async waiting. P7.5 bỏ sensor dư thừa và dùng bounded receipt read. Em không claim đã demo async Airflow sensor.
+5. **Gold pointer hoạt động thế nào? Rollback ra sao?**
+   Candidate được build, test và reconcile trước publication. Nếu gate fail thì candidate không được public. Commerce fence có thể làm view current rỗng khi upstream state đổi; các version bất biến vẫn giữ audit. Repo không chứng minh một nút rollback tự động; restore phải là thao tác publication có kiểm tra và có authorization riêng.
 
-6. **Vì sao dùng sequence thay vì chỉ dựa vào <code>updated_at</code>?**<br>
-   Nhiều event có thể cùng timestamp, còn sequence tạo thứ tự replay ổn định và checkpoint rõ ràng. Nó giúp xử lý tombstone, gap, backfill và retry có thể kiểm tra. Sequence là source ordering cho bài tập này, không phải CDC streaming.
+6. **Airflow, Workflows và Composer khác nhau thế nào? Vì sao chọn VM?**
+   Cloud Workflows điều phối finite cloud steps; Airflow là scheduler/DAG framework; Cloud Composer là managed Airflow service. DataForge không chọn VM làm scheduler đã vận hành: Airflow từng chạy một lần trong local Docker; Composer và hosted Airflow không được triển khai. Local run giảm scope cho code evidence, nhưng không đáp ứng yêu cầu wholly-GCP nếu mentor đòi điều đó.
 
-7. **Tại sao đợi 7 ngày cho ERA5?**<br>
-   Đây là settling policy bảo thủ cho dữ liệu lịch sử, không phải khẳng định provider đã chốt vĩnh viễn mọi giá trị. Nếu provider sửa dữ liệu, response hash tạo request identity mới và pipeline giữ provenance của lần đó.
+7. **Sensor dùng reschedule hay deferrable?**
+   Bản cũ có reschedule sensor, nhưng Cloud Run task đã poll đồng bộ xong trước đó nên sensor không chứng minh asynchronous waiting có ý nghĩa. P7.5 bỏ sensor dư thừa. Bản hiện tại không claim một sensor async wait.
 
-8. **Nếu provider sửa dữ liệu cũ thì theo dõi thế nào?**<br>
-   Request ID dựa trên date, danh sách province và digest response; manifest ghi source hash, object generation, và provenance. Bản sửa tạo identity mới, còn Bronze cũ vẫn immutable. dbt chọn request đã verify mới nhất cho grain date/province/source/model.
+8. **SLA trong Airflow 3 ở đâu? Deadline Alerts dùng thế nào?**
+   P7.5 dùng Airflow 3 Deadline Alert thay cho legacy SLA callback. No-egress harness kiểm tra deadline event và failure event riêng. Đây là local log/harness evidence; external email alert không được gửi bởi bản này.
 
-9. **Gold pointer hỗ trợ recovery/rollback ra sao?**<br>
-   Candidate được build và test trước publication. Week 7 commerce dùng versioned output và currentness fence; nếu failure xảy ra sau Silver commit nhưng trước publish, view không lộ candidate mới và exact-manifest replay có thể hoàn tất publish. Mini3 weather có pointer riêng. Em không nói rollback tự động cho mọi lỗi; các version và receipt giữ bằng chứng để reviewer kiểm tra.
+9. **Lỗi nào retry, lỗi nào fail ngay?**
+   Contract retry HTTP 408/429/5xx và transient poll reads trong giới hạn. HTTP 4xx như 403, ngày/identity/receipt/contract sai thì fail fast. Operation timeout mơ hồ cần operator xem Cloud Run trước khi replay.
 
-10. **1,000 địa điểm × 365 ngày có chạy được với code hiện tại không?**<br>
-    Không nên suy ra từ demo ba địa điểm. Grain lý thuyết là 365,000 location/date rows, nhưng API quota, số request, concurrency, retry, object count, partitioning, late correction và cost phải benchmark trước. Em sẽ mở rộng theo batch, đặt giới hạn và đo số request/bytes trước khi hứa throughput.
+10. **Retry có thể tạo duplicate không? Vì sao?**
+    Provider request có thể lặp nếu timeout xảy ra sau khi Cloud Run nhận request nhưng trước khi caller nhận operation ID. Stable invocation ID, immutable writes, <code>MERGE</code>, và publication no-op bảo vệ published state; chúng không chứng minh exactly-once execution hay API call.
 
-11. **SCD2 proof có phải customer dimension không?**<br>
-    Không. Đó là bảng order-state synthetic để chứng minh dbt snapshot tạo ba version, validity window nối tiếp, một current row và không tạo version mới khi replay unchanged. Nó không phải thiết kế SCD2 customer/location dimension hay bằng chứng lịch sử nghiệp vụ thật.
+11. **Backfill một năm làm thế nào, nghẽn ở đâu?**
+    Em chưa chạy year-long backfill. API contract hiện nhận một observation date mỗi request; một kế hoạch tương lai cần chia theo ngày, giới hạn concurrency, xác minh từng receipt, và đặt query/cost bound. Provider quota/rate, request volume và BigQuery scan là các điểm nghẽn cần đo trước khi xin phép chạy.
 
-12. **Bytes billed của BigQuery có phải invoice không? Budget alert có chặn spend không?**<br>
-    Không. Billed bytes và list-rate là usage estimate; billing export/credits/free tier và settled invoice có thể khác. Repo ghi actual settlement là unknown. Budget alert chỉ thông báo theo ngưỡng, không phải hard cap; hiện không có budget alert được claim là đã cấu hình.
+12. **Nếu mở rộng lên 1.000 địa điểm, phần nào hỏng trước?**
+    Hệ thống hiện chỉ allowlist ba điểm, nên chưa có evidence ở quy mô đó. Best estimate là provider quota/request fan-out sẽ là giới hạn đầu tiên; payload volume, concurrency, rate limit, BigQuery partitioning và cost cần benchmark riêng. Đây là suy luận, không phải kết quả đo.
 
-13. **Tại sao broadcast join lại chậm hơn?**<br>
-    Trên máy local này broadcast giảm shuffle nhưng tăng memory/serialization và scheduling overhead. Median baseline là 213.924 giây, broadcast là 256.307 giây, chậm hơn 19.8%. Đây là một workload/máy cụ thể, không phải quy luật cho mọi cluster.
+13. **Vì sao chờ bảy ngày? Provider sửa dữ liệu thì sao?**
+    ERA5 cần settling delay trong contract. Raw response và typed Parquet được hash; response đã sửa tạo request identity mới và object version mới thay vì overwrite. Sau đó phải reconcile candidate trước publish. Không có guarantee provider sẽ không sửa lại sau thời gian này.
 
-14. **Retry và no-op bảo vệ điều gì? Có exactly-once không?**<br>
-    Stable invocation ID, immutable upload precondition, landing MERGE và publication hash/check giúp retry hoặc exact replay không nhân bản published state. Nhưng timeout sau <code>jobs.run</code> có thể khiến operation đầu vẫn chạy trong lúc Airflow retry gửi lại; provider API call có thể lặp. Vì vậy em nói at-least-once invocation với idempotent effects, không claim exactly-once.
+14. **IAM: service account nào được làm gì? Vì sao không dùng key?**
+    Ingest identity ghi/đọc dưới Bronze prefix và merge landing; dbt identity đọc landing và ghi isolated candidates/Gold pointer; Workflows identity gọi đúng hai Cloud Run jobs và ghi ledger/log; Airflow identity có quyền invocation/read phù hợp; Scheduler caller tạm thời chỉ tạo Workflow execution. Dùng keyless identity để tránh long-lived service-account key.
 
-15. **Credential và AI-assisted engineering được kiểm soát thế nào?**<br>
-    Runtime dùng keyless ADC/impersonation và scoped service account; không có static service-account key trong evidence. AI có thể hỗ trợ soạn code hoặc tài liệu, nhưng em chỉ nên nhận phần em đã tự đọc và kiểm chứng. Em sẽ trỏ từng claim về test hoặc receipt, không nhận human review, certificate hay mentor approval khi chưa có artifact tương ứng.
+15. **Secret nằm ở đâu, rotate thế nào?**
+    Repo không có static service-account key. Runtime identity dùng keyless ADC; một số local harness mount file credential read-only làm fixture/runtime input, không phải secret được commit. No Secret Manager secret rotation event được claim ở đây; nếu workload cần real secret thì phải thiết kế scope và rotation policy riêng trước khi bật.
+
+16. **Cost mỗi run là bao nhiêu? Budget có chặn spend không?**
+    Em không thể đưa ra một đơn giá per-run đáng tin từ aggregate receipt. Weather receipt cho gross Cloud Run + BigQuery subtotal khoảng USD 0.095 qua nhiều executions, chưa gồm free usage và các dịch vụ chưa định giá. Project bill và current VM inventory unknown. Budget alert thông báo usage; không phải hard cap. [Cost table](cost_table.md).
+
+17. **Vì sao broadcast join chậm hơn?**
+    Quan sát được là broadcast giảm shuffle bytes nhưng median runtime chậm hơn 19.8%. Nguyên nhân cụ thể chưa được cô lập; scheduler overhead, serialization, memory pressure hoặc host contention chỉ là hypotheses. Em giữ số đo âm và không tuyên bố broadcast luôn chậm.
+
+18. **SCD2 trên orders khác gì SCD2 trên dimension?**
+    Receipt này lưu các order states mà synthetic dbt snapshot quan sát được; <code>ingested_at</code> tạo observation validity, không phải business-effective history. Dimension SCD2 thường version business attributes với surrogate key/effective dates để facts join đúng historical state. Repo không gọi order-state snapshot này là customer dimension.
+
+19. **AI hỗ trợ phần nào, và kiểm chứng thế nào?**
+    Engineering decision log và một phần tài liệu là AI-assisted draft; tác giả chưa ký duyệt reflection. Mỗi factual claim cần đối chiếu code, test, CI hoặc receipt. Em không gán cho AI hay bản thân bất kỳ mentor approval, course completion, screenshot, hay spend evidence nào khi không có artifact.
+
+20. **Nếu làm lại từ đầu, em sẽ giản lược gì?**
+    Em sẽ giữ một local commerce baseline, một bounded cloud batch, một local Spark lab và một Mini3 weather slice. Em sẽ thêm orchestrator hoặc hosted runtime chỉ khi checkpoint yêu cầu và có cost/permission gate; không giữ nhiều control plane nếu không mang lại evidence mới.
