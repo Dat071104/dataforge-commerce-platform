@@ -64,6 +64,14 @@
 - Opt-in PostgreSQL 16 D2 EXPLAIN test passed 1 after rebase. It created and dropped its unique synthetic database; an independent read-only check found 0 residual dataforge_explain_* databases. Before/after plan evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-postgres-explain-rebase-2026-11-14.log; SHA-256 4FBD26831E20C1D9F9DD63ACA5FEAD144E97F8FDE745D72311D462154395F894. The planner used the baseline index in both plans; no speedup claim is made.
 
 - D2 exact-head CI Postgres summary remains required. D4 root cause: the grep filter selected delivered data rows and redirected them into delivered.csv without copying the CSV header. The minimal fix writes the header first, appends transformed rows, and reports data rows excluding the header. In cached apache/airflow:3.4.0-python3.11 with network_mode=none, bash -n and exact output assertions passed: header present, total 135.50, 2 data rows, pending/canceled excluded, mode 600. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-d4-linux-container-2026-11-14.log, SHA-256 A386AF57727C7E02E2C8068F5FE2751B137F93BB460CC51983FD7B61458ADD09. After the fix, Python 3.11 tests/learning passed 6/2, Ruff/compileall passed, secret scan found 0/518, and diff-check passed; log SHA-256 6D2A231690B598534B9080F30131DBBE49EEB0F08B3689BF4EE2352D8F369179. D2 opt-in Postgres result is recorded above; exact-head D2/D4 CI is pending.
+
+## Root integration update after B merge (2026-11-14)
+
+- Merged origin/main at 9ec5f75, which includes B PR #9 and the Airflow fix, into the D branch with normal merge commit b2e475cc9fa41b37fa390487f5b00b46576ba68a. The merge had no conflicts or history rewrite.
+- Post-merge offline suite: tests/learning completed 6 passed and 2 expected skips (Windows-only D4 and opt-in D2). Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-post-main-offline-2026-11-14.log; SHA-256 58E1CAC784D40E276B83BDBA989F72DD38E37A50710527F5D18BBE994EDEC6D5.
+- Post-merge D2 opt-in PostgreSQL 16 EXPLAIN test: 1 passed, both plans recorded, and a follow-up query found 0 residual dataforge_explain_* databases. The planner used the baseline index in both plans, so no speedup is claimed. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-post-main-postgres-2026-11-14.log; SHA-256 EB2CFC0992D4D28A0F06E3BA4AB258B1D86BEBF32CB62D6C498496635BDB2895.
+- Ruff, compileall, git diff --check, and secret scan passed; the scan found 0/553 files. The D4 Linux-only assertions were not changed; exact-head CI on the newly synced branch remains necessary for Linux D4 and the Postgres step.
+- No cloud action, resource, paid query, or GCP cost was created for this update.
 ## RCA log
 
 ### Ruff I001 in the timing helper
