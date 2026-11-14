@@ -127,9 +127,21 @@ run-version table and selects only the version named by the pointer. It is
 created after the version table exists and continues to expose the prior run
 while the next candidate is being validated.
 
-Do not run `dbt build` or `dbt docs generate` with the offline target: those
-commands execute warehouse operations and the offline project is intentionally
-invalid. The generated `target/`, logs, packages, and profile are ignored.
+Do not run `dbt build` or default `dbt docs generate` with the offline target:
+those commands can execute warehouse operations and the offline project is
+intentionally invalid. A credential-free static docs artifact can be generated
+from the parsed manifest without compiling or querying the warehouse:
+
+```powershell
+dbt parse --project-dir . --profiles-dir . --target offline
+dbt docs generate --no-compile --empty-catalog --static --project-dir . --profiles-dir . --target offline
+```
+
+This produces a static site with manifest-based model/exposure lineage and an
+empty `catalog.json`; it does not include warehouse column metadata and does
+not publish the site to GitHub Pages. Use the trusted read-only CI identity
+only if warehouse metadata is needed. The generated `target/`, logs, packages,
+and profile are ignored.
 
 ## Mini-project 3 weather domain
 

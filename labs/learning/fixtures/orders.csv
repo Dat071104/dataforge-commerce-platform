@@ -1,0 +1,9 @@
+order_id,province_id,status,amount
+O001,P1,delivered,100.00
+O002,P1,pending,250.00
+O003,P1,delivered,0.00
+O004,P2,delivered,35.50
+O005,P2,canceled,18.00
+O006,P3,delivered,99.00
+O007,P3,delivered,1.25
+O008,P3,returned,50.00

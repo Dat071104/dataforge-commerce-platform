@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: mart_weather_province_daily
+    description: >-
+      One row per province and local observation date for the approved
+      Open-Meteo ERA5 source/model. Seven-day precipitation is the complete
+      calendar window including the current date and previous six dates; it is
+      NULL unless all seven daily precipitation values are present. The
+      thirty-day temperature mean similarly requires thirty consecutive
+      calendar dates with non-NULL maximum temperatures. Missing dates and
+      unknown measurements are not imputed as zero. The anomaly is current
+      maximum temperature minus the complete trailing thirty-day mean; the
+      window includes the current date.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: province_id
+        data_type: STRING
+        description: Province code; one of HCM, HN, or DN.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['HCM', 'HN', 'DN']
+      - name: observation_date
+        data_type: DATE
+        description: Local calendar observation date returned by Open-Meteo.
+        data_tests: [not_null]
+      - name: precipitation_mm
+        data_type: FLOAT64
+        description: Daily precipitation sum in millimetres; NULL remains unknown.
+      - name: temp_max_c
+        data_type: FLOAT64
+        description: Daily maximum two-metre air temperature in Celsius; NULL remains unknown.
+      - name: rain_day
+        data_type: BOOL
+        description: TRUE for positive precipitation, FALSE for zero, and NULL when unknown.
+      - name: precipitation_observed_days_7d
+        data_type: INT64
+        description: Number of non-NULL precipitation observations in the trailing seven calendar dates.
+        data_tests: [not_null]
+      - name: precipitation_7d_mm
+        data_type: FLOAT64
+        description: Complete seven-calendar-day precipitation sum; NULL when any date or value is missing.
+      - name: temp_max_observed_days_30d
+        data_type: INT64
+        description: Number of non-NULL temperature observations in the trailing thirty calendar dates.
+        data_tests: [not_null]
+      - name: temp_max_30d_mean_c
+        data_type: FLOAT64
+        description: Complete thirty-calendar-day mean maximum temperature; NULL when any date or value is missing.
+      - name: temp_max_30d_anomaly_c
+        data_type: FLOAT64
+        description: Current maximum temperature minus its complete trailing thirty-day mean.
+
+unit_tests:
+  - name: mart_weather_calendar_windows_handle_gaps
+    description: >-
+      Calendar windows must not stretch to include older observations when an
+      observation date is missing. The fixture also has one complete 30-day
+      province window and one unknown precipitation value.
+    model: mart_weather_province_daily
+    given:
+      - input: ref('fct_mini3_weather_daily')
+        format: csv
+        fixture: mart_weather_province_daily_input
+    expect:
+      format: csv
+      fixture: mart_weather_province_daily_expected
+
+exposures:
+  - name: weather_province_daily_demo
+    label: Province Daily Weather Demo
+    type: dashboard
+    maturity: low
+    description: >-
+      Planned demonstration dashboard for per-province precipitation and
+      temperature trends. The exposure documents the downstream use and
+      lineage; no dashboard URL is configured or claimed as live.
+    depends_on:
+      - ref('mart_weather_province_daily')
+    owner:
+      name: DataForge portfolio owner
