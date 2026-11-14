@@ -4,6 +4,7 @@ locals {
     "metadata_db_password",
     "admin_password",
   ])
+  airflow_startup_script = var.airflow_startup_script != null ? var.airflow_startup_script : file("${path.module}/../../../deploy/airflow_vm/startup.sh")
 }
 
 resource "google_project_service" "compute" {
@@ -147,11 +148,11 @@ resource "google_compute_instance" "airflow" {
     enable-oslogin               = "TRUE"
     block-project-ssh-keys       = "TRUE"
     dataforge-airflow-image      = var.airflow_image
-    dataforge-runtime-bundle-uri = var.airflow_runtime_bundle_uri
+    dataforge-weather-cloud-enabled = tostring(var.weather_cloud_enabled)
     destroy_by                   = var.destroy_by
   }
 
-  metadata_startup_script = var.airflow_startup_script
+  metadata_startup_script = local.airflow_startup_script
 
   scheduling {
     automatic_restart   = true

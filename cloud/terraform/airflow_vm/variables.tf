@@ -47,12 +47,10 @@ variable "enable_vm" {
       var.enable_secrets &&
       var.airflow_service_account_email != null &&
       var.airflow_image != null &&
-      var.airflow_runtime_bundle_uri != null &&
-      var.airflow_startup_script != null &&
       var.subnet_cidr != null &&
       var.destroy_by != null
     )
-    error_message = "VM creation requires the VM secrets, existing scoped service account, digest-pinned image, runtime bundle, startup script, verified subnet CIDR, and destroy_by."
+    error_message = "VM creation requires the VM secrets, existing scoped service account, digest-pinned image, verified subnet CIDR, and destroy_by."
   }
 }
 
@@ -97,23 +95,22 @@ variable "airflow_image" {
   }
 }
 
-variable "airflow_runtime_bundle_uri" {
-  description = "Immutable CI-produced GCS URI for the reviewed Airflow Compose/systemd bundle."
+variable "airflow_startup_script" {
+  description = "Optional startup script override. Defaults to the script bundled with the reviewed Airflow runtime image source."
   type        = string
   default     = null
   nullable    = true
 
   validation {
-    condition     = var.airflow_runtime_bundle_uri == null || startswith(var.airflow_runtime_bundle_uri, "gs://")
-    error_message = "airflow_runtime_bundle_uri must be an immutable gs:// object URI."
+    condition     = var.airflow_startup_script == null || length(trimspace(var.airflow_startup_script)) > 0
+    error_message = "airflow_startup_script must be non-empty when explicitly overridden."
   }
 }
 
-variable "airflow_startup_script" {
-  description = "Reviewed startup script from the Airflow runtime bundle; it must read secrets from Secret Manager and write only to tmpfs."
-  type        = string
-  default     = null
-  nullable    = true
+variable "weather_cloud_enabled" {
+  description = "Explicit Airflow cloud execution gate; keep false until the C5 schedule preflight is complete."
+  type        = bool
+  default     = false
 }
 
 variable "destroy_by" {
