@@ -145,11 +145,11 @@ resource "google_compute_instance" "airflow" {
   }
 
   metadata = {
-    enable-oslogin               = "TRUE"
-    block-project-ssh-keys       = "TRUE"
-    dataforge-airflow-image      = var.airflow_image
+    enable-oslogin                  = "TRUE"
+    block-project-ssh-keys          = "TRUE"
+    dataforge-airflow-image         = var.airflow_image
     dataforge-weather-cloud-enabled = tostring(var.weather_cloud_enabled)
-    destroy_by                   = var.destroy_by
+    destroy_by                      = var.destroy_by
   }
 
   metadata_startup_script = local.airflow_startup_script
@@ -160,8 +160,8 @@ resource "google_compute_instance" "airflow" {
   }
 
   shielded_instance_config {
-    enable_secure_boot         = true
-    enable_vtpm                = true
+    enable_secure_boot          = true
+    enable_vtpm                 = true
     enable_integrity_monitoring = true
   }
 

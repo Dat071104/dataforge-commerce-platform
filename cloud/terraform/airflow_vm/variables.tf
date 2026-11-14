@@ -87,11 +87,11 @@ variable "airflow_image" {
   nullable    = true
 
   validation {
-    condition = var.airflow_image == null ? !var.enable_vm : can(regex(
+    condition = var.airflow_image == null || can(regex(
       "^${var.region}-docker\\.pkg\\.dev/${var.project_id}/dataforge-week7/airflow@sha256:[0-9a-f]{64}$",
       var.airflow_image
     ))
-    error_message = "An enabled VM requires a digest-pinned Airflow image in the approved project's Week-7 repository."
+    error_message = "airflow_image must be a digest-pinned image in the approved project's Week-7 repository."
   }
 }
 

@@ -7,7 +7,7 @@ resource "google_logging_metric" "week7_workflow_failed" {
   project     = var.project_id
   name        = "dataforge_week7_workflows_failed"
   description = "Counts error-severity executions for the Week-7 Mini3 Workflow."
-  filter = <<-EOT
+  filter      = <<-EOT
     resource.type="workflows.googleapis.com/Workflow"
     AND resource.labels.workflow_id="${local.week7_workflow_name}"
     AND severity>=ERROR
@@ -26,7 +26,7 @@ resource "google_logging_metric" "week7_airflow_failed" {
   project     = var.project_id
   name        = "dataforge_week7_airflow_pipeline_failed"
   description = "Counts terminal Airflow PIPELINE_FAILED events from the scoped gcplogs container."
-  filter = <<-EOT
+  filter      = <<-EOT
     resource.type="gce_instance"
     AND labels.container_name="${var.airflow_container_label}"
     AND (
@@ -49,7 +49,7 @@ resource "google_logging_metric" "week7_airflow_deadline_missed" {
   project     = var.project_id
   name        = "dataforge_week7_airflow_pipeline_deadline_missed"
   description = "Counts Airflow PIPELINE_DEADLINE_MISSED events from the scoped gcplogs container."
-  filter = <<-EOT
+  filter      = <<-EOT
     resource.type="gce_instance"
     AND labels.container_name="${var.airflow_container_label}"
     AND (

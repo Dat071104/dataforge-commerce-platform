@@ -130,10 +130,13 @@ variable "week7_artifact_cleanup_live_digests" {
   ]
 
   validation {
-    condition = length(var.week7_artifact_cleanup_live_digests) > 0 &&
-      length(toset(var.week7_artifact_cleanup_live_digests)) == length(var.week7_artifact_cleanup_live_digests) && alltrue([
-      for digest in var.week7_artifact_cleanup_live_digests : can(regex("^sha256:[0-9a-f]{64}$", digest))
-    ])
+    condition = (
+      length(var.week7_artifact_cleanup_live_digests) > 0 &&
+      length(toset(var.week7_artifact_cleanup_live_digests)) == length(var.week7_artifact_cleanup_live_digests) &&
+      alltrue([
+        for digest in var.week7_artifact_cleanup_live_digests : can(regex("^sha256:[0-9a-f]{64}$", digest))
+      ])
+    )
     error_message = "Live Week-7 digests must be explicit sha256 version IDs; refresh them from Cloud Run before any non-dry-run cleanup."
   }
 }

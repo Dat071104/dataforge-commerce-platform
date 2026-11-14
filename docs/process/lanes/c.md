@@ -290,3 +290,20 @@ No cloud write, API enablement, Terraform apply/state migration, secret or secre
 - **Root cause:** report text was built in a JavaScript quoted string where `\a`, `\f`, `\e`, `\v`, and `\r` were interpreted as control characters, then saved with CRLF.
 - **Fix:** after this RCA, unstage the report, normalize line endings to LF, replace those specific control bytes with their intended letters, and read back affected entries.
 - **Guard:** require zero control characters other than LF and rerun both staged and unstaged `git diff --check` before committing.
+
+## Root integration update after Lane A
+
+After PR #10 merged, the C4 Terraform root was aligned with A5. The unused GCS runtime-bundle URI/metadata was removed; the startup script now defaults from deploy/airflow_vm/startup.sh in the reviewed repository image source; the explicit weather-cloud gate defaults false. The image remains digest-validated in the existing private Artifact Registry repository.
+
+Root fetched Terraform 1.17.1 into a temporary directory and verified the official Windows archive checksum a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a. terraform fmt -check -recursive passed for dev, week7_ops, airflow_vm, and state_backend_bucket after recording/fixing the dev conditional-expression syntax and HCL alignment from the first C push. No backend init, validate, plan, or apply ran locally; exact-head CI is pending after the next push.
+
+Root independently reran 12 managed Spark tests, PowerShell parser (0 errors), compileall, diff-check, and secret scan (0/531 findings). No GCP command/write, data download/staging, batch, VM, or cost was initiated. C4 still requires a complete cost upper bound, live subnet and IAM verification, an authorized image publish/read path, and license-notice review; C7 still lacks measured GCS/network bounds.
+
+
+### Root Lane C IaC diagnosis and correction
+
+The first C push at e2f27cb ran Week 7 CI 43561255866. The dev root failed parsing the multiline digest-list validation condition; the week7_ops root failed fmt-check on alerts.tf; the airflow_vm root failed fmt-check on main.tf. The state_backend_bucket root passed. Authenticated Chrome job inspection showed the exact root and file names.
+
+Root downloaded Terraform 1.17.1 to a temporary directory from releases.hashicorp.com and verified the archive SHA-256 a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a. Disposable-copy fmt output showed only alignment changes in alerts.tf filters and main.tf metadata/shielded settings. Root parenthesized the dev validation, applied those exact fmt changes, removed the unused C4 GCS runtime-bundle URI, set the startup script default from deploy/airflow_vm/startup.sh, added a false-by-default weather-cloud metadata gate, and removed the enable_vm/airflow_image validation cycle.
+
+After the correction, Terraform fmt-check passed for all four roots. In a context-owned temporary repository copy containing cloud/workflows and deploy/airflow_vm, Terraform init -backend=false and validate both passed for dev, week7_ops, airflow_vm, and state_backend_bucket. No backend migration, state read/write, plan, apply, API enable, or cloud access occurred. The correction is local only; exact-head CI must rerun after the next C push.
