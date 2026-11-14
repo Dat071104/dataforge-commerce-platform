@@ -1,6 +1,10 @@
 terraform {
   required_version = "= 1.17.1"
 
+  # C10 state migration is staged but not executed in Phase 2. Use an ignored
+  # backend.hcl with the verified versioned state bucket and dev prefix.
+  backend "gcs" {}
+
   required_providers {
     google = {
       source  = "hashicorp/google"
