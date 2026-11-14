@@ -48,6 +48,13 @@
 - Root local verification on the merged worktree: the weather mart fixture oracle passed 3 tests; targeted Ruff and staged/unstaged diff checks passed; secret scan found 0/540 files. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-b-post-c-sync-local-2026-11-14.log; SHA-256 F90ACC63ED230CE68D1134529B661A6A117FD25B0E69A9D4F5505A22178ED8B2.
 - dbt CLI was unavailable in the root local environment, so no new local dbt parse/compile was run. No BigQuery build, dbt unit-test execution, source-freshness query, Pages publish, or cloud write occurred. Exact-head PR CI on the merged branch is required; the keyless compile is skipped outside its branch WIF scope.
 - PR #9 remains Draft pending exact-head CI after the sync. G7 Pages publication remains with the integrator and is not enabled/published.
+
+## Root integration update after Airflow follow-up merge (2026-11-14)
+
+- The B branch now incorporates main merge commit 9ec5f75 through a normal merge commit cefd20809bbfee45b13b343d8b2e6bf29b2d227e. This includes the isolated deadline-harness capacity change from PR #12; no force-push was used.
+- After the sync, the local Gold fixture oracle passed 3 tests, targeted Ruff passed, secret scan found 0/540 files, and git diff --check passed. dbt CLI remains unavailable locally.
+- Main merge-SHA base CI 43576483497 and Week 7 CI 43576483463 passed on 9ec5f75, including all six Airflow scenarios and the keyless dbt compile on main.
+- PR #9 remains Draft at its prior head 4f0c115 and old base 95f89b4 until the B merge commit, report update, and fresh exact-head CI are pushed. No BigQuery build, dbt unit-test execution, source-freshness query, Pages publish, or cloud write occurred.
 ## RCA log
 
 ### Patch formatting failure
