@@ -48,6 +48,8 @@ docker compose up -d --wait
 
 See the [runbook](docs/architecture.md) and [metric contract](docs/metric_contract.md) for setup and grains.
 
+The [static dbt docs and exposure lineage](https://dat071104.github.io/dataforge-commerce-platform/) are generated from the offline manifest; the warehouse catalog is intentionally empty.
+
 ## AI assistance and verification
 
 AI tools assisted with code and documentation. The first-person [engineering decisions](docs/ENGINEERING_DECISIONS.md) are an AI-assisted draft marked AUTHOR REVIEW REQUIRED. The [evidence index](docs/EVIDENCE_INDEX.md) and [syllabus coverage](docs/SYLLABUS_COVERAGE.md) distinguish source, local checks, exact-head CI, historical cloud receipts, and human evidence. Check linked runs for the exact head; tests do not prove a live service.
