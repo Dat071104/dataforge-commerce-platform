@@ -32,9 +32,6 @@ jobs:
     permissions:
       contents: read
       pages: read
-    env:
-      DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
-      DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,12 +48,16 @@ jobs:
           enablement: false
       - name: Parse dbt and generate static docs without warehouse access
         working-directory: dbt/dataforge
+        env:
+          DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
+          DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
         run: |
           cp profiles.example.yml profiles.yml
           dbt parse --project-dir . --profiles-dir . --target offline --no-send-anonymous-usage-stats --no-version-check --no-partial-parse
           dbt docs generate --project-dir . --profiles-dir . --target offline --no-compile --empty-catalog --static --no-send-anonymous-usage-stats --no-version-check
       - name: Prepare repository-base static site
         env:
+          DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           python - <<'PY'
