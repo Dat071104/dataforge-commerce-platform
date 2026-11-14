@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'feat/w7-dbt-pages'
+      - 'fix/w7-pages-render'
     paths:
       - 'dbt/dataforge/**'
       - 'cloud/jobs/week7/requirements.lock'
@@ -62,7 +63,39 @@ jobs:
         run: |
           python - <<'PY'
           import os
+          import subprocess
+          import tempfile
+          from html.parser import HTMLParser
           from pathlib import Path
+
+          class DocsHTMLParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.in_head = False
+                  self.in_script = False
+                  self.head_bases = []
+                  self.scripts = []
+                  self._script = []
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'head':
+                      self.in_head = True
+                  elif tag == 'base' and self.in_head:
+                      self.head_bases.append(dict(attrs))
+                  elif tag == 'script':
+                      self.in_script = True
+                      self._script = []
+
+              def handle_data(self, data):
+                  if self.in_script:
+                      self._script.append(data)
+
+              def handle_endtag(self, tag):
+                  if tag == 'script' and self.in_script:
+                      self.scripts.append(''.join(self._script))
+                      self.in_script = False
+                  elif tag == 'head':
+                      self.in_head = False
 
           target = Path(os.environ['DBT_TARGET_PATH'])
           static_index = target / 'static_index.html'
@@ -72,19 +105,62 @@ jobs:
           base_url = os.environ['PAGES_BASE_URL'].rstrip('/')
           if not base_url:
               raise SystemExit('GitHub Pages base_url is empty')
-          if html.count('<base>') != 1:
-              raise SystemExit('Expected one dbt static base tag for path configuration')
-          html = html.replace('<base>', f'<base href="{base_url}/">', 1)
+
+          source_parser = DocsHTMLParser()
+          source_parser.feed(html)
+          if html.count('<head>') != 1:
+              raise SystemExit('Expected one document head tag')
+          if source_parser.head_bases:
+              raise SystemExit('Expected no existing base element in dbt document head')
+          if len(source_parser.scripts) != 1:
+              raise SystemExit('Expected one inline dbt docs script')
+
+          html = html.replace('<head>', f'<head><base href="{base_url}/">', 1)
           canonical = 'href="/overview/"'
           if html.count(canonical) != 1:
               raise SystemExit('Expected one dbt canonical overview link')
           html = html.replace(canonical, f'href="{base_url}/overview/"', 1)
           if 'mart_weather_province_daily' not in html or 'weather_province_daily_demo' not in html:
               raise SystemExit('Static docs do not contain expected mart/exposure lineage')
+
+          prepared_parser = DocsHTMLParser()
+          prepared_parser.feed(html)
+          if len(prepared_parser.head_bases) != 1:
+              raise SystemExit('Prepared site must have exactly one base element in its head')
+          if prepared_parser.head_bases[0].get('href') != f'{base_url}/':
+              raise SystemExit('Prepared base element does not match the Pages base URL')
+          if len(prepared_parser.scripts) != 1:
+              raise SystemExit('Prepared site must retain one inline dbt docs script')
+
+          script_path = None
+          try:
+              with tempfile.NamedTemporaryFile(
+                  mode='w', encoding='utf-8', suffix='.js', delete=False
+              ) as script_file:
+                  script_file.write(prepared_parser.scripts[0])
+                  script_path = Path(script_file.name)
+              subprocess.run(
+                  ['node', '--check', str(script_path)],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+                  encoding='utf-8',
+                  errors='replace',
+              )
+          except FileNotFoundError as error:
+              raise SystemExit('Node.js is required to syntax-check the dbt docs bundle') from error
+          except subprocess.CalledProcessError as error:
+              details = (error.stderr or '').strip().splitlines()
+              summary = details[-1] if details else 'node --check failed'
+              raise SystemExit(f'dbt docs inline JavaScript is invalid: {summary}') from error
+          finally:
+              if script_path is not None:
+                  script_path.unlink(missing_ok=True)
+
           site = Path('_site')
           site.mkdir(exist_ok=True)
           (site / 'index.html').write_text(html, encoding='utf-8')
-          print('Prepared static dbt docs with the configured GitHub Pages base URL and empty catalog.')
+          print('Prepared static dbt docs with valid inline JavaScript and a repository-base URL.')
           PY
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
