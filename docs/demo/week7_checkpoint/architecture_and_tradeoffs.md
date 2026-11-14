@@ -26,14 +26,15 @@ Cloud Workflows invokes finite Cloud Run Jobs. Airflow is a separate orchestrati
 
 - The historical integration receipt records one Airflow 3.4 run in local Docker against the GCP data plane. In that earlier implementation, the task synchronously waited for Cloud Run; the later receipt sensor therefore did not provide a genuine asynchronous wait.
 - P7.5 removed that redundant sensor and separates cloud authorization from the requested run mode. Its no-egress scheduler harness tests task retry, deadline, forbidden, gate-off, failure, and backfill behavior using fake authorized I/O. It does not prove a live GCP retry or an external notification.
-- The exact PR #11 Week 7 run passed six scheduler scenarios. At the last Lane E checklist snapshot, the later combined-head Lane B push run failed its deadline scenario after seven reschedules and recorded a LocalExecutor task-state mismatch. That RCA remained open at the snapshot; do not present the earlier green run as proof the later combined head is green.
+- B PR #9 merged at 9bca18c and D PR #13 merged normally at f4d340ff151557040d85e1688a9e0f94caa2a8c5. D exact-head checks passed with one expected keyless-compile skip; Airflow job 132422133934 passed all six scenarios on attempt 2. Attempt 1 timed out on the fifth synthetic backfill date. The exact failed task state/root cause was not captured; no code/assertion changed between attempts, and the retry budget is exhausted.
+- Merge-SHA base CI 43606510616 and Week 7 CI 43606510673 passed on f4d340f. Airflow job 132482197676 succeeded and artifact 14118655954 (SHA-256 9a0a8d20c7f1599a8b4d722a81b8eefa84abd3bf9eea7b89cb412a87c7068d52) was uploaded. This green merge check does not explain the earlier backfill timeout or prove live GCP retry.
 - No recurring Airflow schedule is active, Airflow is not hosted on GCP, and no current external notification channel is claimed.
 
 The cost and cleanup receipts record one historical Scheduler firing and one controlled notification; both temporary resources were removed after their demonstrations.
 
 ## Security and operations
 
-The design uses project/resource allowlists, keyless identities, scoped service accounts, immutable inputs, and bounded queries where recorded. No static service-account key was created in the retained evidence. Current effective IAM and VM inventory were not rechecked in Lane E because the D-pack checklist records a gcloud reauthentication blocker.
+The design uses project/resource allowlists, keyless identities, scoped service accounts, immutable inputs, and bounded queries where recorded. No static service-account key was created in the retained evidence. Current effective IAM and VM inventory were not rechecked in Lane E because the D-pack checklist records an H5/R1 reauthentication and inventory blocker. No GCP resource is confirmed running, but the unavailable inventory does not prove that none exists; actual hourly run-rate remains unknown.
 
 Retries may resubmit a Cloud Run job after an ambiguous transport timeout. Stable invocation identity, immutable writes, content hashes, MERGE semantics, and publication checks control data effects, but do not guarantee exactly-once API submission or exactly-once provider requests.
 

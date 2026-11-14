@@ -26,9 +26,9 @@ Evidence: [local ingestion architecture](architecture.md), [Week 4 acceptance](c
 
 ### 4. I use sequence order for the Week 5 journal
 
-I use the transactionally allocated change_seq as the journal cursor. A timestamp alone can miss a later event with the same updated_at value. The learning test demonstrates that counterexample and that a strictly newer sequence recovers the event; Lane D remains an unmerged feature branch.
+I use the transactionally allocated change_seq as the journal cursor. A timestamp alone can miss a later event with the same updated_at value. The merged Lane D learning test demonstrates that counterexample and that a strictly newer sequence recovers the event. This is a learning fixture and does not replace the accepted journal implementation.
 
-Evidence: [Week 5 source](../src/dataforge/incremental/source.py), [Week 5 batch runtime](../src/dataforge/incremental/batch.py), and [Lane D cursor test](https://github.com/Dat071104/dataforge-commerce-platform/blob/a7fe5b93f1b4cec2f1e70e7b39551a97f87b5b8f/tests/learning/test_change_cursor_counterexample.py).
+Evidence: [Week 5 source](../src/dataforge/incremental/source.py), [Week 5 batch runtime](../src/dataforge/incremental/batch.py), and [Lane D cursor test](https://github.com/Dat071104/dataforge-commerce-platform/blob/3d3b4e47c015fe20b8f1e1e987bdca7388c48fc0/tests/learning/test_change_cursor_counterexample.py).
 
 ### 5. I preserve source grains and aggregate before joining
 
@@ -50,9 +50,9 @@ Evidence: [Airflow DAG](../labs/airflow_reference/dags/dataforge_week7_weather_c
 
 ### 8. I fail terminal work fast and bound each wait
 
-The earlier combined sensor used reschedule mode, but it ran after a synchronous Cloud Run wait and did not demonstrate a useful asynchronous wait. P7.5 removed that redundant sensor; the revised task owns a bounded operation poll and fails HTTP 403, terminal execution, identity, and receipt errors without retry. The no-egress scheduler harness checks retry, forbidden, gate-off, failure, deadline, and backfill scenarios. One deadline attempt failed; an unchanged same-head rerun passed, and no assertion was weakened. A later combined-head Lane B run exposed a separate deadline state mismatch that remained open at the Lane E checklist snapshot.
+The earlier combined sensor used reschedule mode, but it ran after a synchronous Cloud Run wait and did not demonstrate a useful asynchronous wait. P7.5 removed that redundant sensor; the revised task owns a bounded operation poll and fails HTTP 403, terminal execution, identity, and receipt errors without retry. The no-egress scheduler harness checks retry, forbidden, gate-off, failure, deadline, and backfill scenarios. D PR #13 attempt 1 timed out on the fifth synthetic backfill date; unchanged attempt 2 passed all six scenarios. The exact failed task state and root cause were not captured, no code/assertion changed between attempts, and the retry budget is exhausted. The merged main base and Week 7 checks later passed on f4d340f; that does not explain the earlier timeout.
 
-Evidence: [P7.5 Airflow closure](cloud/week7/closure/p75_airflow_correctness.md), [Week 7 CI rerun](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43562629089), [PR #11 Airflow job](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43567547422/job/132364562675), and the Lane B status in the [evidence index](EVIDENCE_INDEX.md).
+Evidence: [P7.5 Airflow closure](cloud/week7/closure/p75_airflow_correctness.md), [PR #11 Airflow job](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43567547422/job/132364562675), [D PR #13 run](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43584910006), and [merged Week 7 run](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43606510673), Airflow job 132482197676.
 
 ### 9. I describe retry as at-least-once submission with idempotent effects
 
@@ -62,7 +62,7 @@ Evidence: [Mini3 API contract](cloud/week7/closure/mini3_api_contract.md), [Airf
 
 ### 10. I use keyless identities and keep live permissions explicit
 
-The design uses workload identity or attached identities and does not include a service-account key. I did not add IAM bindings in Lane C. The current gcloud token could not be refreshed, so current VM and effective Artifact Registry permissions remain unverified; the C4 apply is still blocked.
+The design uses workload identity or attached identities and does not include a service-account key. I did not add IAM bindings in Lane C. The latest checklist records H5/R1 reauthentication and inventory as blocked, so I have not verified current VM inventory or effective Artifact Registry permissions; the C4 amount remains a planning estimate.
 
 Evidence: [IAM matrix](cloud/iam_matrix.md), [Week 7 security notes](cloud/week7/security_iam.md), and [Lane C report](process/lanes/c.md).
 
@@ -74,7 +74,7 @@ Evidence: [Week 6 benchmark](cloud/week6/benchmark.md) and [final report](cloud/
 
 ### 12. I require a complete cost bound before starting paid cloud work
 
-The planned C4 fixed subtotal is USD 4.985947 for 120 hours, about USD 0.04155/hour, before NAT processing, egress, logging, and staging. That is a lower bound, not a worst-case estimate. C7 compute plus illustrative shuffle is USD 0.720548, but GCS and network costs are still unbounded. No VM or managed Spark batch was created by this phase, and the settled project bill is unknown.
+The planned C4 fixed subtotal is USD 4.985947 for 120 hours, about USD 0.04155/hour, before NAT processing, egress, logging, and staging. That is a lower bound, not a worst-case estimate. C7 compute plus illustrative shuffle is USD 0.720548, but GCS and network costs are still unbounded. Lane D created no GCP resource and Lane E made no cloud call; no current resource is confirmed running, but inventory is not verified. The settled project bill and actual hourly run-rate remain unknown.
 
 Evidence: [Lane C cost and blocker report](process/lanes/c.md), [Week 7 operations notes](cloud/week7/ops/README.md), and the local D-pack checklist, which is not versioned in this repository.
 
