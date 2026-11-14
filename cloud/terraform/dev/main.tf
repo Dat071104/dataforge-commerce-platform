@@ -117,6 +117,43 @@ resource "google_artifact_registry_repository" "week5" {
     immutable_tags = true
   }
 
+  cleanup_policy_dry_run = var.week5_artifact_cleanup_dry_run
+
+  cleanup_policies {
+    id     = "keep-latest-five-week5"
+    action = "KEEP"
+
+    most_recent_versions {
+      package_name_prefixes = ["processor"]
+      keep_count            = 5
+    }
+  }
+
+  dynamic "cleanup_policies" {
+    for_each = var.week5_artifact_cleanup_live_digests
+
+    content {
+      id     = "keep-live-${replace(cleanup_policies.value, "sha256:", "")}"
+      action = "KEEP"
+
+      condition {
+        package_name_prefixes = ["processor"]
+        version_name_prefixes = [cleanup_policies.value]
+      }
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-old-untagged-week5"
+    action = "DELETE"
+
+    condition {
+      package_name_prefixes = ["processor"]
+      tag_state             = "UNTAGGED"
+      older_than            = "30d"
+    }
+  }
+
   labels = {
     application = "dataforge"
     environment = "synthetic-dev"
@@ -370,6 +407,43 @@ resource "google_artifact_registry_repository" "week7" {
 
   docker_config {
     immutable_tags = true
+  }
+
+  cleanup_policy_dry_run = var.week7_artifact_cleanup_dry_run
+
+  cleanup_policies {
+    id     = "keep-latest-five-week7"
+    action = "KEEP"
+
+    most_recent_versions {
+      package_name_prefixes = ["airflow", "dbt", "weather-dbt", "weather-ingest"]
+      keep_count            = 5
+    }
+  }
+
+  dynamic "cleanup_policies" {
+    for_each = var.week7_artifact_cleanup_live_digests
+
+    content {
+      id     = "keep-live-${replace(cleanup_policies.value, "sha256:", "")}"
+      action = "KEEP"
+
+      condition {
+        package_name_prefixes = ["airflow", "dbt", "weather-dbt", "weather-ingest"]
+        version_name_prefixes = [cleanup_policies.value]
+      }
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-untagged-over-30d"
+    action = "DELETE"
+
+    condition {
+      package_name_prefixes = ["airflow", "dbt", "weather-dbt", "weather-ingest"]
+      tag_state             = "UNTAGGED"
+      older_than            = "30d"
+    }
   }
 
   labels = {
