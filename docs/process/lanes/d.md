@@ -50,11 +50,11 @@
 
 ## Open risks
 
-- Root pinned `polars>=1.36.1,<2` in the dev extra and `polars==1.36.1` plus `polars-runtime-32==1.36.1` in the Python 3.11 lock, commit b1ef00d. The post-rebase parity suite passed locally; exact-head Linux CI is still pending.
-- D2 was exercised against the local loopback Postgres service; its CI Postgres summary remains pending.
-- D4 Linux shell test is skipped on Windows. On pushed head aa7e6ff, CI 43568025737/job 132366056794 exposed a missing-header bug; root reproduced it in a cached Linux container and fixed the script without changing the header assertion. Exact-head Linux CI after the fix is required before D4 is complete.
-- No timing result justifies a library migration; use real workload measurements before changing the production dependency.
-
+- Polars remains capped below 2.x; compatibility with Polars 2 requires separate API review and parity tests.
+- The q10 planner used the existing baseline index before and after the candidate index; no speedup is claimed.
+- The Linux D4 regression test runs in Linux CI; it is skipped on Windows. Exact-head D4 passed in push run 43580786575.
+- D PR Week7 attempt 1 had a timing-sensitive fifth-date backfill failure after four successful dates. One unchanged attempt 2 passed all six scenarios. Exact failed TaskInstance cause is unknown; no assertions or source code were changed for this incident.
+- No GCP action or resource was created by Lane D. Current inventory and settled spend remain unavailable from the D-pack checklist H5 blocker.
 ## Root verification after rebase (2026-11-14)
 
 - Rebased onto main merge SHA 8cca2c6337fc0db5abcfad8618d122fe17828a70. At verification time the local branch head was b1ef00d410bd531d9461c7ea48aa71797b83bbaf; this report update will add a documentation commit.
@@ -72,6 +72,14 @@
 - Post-merge D2 opt-in PostgreSQL 16 EXPLAIN test: 1 passed, both plans recorded, and a follow-up query found 0 residual dataforge_explain_* databases. The planner used the baseline index in both plans, so no speedup is claimed. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-post-main-postgres-2026-11-14.log; SHA-256 EB2CFC0992D4D28A0F06E3BA4AB258B1D86BEBF32CB62D6C498496635BDB2895.
 - Ruff, compileall, git diff --check, and secret scan passed; the scan found 0/553 files. The D4 Linux-only assertions were not changed; exact-head CI on the newly synced branch remains necessary for Linux D4 and the Postgres step.
 - No cloud action, resource, paid query, or GCP cost was created for this update.
+## Exact-head integration update after D PR checks (2026-11-14)
+
+- D code head 4d64d41 is based on main 9bca18c through normal merge commit b2e475c. Post-sync local tests/learning passed 6 with 2 expected skips; opt-in PostgreSQL EXPLAIN passed 1 and residual test database count was 0; Ruff, compileall, diff check, and secret scan 0/553 passed.
+- Exact-head base push 43580786421, Week 6 Spark push 43580786450, and Week 7 push 43580786575 passed. The Linux D4 test passed in the Week 7 Python regression job; the keyless compile was policy-skipped on the feature branch.
+- Exact-head base PR run 43581796235 passed. Week 7 PR run 43581796293 attempt 1 failed the fifth synthetic backfill date after four successful dates and raised the harness timeout. One unchanged attempt 2 passed all six scenarios; Airflow job 132413625505 succeeded. No source or assertion change occurred between attempts.
+- The failure is classified as a timing-sensitive FLAKY_INFRA candidate; the exact failed task state was not captured, so no root cause or speedup claim is made. The authorized unchanged retry budget is used for this incident.
+- This report update changes the branch head; rerun exact-head CI before marking the D PR ready or merging. No cloud operation occurred.
+
 ## RCA log
 
 ### Ruff I001 in the timing helper
