@@ -1,43 +1,48 @@
-# Architecture and tradeoffs
+# Architecture and trade-offs
 
 ## Objective and scope
 
-DataForge aims to demonstrate repeatable batch ingestion, typed data contracts, dimensional modeling, safe recovery, testing, and clear evidence on small bounded workloads. The portfolio contains four deliberately separate domains: the accepted local synthetic commerce project, GCP Weeks 4–7 commerce exercises, a local NYC TLC Spark lab, and the Mini3 weather project.
+DataForge demonstrates bounded ingestion, typed contracts, dimensional modeling, recovery, testing, and evidence. Four workloads have separate grains and lifecycles:
 
-It is an educational portfolio, not an operated production service. The GCP substitution for Azure/Fabric is recorded as the user's report of mentor approval; no separate written approval artifact is available. The mapping describes learning analogies rather than product equivalence.
-
-## Chosen boundaries
-
-| Domain | Chosen path | Reason |
+| Domain | Implemented path | Boundary |
 |---|---|---|
-| Local commerce | Synthetic CSV → Python validation → content-addressed Parquet and manifest → PostgreSQL raw/audit → Kimball marts → SQL/Power BI | Preserves a low-cost, portable Mini1/Mini2 baseline and makes local tests easy to run. |
-| Week 4 cloud snapshot | Synthetic source extracts → private GCS Bronze → raw and typed BigQuery staging | Demonstrates object integrity, explicit schemas, key checks, IAM, and Terraform with a finite isolated workload. |
-| Week 5/7 commerce | Separate PostgreSQL change journal → immutable GCS manifest → Cloud Run consumer → BigQuery Silver/checkpoint → dbt candidate/reconciliation → versioned Gold pointer | Makes sequence ordering, replay, bounded backfill, and publish recovery explicit. It reads only the small Week 5 simulator; it does not transform all Week 4 sources. |
-| Week 6 Spark | Public NYC TLC files → local Docker/PySpark → quality ledger and hourly/zone aggregate → partitioned Parquet and local Delta example | Exercises Spark plans and table/version behavior without managed-cluster cost. |
-| Mini3 weather | Open-Meteo ERA5 → separate Cloud Run ingest → immutable weather Bronze → BigQuery weather landing → isolated dbt models → weather Gold versions/pointer | Keeps API observations out of order/payment facts and records exact source and manifest identity. |
+| Local commerce | Synthetic CSV → Python validation → content-addressed Parquet and manifest → PostgreSQL raw/audit → Kimball marts → SQL/Power BI | Local reference baseline; proxy metrics are not accounting revenue. |
+| Week 4 cloud snapshot | Synthetic source extracts → private GCS Bronze → BigQuery raw and typed staging | Bounded historical transfer and validation evidence. Current resource inventory is not asserted here. |
+| Week 5/7 commerce | Separate PostgreSQL change journal → immutable GCS manifest → Cloud Run consumer → BigQuery Silver/checkpoint → dbt candidate/reconciliation → versioned Gold pointer | Reads a small deterministic simulator; it does not transform every Week 4 source stream. |
+| Week 6 Spark | Public NYC TLC files → local Docker/PySpark → quality ledger and hourly/zone aggregates → partitioned Parquet plus a local Delta example | Managed Spark was not run. |
+| Mini3 weather | Open-Meteo ERA5 → finite Cloud Run ingest → immutable weather Bronze → BigQuery landing → isolated dbt models → weather Gold versions/pointer | One settled observation date and three locations; separate from commerce facts. |
 
-See the editable [architecture diagram](../../architecture/dataforge_overview.drawio). GCP data-plane resources are GCS, BigQuery, and finite Cloud Run Jobs. Workflows is the GCP control plane for bounded execution. Airflow 3.4 ran once in local Docker against the weather data plane; it is not hosted. The one time-based Cloud Scheduler firing and the single controlled alert policy were removed after their demonstrations.
+The GCP substitution for Azure/Fabric is recorded as user-reported mentor approval, without a separate written approval artifact. The mapping describes learning analogies and differences, not service equivalence.
 
 ## Correctness and publication
 
-The local commerce design keeps each fact at its own grain and defines proxy metrics in a metric contract. The Week 5 simulator uses a transactionally written sequence journal so events with the same <code>updated_at</code> remain ordered. Manifests and immutable object generations provide replay identities. BigQuery landing MERGE and versioned publication macros make no-op behavior testable.
+The local commerce model keeps order items, payment events, returns, and shipments at their own grain. The Week 5 journal uses a transactionally allocated change_seq cursor. Manifests, content hashes, and immutable object generations help detect replays and changed bytes; they are not signatures against an actor who can rewrite the object and manifest.
 
-Week 7 builds a dbt candidate and runs its selected quality tests before the publication step. The commerce path uses a pointer/currentness fence so a failed candidate is not exposed as current; recovery replays the same immutable manifest. Weather Mini3 has separate tables, models, and a separate pointer. Its one-date demo produced three rows, so it is a constrained transformation example rather than a long-history analytics mart.
+Week 7 dbt builds and checks a candidate before the publication step. A currentness fence leaves the public Gold view empty if publication is not verified. Weather Mini3 has separate tables, models, and a separate pointer. Its one-date receipt is not a long-history analytics mart.
 
-P7.5 fixed the Airflow scheduled empty-conf contract and separated permission to touch cloud from the run's requested mode/date. Cloud access defaults OFF. The Cloud Run operation poll is synchronous and bounded; the old receipt sensor ran only after this wait, so the updated DAG removes it. Airflow's contract code passes local helper tests, but the pinned Airflow 3.4 image suite and native scheduler retry transition were not run in this host. Do not claim a hosted or unattended scheduler.
+## Orchestration evidence and limits
+
+Cloud Workflows invokes finite Cloud Run Jobs. Airflow is a separate orchestration implementation, not a hosted service:
+
+- The historical integration receipt records one Airflow 3.4 run in local Docker against the GCP data plane. In that earlier implementation, the task synchronously waited for Cloud Run; the later receipt sensor therefore did not provide a genuine asynchronous wait.
+- P7.5 removed that redundant sensor and separates cloud authorization from the requested run mode. Its no-egress scheduler harness tests task retry, deadline, forbidden, gate-off, failure, and backfill behavior using fake authorized I/O. It does not prove a live GCP retry or an external notification.
+- The exact PR #11 Week 7 run passed six scheduler scenarios. At the last Lane E checklist snapshot, the later combined-head Lane B push run failed its deadline scenario after seven reschedules and recorded a LocalExecutor task-state mismatch. That RCA remained open at the snapshot; do not present the earlier green run as proof the later combined head is green.
+- No recurring Airflow schedule is active, Airflow is not hosted on GCP, and no current external notification channel is claimed.
+
+The cost and cleanup receipts record one historical Scheduler firing and one controlled notification; both temporary resources were removed after their demonstrations.
 
 ## Security and operations
 
-The project uses fixed project/resource allowlists, keyless identities, scoped service accounts, immutable inputs, and bounded BigQuery bytes for the documented workloads. No static service-account key was created. Cloud scheduler and alert resources were temporary; the retained receipts state they were removed. No recurring schedule or notification remains. The one-time email approval is consumed.
+The design uses project/resource allowlists, keyless identities, scoped service accounts, immutable inputs, and bounded queries where recorded. No static service-account key was created in the retained evidence. Current effective IAM and VM inventory were not rechecked in Lane E because the D-pack checklist records a gcloud reauthentication blocker.
 
-Retries may resubmit a Cloud Run job after an ambiguous transport timeout. Stable invocation identity, immutable writes, content hashes, MERGE semantics, and publication no-ops reduce duplicate data effects, but the design does not guarantee exactly-once execution or exactly-once provider requests.
+Retries may resubmit a Cloud Run job after an ambiguous transport timeout. Stable invocation identity, immutable writes, content hashes, MERGE semantics, and publication checks control data effects, but do not guarantee exactly-once API submission or exactly-once provider requests.
 
-## FinOps and limits
+## Cost evidence and limits
 
-Week-specific usage records estimate gross compute and billed bytes. They are not settled invoices and do not include all account-level free-tier/credit effects. The project target in earlier reports was an operational target, not a hard cap. No project budget alert is configured. Storage, APIs, Workflows, logging, and account-wide free tier have separate constraints.
+See the [cost table](cost_table.md) and [historical Week 7 cost and cleanup report](../../cloud/week7/closure/iam_cost_cleanup.md). The approximately USD 0.095 Cloud Run plus BigQuery amount is a gross usage-based list-price estimate, not settled billing. The total billed project spend is unknown. Planned C4 and C7 figures exclude variable or unbounded items and are not actual charges. No Lane D/E GCP action occurred; existing cloud resources were not inventoried live for this report.
 
-Managed Spark, hosted Airflow, a persistent notification channel, and remote Terraform state were not needed to demonstrate the current bounded code patterns. They remain deferred because each adds cost, permissions, or ongoing operations. Week 8–12 syllabus work has not started.
+No budget alert is claimed as currently configured. A budget alert is informational and is not a hard spending cap. Managed Spark, hosted Airflow, a persistent notification channel, and Weeks 8–12 are not completed claims.
 
-## Next decision
+## Presentation decision
 
-Show the accepted evidence first and ask the mentor whether the hybrid local-Airflow/GCP data-plane demonstration satisfies the Week 7 checkpoint. If it does, stop before adding idle infrastructure. If the mentor requires hosted Airflow, a recurring alert, a budget, or managed Spark, prepare a separate target-specific request with the exact permission, duration, cost bound, teardown plan, and evidence objective before deployment.
+Present the static artifacts and ask the mentor whether the hybrid local-Airflow/GCP-data-plane evidence satisfies the Week 7 checkpoint. If the mentor requires hosted Airflow, managed Spark, a recurring alert, or a budget resource, obtain a separate, concrete authorization with target, permissions, duration, cost bound, evidence objective, and teardown before any cloud write.
