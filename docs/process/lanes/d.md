@@ -52,7 +52,7 @@
 
 - Root pinned `polars>=1.36.1,<2` in the dev extra and `polars==1.36.1` plus `polars-runtime-32==1.36.1` in the Python 3.11 lock, commit b1ef00d. The post-rebase parity suite passed locally; exact-head Linux CI is still pending.
 - D2 was exercised against the local loopback Postgres service; its CI Postgres summary remains pending.
-- D4's shell execution is Linux-only and was not run on Windows; exact CI must pass before this item is complete.
+- D4 Linux shell test is skipped on Windows. On pushed head aa7e6ff, CI 43568025737/job 132366056794 exposed a missing-header bug; root reproduced it in a cached Linux container and fixed the script without changing the header assertion. Exact-head Linux CI after the fix is required before D4 is complete.
 - No timing result justifies a library migration; use real workload measurements before changing the production dependency.
 
 ## Root verification after rebase (2026-11-14)
@@ -63,7 +63,7 @@
 
 - Opt-in PostgreSQL 16 D2 EXPLAIN test passed 1 after rebase. It created and dropped its unique synthetic database; an independent read-only check found 0 residual dataforge_explain_* databases. Before/after plan evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-postgres-explain-rebase-2026-11-14.log; SHA-256 4FBD26831E20C1D9F9DD63ACA5FEAD144E97F8FDE745D72311D462154395F894. The planner used the baseline index in both plans; no speedup claim is made.
 
-- D2 CI Postgres summary and D4 Linux shell execution are still required on exact pushed head. No GCP action occurred.
+- D2 exact-head CI Postgres summary remains required. D4 root cause: the grep filter selected delivered data rows and redirected them into delivered.csv without copying the CSV header. The minimal fix writes the header first, appends transformed rows, and reports data rows excluding the header. In cached apache/airflow:3.4.0-python3.11 with network_mode=none, bash -n and exact output assertions passed: header present, total 135.50, 2 data rows, pending/canceled excluded, mode 600. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-d4-linux-container-2026-11-14.log, SHA-256 A386AF57727C7E02E2C8068F5FE2751B137F93BB460CC51983FD7B61458ADD09. After the fix, Python 3.11 tests/learning passed 6/2, Ruff/compileall passed, secret scan found 0/518, and diff-check passed; log SHA-256 6D2A231690B598534B9080F30131DBBE49EEB0F08B3689BF4EE2352D8F369179. D2 opt-in Postgres result is recorded above; exact-head D2/D4 CI is pending.
 ## RCA log
 
 ### Ruff I001 in the timing helper

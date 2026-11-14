@@ -16,11 +16,13 @@ CSV
 
 delivered_total="$(grep -E '^O[0-9]+,delivered,' "$input_file" \
   | awk -F, '{total += $3; count += 1} END {printf "%.2f", total}')"
+sed -n '1p' "$input_file" > "$delivered_file"
 grep -E '^O[0-9]+,delivered,' "$input_file" \
-  | sed 's/,delivered,/,Delivered,/' > "$delivered_file"
+  | sed 's/,delivered,/,Delivered,/' >> "$delivered_file"
 chmod 600 "$delivered_file"
 permission_mode="$(stat -c '%a' "$delivered_file")"
-delivered_rows="$(wc -l < "$delivered_file" | tr -d ' ')"
+delivered_line_count="$(wc -l < "$delivered_file" | tr -d ' ')"
+delivered_rows="$((delivered_line_count - 1))"
 
 printf 'delivered_total=%s\n' "$delivered_total"
 printf 'delivered_rows=%s\n' "$delivered_rows"
