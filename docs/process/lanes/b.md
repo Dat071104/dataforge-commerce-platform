@@ -2,9 +2,9 @@
 
 ## Result — 2026-11-13
 
-**Branch/base:** `feat/w7-dbt-gold-mart` from `main` `7cd204caa29e17c35137272d9ee3b406caef17eb`.
+**Original branch/base:** feat/w7-dbt-gold-mart from main at 7cd204caa29e17c35137272d9ee3b406caef17eb, before root integration.
 
-**Code commit:** `aa5ff631e2424d3d34a43cc107400949122fd73d` (`feat(dbt): add province weather rolling mart`).
+**Original code commit:** aa5ff631e2424d3d34a43cc107400949122fd73d (`feat(dbt): add province weather rolling mart`).
 
 ### B1 — `mart_weather_province_daily`
 
@@ -34,7 +34,7 @@
 - `python -m pytest dbt/dataforge/tests/test_mart_weather_province_daily.py -q` — **PASS**, 3 passed; covers the independent fixture oracle, a gapped 7-day window, a gapped 30-day window, a complete 30-day positive case, and SQL calendar-frame guards.
 - Ruff 0.17.3 on the new Python fixture test — **PASS** after the recorded I001 correction.
 - `git diff --check` — **PASS**. Secret scan — **PASS**, 0 findings across 505 files.
-- No CI runs were created by this worker; no files were pushed.
+- At the original lane submission, the worker had created no CI runs and had not pushed the branch; subsequent root integration and CI are recorded below.
 
 ### Boundaries / integrator follow-up
 
@@ -42,6 +42,12 @@
 - After integration, the integrator should run exact-head CI and add the Pages workflow using either the verified no-compile/empty-catalog path or the explicitly authorized read-only CI identity for richer catalog metadata. Page publication remains pending G7.
 - Freshness thresholds (36h warn / 72h error) assume the planned daily ingestion cadence; adjust if the actual schedule changes.
 
+## Root integration update after Lane C merge (2026-11-14)
+
+- The B worktree incorporates origin/main merge commit 95f89b4 through a normal merge commit; no history rewrite or force-push was used, and the merge had no conflicts. The merge commit and report update will be pushed on the existing Draft PR #9 branch.
+- Root local verification on the merged worktree: the weather mart fixture oracle passed 3 tests; targeted Ruff and staged/unstaged diff checks passed; secret scan found 0/540 files. Evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-b-post-c-sync-local-2026-11-14.log; SHA-256 F90ACC63ED230CE68D1134529B661A6A117FD25B0E69A9D4F5505A22178ED8B2.
+- dbt CLI was unavailable in the root local environment, so no new local dbt parse/compile was run. No BigQuery build, dbt unit-test execution, source-freshness query, Pages publish, or cloud write occurred. Exact-head PR CI on the merged branch is required; the keyless compile is skipped outside its branch WIF scope.
+- PR #9 remains Draft pending exact-head CI after the sync. G7 Pages publication remains with the integrator and is not enabled/published.
 ## RCA log
 
 ### Patch formatting failure

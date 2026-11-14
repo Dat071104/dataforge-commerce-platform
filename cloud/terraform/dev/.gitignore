@@ -1,0 +1,2 @@
+# Local remote-state backend configuration is project-specific and must not be committed.
+backend.hcl

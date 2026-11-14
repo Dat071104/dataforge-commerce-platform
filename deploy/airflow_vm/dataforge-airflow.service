@@ -1,0 +1,17 @@
+[Unit]
+Description=DataForge Airflow 3.4 LocalExecutor stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/dataforge/airflow_vm/bootstrap.py up
+ExecStop=/usr/bin/python3 /opt/dataforge/airflow_vm/bootstrap.py down
+Restart=on-failure
+RestartSec=15
+TimeoutStartSec=900
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target
