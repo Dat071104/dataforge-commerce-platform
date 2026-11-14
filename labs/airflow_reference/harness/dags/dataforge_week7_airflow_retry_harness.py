@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import os
 from datetime import timedelta
 from unittest.mock import patch
 
 from airflow import sdk as airflow_sdk
+from airflow.sdk import DeadlineAlert, DeadlineReference, SyncCallback
 from airflow.sdk.definitions._internal.contextmanager import DagContext
 
 _TESTED_DAG_ID = "dataforge_week7_weather_cloud"
+_TEST_SCENARIO = os.environ["DATAFORGE_AIRFLOW_HARNESS_SCENARIO"]
 _original_dag_decorator = airflow_sdk.dag
 
 
 def _disable_schedule_for_test_dag(*args, **kwargs):
-    if kwargs.get("dag_id") == _TESTED_DAG_ID:
+    if kwargs.get("dag_id") == _TESTED_DAG_ID and _TEST_SCENARIO != "backfill":
         kwargs["schedule"] = None
     return _original_dag_decorator(*args, **kwargs)
 
@@ -25,7 +28,12 @@ try:
 finally:
     airflow_sdk.dag = _original_dag_decorator
 
-from dataforge_week7_airflow_test_session import make_authorized_session  # noqa: E402
+from dataforge_week7_airflow_test_session import (  # noqa: E402
+    make_authorized_session,
+    make_fake_execution_receipt,
+)
+
+production._read_cloud_execution_receipt = make_fake_execution_receipt
 
 
 def _dag_from_entry(entry):
@@ -45,11 +53,25 @@ _production_dag = (
     if _entries
     else production.dataforge_week7_weather_cloud()
 )
+if _TEST_SCENARIO == "deadline":
+    _production_dag.deadline = [
+        DeadlineAlert(
+            reference=DeadlineReference.DAGRUN_QUEUED_AT,
+            interval=timedelta(seconds=2),
+            callback=SyncCallback(production.local_deadline_log),
+        )
+    ]
 for _entry in _entries:
     DagContext.autoregistered_dags.discard(_entry)
 
+_sensor_task_ids = {"wait_for_api_ingest"}
+_target_task_ids = {"wait_for_api_ingest"}
+if _TEST_SCENARIO == "backfill":
+    _sensor_task_ids.add("wait_for_bigquery_landing")
+    _target_task_ids = {"wait_for_bigquery_landing"}
+
 dag = _production_dag.partial_subset(
-    task_ids={"execute_api_ingest"},
+    task_ids=_target_task_ids,
     include_upstream=True,
     include_downstream=False,
 )
@@ -66,6 +88,17 @@ _expected_task_ids = {
     "verify_gcp_schedule_paused",
     "execute_api_ingest",
 }
+if _TEST_SCENARIO == "backfill":
+    _expected_task_ids.update(
+        {
+            "wait_for_api_ingest",
+            "read_execution_receipt",
+            "load_bigquery_landing",
+            "wait_for_bigquery_landing",
+        }
+    )
+else:
+    _expected_task_ids.add("wait_for_api_ingest")
 if set(dag.task_ids) != _expected_task_ids:
     raise RuntimeError(f"unexpected production Mini3 subset: {sorted(dag.task_ids)}")
 
@@ -97,3 +130,24 @@ _ingest.python_callable = _execute_ingest_with_fake_session
 # Keep the production retry count; shorten only the CI wait before Airflow's next attempt.
 _ingest.retry_delay = timedelta(seconds=1)
 _ingest.retry_exponential_backoff = False
+
+if _TEST_SCENARIO == "backfill":
+    _landing = dag.get_task("load_bigquery_landing")
+    _production_landing_callable = _landing.python_callable
+
+    def _load_landing_with_fake_session(receipt):
+        return _run_with_fake_session(_production_landing_callable, receipt)
+
+    _landing.python_callable = _load_landing_with_fake_session
+
+for _sensor_task_id in _sensor_task_ids:
+    dag.get_task(_sensor_task_id).poke_interval = 1
+_production_sensor_poke = production.CloudRunExecutionReceiptSensor.poke
+
+
+def _poke_with_fake_session(sensor, context):
+    with patch.object(production, "_authorized_session", new=make_authorized_session):
+        return _production_sensor_poke(sensor, context)
+
+
+production.CloudRunExecutionReceiptSensor.poke = _poke_with_fake_session
