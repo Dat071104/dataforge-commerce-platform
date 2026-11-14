@@ -253,7 +253,10 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             "AIRFLOW__CORE__DAGS_FOLDER": "/workspace/labs/airflow_reference/harness/dags",
             "AIRFLOW__CORE__LOAD_EXAMPLES": "False",
             "AIRFLOW__CORE__EXECUTOR": "LocalExecutor",
-            "AIRFLOW__CORE__PARALLELISM": "1",
+            # The deadline SyncCallback and rescheduling sensor both use LocalExecutor.
+            # Keep a second slot available for the deadline scenario so the callback
+            # cannot block the sensor from being queued after a reschedule.
+            "AIRFLOW__CORE__PARALLELISM": "2" if scenario == "deadline" else "1",
             "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN": f"sqlite:///{database}",
             "AIRFLOW__DAG_PROCESSOR__MIN_FILE_PROCESS_INTERVAL": "1",
             "AIRFLOW__SCHEDULER__SCHEDULER_HEARTBEAT_SEC": "1",
