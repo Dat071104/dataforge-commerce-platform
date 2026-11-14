@@ -2,9 +2,9 @@
 
 ## Result — 2026-11-13
 
-**Branch/base:** `feat/w1-w6-learning-closures` from `main` at `7cd204caa29e17c35137272d9ee3b406caef17eb`.
+**Branch/base:** feat/w1-w6-learning-closures rebased onto main merge SHA 8cca2c6337fc0db5abcfad8618d122fe17828a70. Rebased lane commits: code f687183df11be42d45e5f9efcb40d536282da88c; report fd246f963d7c1a37d44ebd1d296c6b156af56569; Polars dependency pin b1ef00d410bd531d9461c7ea48aa71797b83bbaf.
 
-**Code commit:** `d07550553c5195c91b37084e5258d07a530a678d` (`feat(learning): add week 1-6 verification labs`).
+**Code commit:** f687183df11be42d45e5f9efcb40d536282da88c (`feat(learning): add week 1-6 verification labs`). Root dependency pin commit: b1ef00d410bd531d9461c7ea48aa71797b83bbaf.
 
 ### D1 — Polars/Pandas parity
 
@@ -18,7 +18,7 @@
 - Added a PostgreSQL integration test that creates/drops a unique synthetic database, runs the existing q10 query against a 150,000-row fixture, captures `EXPLAIN (ANALYZE, BUFFERS)`, applies the repository's candidate covering-index SQL, and captures the second plan. It writes plan text to `GITHUB_STEP_SUMMARY` on Actions and makes no speedup assertion.
 - Local command with the existing loopback Postgres service: PowerShell loaded `DATABASE_URL` from `D:\DATA_ENGINEER\DataForge\.env` into the process without printing it, set `RUN_POSTGRES_TESTS=1`, then ran `python -m pytest -q -s tests/learning/test_q10_explain_plan.py` — **1 passed**. The test created and removed its unique `dataforge_explain_*` database; it did not touch application tables.
 - Before the candidate index, PostgreSQL used the baseline `fct_item_order_date_idx` with a Bitmap Heap Scan (1,581 actual rows, 60 shared hits, 3 reads; 2.663 ms execution). After adding the candidate covering index, the planner still chose the baseline index (1,581 rows, 63 shared hits; 2.299 ms execution). These are separate observed plan times, not a causal comparison; the candidate index was present but not selected.
-- The exact-head CI run that will execute this test in the disposable PostgreSQL 16 service is pending integration; no CI run was created by this lane.
+- At initial lane submission, the exact-head CI run for the disposable PostgreSQL 16 service was pending; see the root verification section below for the post-rebase local D2 run and remaining CI requirement.
 
 ### D3 — timestamp cursor counterexample
 
@@ -28,7 +28,7 @@
 ### D4 — Linux CLI mini-lab
 
 - Added a local script/test that uses a pipe, `grep`, `awk`, `sed`, `chmod`, and `stat`; it reads only a test-local CSV and has no remote host or network call. The README contains one illustrative crontab entry for `scripts/week1_fetch_csv.sh` and exactly five SSH explanation lines.
-- The executable shell test is intentionally skipped on Windows. It must run on the Linux CI runner; that run is pending integration.
+- The executable shell test is intentionally skipped on Windows. It still must run on the Linux CI runner; root verification below records the Windows skip and pending exact-head CI.
 
 ### D5 — Power BI TMDL audit
 
@@ -46,15 +46,24 @@
 - `D:\DATA_ENGINEER\DataForge\.venv\Scripts\ruff.exe check labs/learning tests/learning` — **PASS** after the recorded I001 correction.
 - `git diff --check` — **PASS**.
 - `python scripts/week7_secret_scan.py` — **PASS**, zero findings across 509 files.
-- No GitHub Actions runs were created and no files were pushed. Exact-head CI is required to validate D4 on Linux, D2 on the CI Postgres service, and D1 after the integrator adds the pinned Polars dependency.
+- The original lane worker created no GitHub Actions runs and pushed no files. After root rebase and local verification, exact-head Linux CI is required for D2 and D4 on the pushed branch.
 
 ## Open risks
 
-- The integrator added `polars>=1.36.1,<2` to the dev extra and pinned `polars==1.36.1` plus `polars-runtime-32==1.36.1` in the Python 3.11 lock. The parity suite passed in the supported Python 3.11 venv after this update; exact-head CI remains pending after rebase/push. Lane D did not install packages or edit dependency files.
+- Root pinned `polars>=1.36.1,<2` in the dev extra and `polars==1.36.1` plus `polars-runtime-32==1.36.1` in the Python 3.11 lock, commit b1ef00d. The post-rebase parity suite passed locally; exact-head Linux CI is still pending.
 - D2 was exercised against the local loopback Postgres service; its CI Postgres summary remains pending.
 - D4's shell execution is Linux-only and was not run on Windows; exact CI must pass before this item is complete.
 - No timing result justifies a library migration; use real workload measurements before changing the production dependency.
 
+## Root verification after rebase (2026-11-14)
+
+- Rebased onto main merge SHA 8cca2c6337fc0db5abcfad8618d122fe17828a70. At verification time the local branch head was b1ef00d410bd531d9461c7ea48aa71797b83bbaf; this report update will add a documentation commit.
+
+- Python 3.11 compileall passed; tests/learning passed 6 with 2 expected environment skips (Linux-only D4 and opt-in D2). Ruff passed; secret scan passed with 0 findings across 518 files; git diff --check origin/main...HEAD passed. Evidence log: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-rebase-correct-root-2026-11-14.log; SHA-256 2DECFB10BF9BFA1A2CE3A4DF40B581E2CB11986AB65B9502CC37F45B32612E64.
+
+- Opt-in PostgreSQL 16 D2 EXPLAIN test passed 1 after rebase. It created and dropped its unique synthetic database; an independent read-only check found 0 residual dataforge_explain_* databases. Before/after plan evidence: D:\DATA_ENGINEER\DataForge_D_Week7_Final\evidence\lane-d-postgres-explain-rebase-2026-11-14.log; SHA-256 4FBD26831E20C1D9F9DD63ACA5FEAD144E97F8FDE745D72311D462154395F894. The planner used the baseline index in both plans; no speedup claim is made.
+
+- D2 CI Postgres summary and D4 Linux shell execution are still required on exact pushed head. No GCP action occurred.
 ## RCA log
 
 ### Ruff I001 in the timing helper
