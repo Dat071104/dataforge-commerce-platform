@@ -1,0 +1,109 @@
+name: Publish static dbt docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/w7-dbt-pages'
+    paths:
+      - 'dbt/dataforge/**'
+      - 'cloud/jobs/week7/requirements.lock'
+      - 'README.md'
+      - '.github/workflows/dbt-docs-pages.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'dbt/dataforge/**'
+      - 'cloud/jobs/week7/requirements.lock'
+      - 'README.md'
+      - '.github/workflows/dbt-docs-pages.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dbt-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Install locked dbt runtime
+        run: python -m pip install --disable-pip-version-check -r cloud/jobs/week7/requirements.lock
+      - name: Configure Pages metadata
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        with:
+          enablement: false
+      - name: Parse dbt and generate static docs without warehouse access
+        working-directory: dbt/dataforge
+        env:
+          DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
+          DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
+        run: |
+          cp profiles.example.yml profiles.yml
+          dbt parse --project-dir . --profiles-dir . --target offline --no-send-anonymous-usage-stats --no-version-check --no-partial-parse
+          dbt docs generate --project-dir . --profiles-dir . --target offline --no-compile --empty-catalog --static --no-send-anonymous-usage-stats --no-version-check
+      - name: Prepare repository-base static site
+        env:
+          DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          target = Path(os.environ['DBT_TARGET_PATH'])
+          static_index = target / 'static_index.html'
+          if not static_index.is_file():
+              raise SystemExit('dbt static_index.html was not generated')
+          html = static_index.read_text(encoding='utf-8')
+          base_url = os.environ['PAGES_BASE_URL'].rstrip('/')
+          if not base_url:
+              raise SystemExit('GitHub Pages base_url is empty')
+          if html.count('<base>') != 1:
+              raise SystemExit('Expected one dbt static base tag for path configuration')
+          html = html.replace('<base>', f'<base href="{base_url}/">', 1)
+          canonical = 'href="/overview/"'
+          if html.count(canonical) != 1:
+              raise SystemExit('Expected one dbt canonical overview link')
+          html = html.replace(canonical, f'href="{base_url}/overview/"', 1)
+          if 'mart_weather_province_daily' not in html or 'weather_province_daily_demo' not in html:
+              raise SystemExit('Static docs do not contain expected mart/exposure lineage')
+          site = Path('_site')
+          site.mkdir(exist_ok=True)
+          (site / 'index.html').write_text(html, encoding='utf-8')
+          print('Prepared static dbt docs with the configured GitHub Pages base URL and empty catalog.')
+          PY
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
