@@ -1,32 +1,34 @@
 # Lane E — Portfolio, syllabus traceability, and demo voice
 
-**Snapshot:** 2026-11-14, based on repository commit 95f89b4b8b9f6e8999d65d71edaa86ed8d423a0c. The integrator-owned D-pack checklist remains the current source for live PR and CI state.
+**Snapshot refreshed:** 2026-11-14 from the integrator's latest state update. This Lane E branch is still based on the earlier 95f89b4 integration and has not been rebased onto the B/D merge commits.
 
 ## Scope delivered
 
 - Reworked the canonical W1-01…W7-08 coverage table and evidence index. Every syllabus row has a bounded evidence pointer and a MET, PARTIAL, NOT_RUN, or MENTOR_CONFIRMATION_PENDING status.
 - Added an engineering decision record in first person with an explicit AUTHOR REVIEW REQUIRED marker. The draft is evidence-based but is not author sign-off.
-- Updated the Week 7 demo script, architecture and trade-offs, acceptance checklist, screenshot plan, and 20-question technical defense to distinguish local, CI, historical live, and mentor/user-reported evidence.
+- Updated the Vietnamese Week 1–7 demo script and Week 7 demo pack to distinguish local, CI, historical live, and mentor/user-reported evidence.
 - Added a cost table that separates lane incremental spend, historical gross usage estimates, planned lower bounds, current live-resource cost, and settled billed spend.
 - Added a course tracker with official or primary learning links. Completion and evidence columns are blank.
 
 ## Evidence snapshot and open integration state
 
-- Lane C is merged at 95f89b4; the D-pack checklist records successful merge-SHA base and Week 7 main CI.
-- At the last checklist update, Draft PR #9 (Lane B, head 4f0c115) had a Week 7 push run deadline-scenario failure at job 132374987160, with a scheduler state mismatch. The PR Airflow job 132374995190 was still in progress. The RCA was recorded; no unchanged retry or source fix was yet authorized by evidence.
-- Lane D head a7fe5b9 passed its then-current base CI (217 passed, 8 skipped), including the Linux CLI lab and PostgreSQL EXPLAIN summary. D still requires integration after B.
-- No Lane E GitHub or cloud action was performed. The final PR/merge state for Lane E remains with the integrator.
+- Lane B PR #9 merged at 9bca18c. Lane D PR #13 merged normally at f4d340ff151557040d85e1688a9e0f94caa2a8c5.
+- D exact-head PR checks passed: Week 7 attempt 2 run 43584910006 had eight successful jobs and one expected keyless-compile skip; Airflow job 132422133934 passed all six scenarios. Its first attempt timed out on the fifth synthetic backfill date; the unchanged retry passed. The exact failed task state/root cause was not captured and no code/assertion changed. Base Postgres job 132417202516 includes the q10 EXPLAIN plans. The planner used the baseline index; no speedup is claimed.
+- Merge-SHA base CI 43606510616 and Week 7 run 43606510673 passed on f4d340ff151557040d85e1688a9e0f94caa2a8c5. Airflow job 132482197676 succeeded and artifact 14118655954 (SHA-256 9a0a8d20c7f1599a8b4d722a81b8eefa84abd3bf9eea7b89cb412a87c7068d52) was uploaded. Local main and origin/main are clean at the merge SHA; this Lane E branch remains behind and needs rebase/integration.
+- Cloud inventory and actual hourly run-rate remain unknown because H5/R1 reauthentication/inventory is blocked. No GCP resource is confirmed currently running, but that is not proof that none exists. Lane D created no GCP resource; Lane E made no cloud call.
+- No Lane E GitHub or cloud action was performed. This branch still needs integrator rebase/review before its PR and final main verification.
 
-This snapshot is historical once integration advances. Refresh the checklist and CI state before a presentation; do not treat this report as current remote status.
+This is a point-in-time snapshot. Refresh the checklist and CI state before presenting. Older receipts and prior Lane E notes remain historical evidence and must not be rewritten as current remote state.
 
 ## Focused verification
 
-The integrator should run focused Markdown link, table-count, exact-ID, Q&A-count, and diff-whitespace checks on the assembled E branch. No product tests are added by this documentation lane. The full data and cloud evidence remains in the linked source receipts and lane reports.
+For this refresh, all local Markdown links in the updated coverage, Vietnamese demo script, cost table, and Lane E report resolved. The coverage matrix has 45 unique IDs with 13 MET, 22 PARTIAL, 8 NOT_RUN, and 2 MENTOR_CONFIRMATION_PENDING. The demo snapshot states the merged B/D commits and successful merge-SHA base/Week 7 CI. The cost table preserves unknown inventory/hourly rate and settled spend; AUTHOR REVIEW REQUIRED remains present in the decision draft. No product tests, GitHub action, or cloud operation was run by Lane E.
 
 ## Handoff to the integrator
 
 - E6 GitHub metadata, release/tag settings, repository description/topics, ruleset, and branch cleanup remain outside this lane. Verify each exact SHA before changing remote metadata or deleting a branch.
-- Update the README front door and workflow/docs publication only on the integrator-owned paths. Reconcile README claims against the final merged CI and keep Pages publication disabled unless its specific authorization is present.
+- README front-door work is present on this branch as commit 5c9063a; review it against the final CI before integration. Workflow/docs publication remains integrator-owned; keep Pages publication disabled unless its specific authorization is present.
+- The older integration snapshot in docs/EVIDENCE_INDEX.md, docs/ENGINEERING_DECISIONS.md, and the Week 7 checkpoint walkthrough/architecture still describes B/D as pending. The acceptance checklist tells presenters to check current CI but was not date-refreshed. These paths were outside this refresh scope; update them before using the full demo pack as a current status report.
 - Ask the author to review docs/ENGINEERING_DECISIONS.md before presenting first-person reflections. The prepared walkthrough is not evidence that a mentor demo or review occurred.
 - Keep unsettled project billing and current VM inventory explicitly unknown until an authorized current billing/resource receipt exists.
 
@@ -65,3 +67,12 @@ The integrator should run focused Markdown link, table-count, exact-ID, Q&A-coun
 - **Root cause:** PowerShell variable interpolation syntax conflicted with JavaScript template-literal interpolation in tool-call source.
 - **Fix:** Build the PowerShell diagnostic string by concatenating the variable names and line number; rerun the same focused checks.
 - **Guard:** Avoid dollar-brace expressions in exec template literals unless intentionally escaped; confirm shell exit status and expected summary output.
+
+### Stale integration-validator expectation (2026-11-14)
+
+- **Symptom:** The final focused validator stopped at a snapshot assertion after local links, 45 unique IDs, and the 13/22/8/2 status counts passed. No file changed.
+- **Reproduction:** The assertion still expected the text “still in progress,” copied from the earlier task message, while the newer checklist at 21:53 records Week 7 merge-SHA CI as passed.
+- **Hypothesis:** The docs had regressed versus a failed CI run, or the validation token was stale. The latest checklist RESUME_POINT and session log both record run 43606510673 passed and Airflow job 132482197676 succeeded.
+- **Root cause:** The validator expected an obsolete intermediate state after the evidence snapshot had been updated.
+- **Fix:** Replace the stale assertion with checks for both successful merge-SHA runs and the Airflow terminal job.
+- **Guard:** Read the latest local checklist snapshot immediately before final validation and assert only its observed status text.
