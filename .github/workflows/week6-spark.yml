@@ -26,4 +26,4 @@ jobs:
         run: docker compose --file labs/spark_nyc_taxi/compose.yaml build
 
       - name: Run network-free fixtures only
-        run: docker compose --file labs/spark_nyc_taxi/compose.yaml run --rm spark -m pytest -q labs/spark_nyc_taxi/tests
+        run: docker compose --file labs/spark_nyc_taxi/compose.yaml run --rm spark -m pytest -q labs/spark_nyc_taxi/tests labs/spark_nyc_taxi/managed/tests
