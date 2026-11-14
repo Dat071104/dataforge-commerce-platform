@@ -2,7 +2,7 @@
 
 ## Work report
 
-**Branch:** `feat/w7-cloud-ops`, based on main SHA `7cd204caa29e17c35137272d9ee3b406caef17eb`. Code commit `6c029b5d315ff836a4b3a34211ac2abc73f7e90a` contains the Lane C preparation. It is local only; no push, PR, or cloud action.
+**Branch/code/base:** feat/w7-cloud-ops; verified code head 2be9a1a34f84fe0b3586667254f6452203a2baf5, based on main merge SHA 8cca2c6337fc0db5abcfad8618d122fe17828a70. Lane implementation commit 6c029b5d315ff836a4b3a34211ac2abc73f7e90a; report commit cc06536; root integration commit 2be9a1a. This report records root verification for that code head; no cloud action.
 
 ### Changed files
 
@@ -22,9 +22,9 @@
 - Plan-only submit wrapper with synthetic GCS URIs/SHA/generations and a caller-supplied USD 1.00 remainder — **exit 0**, estimated USD `1.720548`, status `PASS_WITHIN_80_PERCENT_STOP`. This is a synthetic guard test only, not a project estimate or pre-submit clearance; `-Submit` was not used and no gcloud command ran.
 - `python scripts/week7_secret_scan.py` — **PASS**, 0 findings across 522 files.
 - `git diff --check` — **PASS**.
-- `Get-Command terraform` found no Terraform CLI; Python `hcl2` is unavailable. Terraform fmt/init/validate/plan were **NOT RUN**; no tool was installed.
+- The lane worker initially had no Terraform CLI or Python hcl2. Root later used checksum-verified Terraform 1.17.1 in a temporary directory and passed fmt-check, init -backend=false, and validate for all four roots after the integration correction. No plan, apply, state migration, or cloud access.
 - Existing local Spark fixture suite was **NOT RUN**: the pinned Python base digest was not cached. No image pull was attempted. The managed Spark contract/cost tests above ran locally without Spark or network.
-- CI run IDs: **none**; the lane branch was not pushed.
+- Exact-head base CI 43562629055 passed. Week 7 run 43562629089: attempt #1 Airflow job 132349472474 failed the deadline scenario; unchanged attempt #2 passed all six scenarios in job 132358807655. On attempt #2, Python offline 132358809138, dbt image 132358808588, A5 runtime 132358849384, and Terraform roots dev/week7_ops/airflow_vm/state_backend_bucket jobs 132358851788/132358841838/132358809329/132358809298 all passed. Keyless dbt compile 132358809040 was skipped by branch WIF policy. Airflow artifact 14102526782 is 2.02 KB, sha256:a360fe4e8cbe8fb040659389d71d4b1d427b19a158cae1704b27000934c0e85e.
 
 ### R1 read-only results and blockers
 
@@ -295,7 +295,7 @@ No cloud write, API enablement, Terraform apply/state migration, secret or secre
 
 After PR #10 merged, the C4 Terraform root was aligned with A5. The unused GCS runtime-bundle URI/metadata was removed; the startup script now defaults from deploy/airflow_vm/startup.sh in the reviewed repository image source; the explicit weather-cloud gate defaults false. The image remains digest-validated in the existing private Artifact Registry repository.
 
-Root fetched Terraform 1.17.1 into a temporary directory and verified the official Windows archive checksum a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a. terraform fmt -check -recursive passed for dev, week7_ops, airflow_vm, and state_backend_bucket after recording/fixing the dev conditional-expression syntax and HCL alignment from the first C push. No backend init, validate, plan, or apply ran locally; exact-head CI is pending after the next push.
+Root fetched Terraform 1.17.1 into a temporary directory and verified the official Windows archive checksum a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a. terraform fmt -check -recursive passed for dev, week7_ops, airflow_vm, and state_backend_bucket after the first-push syntax/alignment RCA. At that point init/validate had not run; they are recorded in the subsequent correction section. No plan, apply, state migration, or cloud access occurred.
 
 Root independently reran 12 managed Spark tests, PowerShell parser (0 errors), compileall, diff-check, and secret scan (0/531 findings). No GCP command/write, data download/staging, batch, VM, or cost was initiated. C4 still requires a complete cost upper bound, live subnet and IAM verification, an authorized image publish/read path, and license-notice review; C7 still lacks measured GCS/network bounds.
 
@@ -306,4 +306,4 @@ The first C push at e2f27cb ran Week 7 CI 43561255866. The dev root failed parsi
 
 Root downloaded Terraform 1.17.1 to a temporary directory from releases.hashicorp.com and verified the archive SHA-256 a3b71365cff94c0f978cf75d86addb075ea1bb6409055ea0ab359bf057d7898a. Disposable-copy fmt output showed only alignment changes in alerts.tf filters and main.tf metadata/shielded settings. Root parenthesized the dev validation, applied those exact fmt changes, removed the unused C4 GCS runtime-bundle URI, set the startup script default from deploy/airflow_vm/startup.sh, added a false-by-default weather-cloud metadata gate, and removed the enable_vm/airflow_image validation cycle.
 
-After the correction, Terraform fmt-check passed for all four roots. In a context-owned temporary repository copy containing cloud/workflows and deploy/airflow_vm, Terraform init -backend=false and validate both passed for dev, week7_ops, airflow_vm, and state_backend_bucket. No backend migration, state read/write, plan, apply, API enable, or cloud access occurred. The correction is local only; exact-head CI must rerun after the next C push.
+After the correction, Terraform fmt-check passed for all four roots. In a context-owned temporary repository copy containing cloud/workflows and deploy/airflow_vm, Terraform init -backend=false and validate passed for dev, week7_ops, airflow_vm, and state_backend_bucket. No backend migration, state read/write, plan, apply, API enable, or cloud access occurred. The exact-head base CI and Week 7 attempt #2 passed for code head 2be9a1a as detailed above. Attempt #1 had one deadline timing failure; the unchanged rerun passed, so this is recorded as intermittent CI timing variance with its mechanism unconfirmed. No code or assertion changed. This report-only update changes the branch head; rerun exact-head checks before opening the PR.
