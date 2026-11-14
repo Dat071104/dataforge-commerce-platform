@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'feat/w7-dbt-pages'
+      - 'fix/w7-pages-render'
     paths:
       - 'dbt/dataforge/**'
       - 'cloud/jobs/week7/requirements.lock'
