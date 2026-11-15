@@ -4,3 +4,5 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+# Local remote-state configuration is project-specific and must not be committed.
+backend.hcl

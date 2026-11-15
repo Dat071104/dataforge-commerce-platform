@@ -1,6 +1,9 @@
 terraform {
   required_version = "= 1.17.1"
 
+  # The bootstrap root moves into its own prefix after the bucket is verified.
+  backend "gcs" {}
+
   required_providers {
     google = {
       source  = "hashicorp/google"
