@@ -6,6 +6,7 @@ RUN python -c "from importlib.metadata import version; from pathlib import Path;
 
 COPY --chown=airflow:root labs/airflow_reference/dags/ /opt/airflow/dags/
 COPY --chown=airflow:root deploy/airflow_vm/ /opt/dataforge/airflow_vm/
+COPY --chown=airflow:root LICENSE /opt/dataforge/LICENSE
 RUN chmod 0755 /opt/dataforge/airflow_vm/bootstrap.py
 
 USER airflow

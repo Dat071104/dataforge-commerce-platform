@@ -234,6 +234,8 @@ jobs:
         run: python deploy/airflow_vm/tests/compose_config_smoke.py
       - name: Build the digest-based Airflow runtime image
         run: docker build --file deploy/airflow_vm/Dockerfile --tag dataforge-airflow-runtime:ci .
+      - name: Verify runtime image license and notice files
+        run: docker run --rm --network none dataforge-airflow-runtime:ci python /opt/dataforge/airflow_vm/tests/license_files_smoke.py
       - name: Smoke-test the Airflow runtime without network access
         run: |
           docker run --rm --network none dataforge-airflow-runtime:ci airflow version
