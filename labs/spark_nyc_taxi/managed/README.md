@@ -13,7 +13,7 @@ python ./labs/spark_nyc_taxi/managed/local_oracle.py `
   --output-json D:/dataforge-spark/evidence/oracle-2024-01.json
 ```
 
-The oracle verifies the existing local source manifest and re-hashes both input files before reading. It streams Parquet record batches into the independent `oracle.py` logic. That oracle retains per-key durations and source fingerprints; measure local memory before using a full month. No download or oracle run occurred in this lane.
+The oracle verifies the local source manifest and re-hashes both input files before reading. It streams 10,000-row Parquet batches into `run_aggregate_oracle`, which shares the Python/Decimal row classifier but retains only group-level sums/counts for the cross-engine checksum. The general `run_oracle` remains available for bounded fixtures and keeps per-row fingerprints and durations. The full January 2024 local oracle completed with 2,964,624 input rows, 2,875,519 accepted, 89,105 rejected, and 72,604 groups. Raw files and the oracle receipt remain outside this checkout. No GCS staging or Dataproc batch was submitted.
 
 First upload the exact Parquet file, official zone lookup, and local oracle JSON to private `gs://…-bronze/tlc_managed/` prefixes with create-only preconditions. Use read-only `gcloud storage objects describe` checks to capture both generations, then run `stage_manifest.py` to make a sanitized manifest without local paths and with both generations; upload that manifest with a create-only precondition. Record both SHA-256 values, generations, and byte counts. Before submit, `submit.ps1 -Submit` re-reads both object generations and compares them with the staged manifest; it does not overwrite or resubmit on mismatch.
 

@@ -138,7 +138,7 @@ resource "google_artifact_registry_repository" "week5" {
 
       condition {
         package_name_prefixes = ["processor"]
-        version_name_prefixes = [cleanup_policies.value]
+        version_name_prefixes = [substr(cleanup_policies.value, 0, 64)]
       }
     }
   }
@@ -430,7 +430,7 @@ resource "google_artifact_registry_repository" "week7" {
 
       condition {
         package_name_prefixes = ["airflow", "dbt", "weather-dbt", "weather-ingest"]
-        version_name_prefixes = [cleanup_policies.value]
+        version_name_prefixes = [substr(cleanup_policies.value, 0, 64)]
       }
     }
   }
