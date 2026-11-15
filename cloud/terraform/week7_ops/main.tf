@@ -48,7 +48,8 @@ resource "google_billing_budget" "week7" {
   display_name    = "DataForge Week 7 - USD 20"
 
   budget_filter {
-    projects = [format("projects/%s", data.google_project.target.number)]
+    projects        = [format("projects/%s", data.google_project.target.number)]
+    calendar_period = "MONTH"
   }
 
   amount {

@@ -91,6 +91,17 @@ class OracleResult:
         }
 
 
+@dataclass(frozen=True)
+class AggregateOracleResult:
+    """Memory-bounded C7 result for the count/money/grain cross-engine check."""
+
+    input_rows: int
+    accepted_rows: int
+    rejected_rows: int
+    rejection_counts: dict[str, int]
+    aggregates: tuple[dict[str, Any], ...]
+
+
 def _json_value(value: Any) -> Any:
     if isinstance(value, (date, datetime)):
         return value.isoformat()
@@ -399,5 +410,92 @@ def run_oracle(
         exact_full_row_duplicate_like_rows=sum(
             count - 1 for count in fingerprints.values() if count > 1
         ),
+        aggregates=tuple(output),
+    )
+
+
+def run_aggregate_oracle(
+    rows: Iterable[Mapping[str, Any]],
+    zone_records: Iterable[Mapping[str, Any]],
+    *,
+    period_start: date = DEFAULT_PERIOD_START,
+    period_end: date = DEFAULT_PERIOD_END,
+    timezone_name: str = NY_ZONE,
+) -> AggregateOracleResult:
+    """Aggregate with the same row rules without retaining per-row diagnostics.
+
+    This C7 path only needs the fields compared with the managed Spark result.
+    Unlike ``run_oracle``, it does not retain source-row fingerprints or every
+    duration value, so its memory use scales with aggregate group count.
+    """
+
+    if period_start >= period_end:
+        raise ValueError("period_start must be earlier than period_end")
+    try:
+        zone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise ValueError(f"unknown IANA timezone: {timezone_name}") from exc
+    lookup = _zone_lookup(zone_records)
+    rejection_counts: Counter[str] = Counter()
+    groups: dict[tuple[date, int, int, str], dict[str, Any]] = defaultdict(
+        lambda: {
+            "trip_count": 0,
+            "distance_miles_sum": Decimal("0.000"),
+            "fare_amount_sum": Decimal("0.00"),
+            "total_amount_sum": Decimal("0.00"),
+        }
+    )
+    input_rows = 0
+    accepted_rows = 0
+
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise OracleContractError("each raw row must be a mapping")
+        input_rows += 1
+        normalized, reason, _ = _classify_row(row, lookup, zone, period_start, period_end)
+        if reason:
+            rejection_counts[reason] += 1
+            continue
+        assert normalized is not None
+        accepted_rows += 1
+        key = (
+            normalized["pickup_date"],
+            normalized["pickup_hour"],
+            normalized["pickup_zone"],
+            normalized["pickup_borough"],
+        )
+        aggregate = groups[key]
+        aggregate["trip_count"] += 1
+        aggregate["distance_miles_sum"] += normalized["trip_distance_miles"]
+        aggregate["fare_amount_sum"] += normalized["fare_amount"]
+        aggregate["total_amount_sum"] += normalized["total_amount"]
+
+    output: list[dict[str, Any]] = []
+    for (pickup_date, pickup_hour, pickup_zone, pickup_borough), aggregate in sorted(
+        groups.items()
+    ):
+        output.append(
+            {
+                "pickup_date": pickup_date.isoformat(),
+                "pickup_hour": pickup_hour,
+                "pickup_zone": pickup_zone,
+                "pickup_borough": pickup_borough,
+                "trip_count": aggregate["trip_count"],
+                "distance_miles_sum": _quantize(
+                    aggregate["distance_miles_sum"], DISTANCE_QUANTUM
+                ),
+                "fare_amount_sum": _quantize(aggregate["fare_amount_sum"], MONEY_QUANTUM),
+                "total_amount_sum": _quantize(aggregate["total_amount_sum"], MONEY_QUANTUM),
+            }
+        )
+
+    rejected_rows = input_rows - accepted_rows
+    if accepted_rows + rejected_rows != input_rows:
+        raise AssertionError("oracle accounting invariant failed")
+    return AggregateOracleResult(
+        input_rows=input_rows,
+        accepted_rows=accepted_rows,
+        rejected_rows=rejected_rows,
+        rejection_counts={reason: rejection_counts.get(reason, 0) for reason in REJECTION_REASONS},
         aggregates=tuple(output),
     )

@@ -8,6 +8,7 @@ Decimal oracle, and writes one JSON comparison receipt for the later batch.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -17,12 +18,13 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from labs.spark_nyc_taxi.download import MANIFEST_NAME, monthly_url
-from labs.spark_nyc_taxi.oracle import load_zone_records, run_oracle
+from labs.spark_nyc_taxi.oracle import run_aggregate_oracle
 from labs.spark_nyc_taxi.managed.preflight import aggregate_checksum
 
 MONTH_FILE = "yellow_tripdata_2024-01.parquet"
 ZONE_FILE = "taxi_zone_lookup.csv"
 ZONE_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+ZONE_COLUMNS = ("LocationID", "Borough", "Zone", "service_zone")
 PERIOD_START = date(2024, 1, 1)
 PERIOD_END = date(2024, 2, 1)
 
@@ -91,8 +93,23 @@ def _records(trip_path: Path) -> Iterator[dict[str, Any]]:
     except ImportError as exc:
         raise LocalOracleContractError("pyarrow is required for the local source oracle") from exc
     parquet = pq.ParquetFile(trip_path)
-    for batch in parquet.iter_batches(batch_size=50_000):
+    for batch in parquet.iter_batches(batch_size=10_000):
         yield from batch.to_pylist()
+
+
+def _load_zone_records(path: Path) -> list[dict[str, str | None]]:
+    """Read the fixed TLC lookup without importing the Spark job module."""
+
+    with path.open("r", encoding="utf-8-sig", newline="") as source:
+        reader = csv.DictReader(source)
+        if tuple(reader.fieldnames or ()) != ZONE_COLUMNS:
+            raise LocalOracleContractError(
+                "official taxi-zone lookup schema or column order changed"
+            )
+        records = list(reader)
+    if not records:
+        raise LocalOracleContractError("official taxi-zone lookup is empty")
+    return records
 
 
 def _summary(result) -> dict[str, Any]:
@@ -121,8 +138,8 @@ def main(argv: list[str] | None = None) -> int:
 
     data_dir = args.data_dir.expanduser().resolve()
     trip_path, zone_path, manifest, source_sha256, zone_sha256, manifest_sha256 = _source_receipts(data_dir)
-    zones = load_zone_records(zone_path)
-    result = run_oracle(
+    zones = _load_zone_records(zone_path)
+    result = run_aggregate_oracle(
         _records(trip_path),
         zones,
         period_start=PERIOD_START,
