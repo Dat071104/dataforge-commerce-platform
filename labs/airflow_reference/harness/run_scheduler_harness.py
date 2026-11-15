@@ -11,6 +11,7 @@ import sqlite3
 import subprocess
 import tempfile
 import time
+from contextlib import closing
 from pathlib import Path
 
 DAG_ID = "dataforge_week7_weather_cloud"
@@ -113,6 +114,150 @@ def _all_dag_runs(database: Path) -> list[dict[str, object]]:
         }
         for run_id, run_type, state, logical_date in rows
     ]
+
+
+def _backfill_poll_should_stop(
+    backfill_runs: list[dict[str, object]], expected_count: int = 5
+) -> bool:
+    if len(backfill_runs) > expected_count:
+        return True
+    if any(run.get("run_type") != "backfill" for run in backfill_runs):
+        return True
+    if any(run.get("state") in {"failed", "canceled"} for run in backfill_runs):
+        return True
+    return len(backfill_runs) == expected_count and all(
+        run.get("state") == "success" for run in backfill_runs
+    )
+
+
+def _task_instances_for_runs(
+    database: Path, run_ids: list[str]
+) -> list[dict[str, object]]:
+    if not database.exists() or not run_ids:
+        return []
+
+    placeholders = ",".join("?" for _ in run_ids)
+    with closing(sqlite3.connect(database, timeout=5)) as connection:
+        rows = connection.execute(
+            "SELECT run_id, task_id, state, try_number, working_set "
+            f"FROM task_instance WHERE dag_id=? AND run_id IN ({placeholders}) "
+            "ORDER BY run_id, task_id, try_number",
+            (DAG_ID, *run_ids),
+        ).fetchall()
+
+    current_rows = [row for row in rows if row[4] == 1]
+    if current_rows:
+        rows = current_rows
+    return [
+        {
+            "run_id": run_id,
+            "task_id": task_id,
+            "state": state,
+            "try_number": try_number,
+        }
+        for run_id, task_id, state, try_number, _working_set in rows
+    ]
+
+
+def _redact_task_log_line(line: str) -> str:
+    line = re.sub(
+        r"(?i)\b(password|secret|token|api[_-]?key|authorization|cookie|email)"
+        r"(\s*[:=]\s*)\S+",
+        r"\1\2<redacted>",
+        line,
+    )
+    line = re.sub(r"(?i)\bbearer\s+\S+", "Bearer <redacted>", line)
+    line = re.sub(
+        r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+        "<redacted-email>",
+        line,
+    )
+    return line[:1000]
+
+
+def _task_log_excerpt(home: Path, run_id: str, task_id: str) -> str:
+    log_root = home / "logs"
+    if not log_root.is_dir():
+        return ""
+
+    candidates = sorted(
+        path
+        for path in log_root.rglob("*.log")
+        if run_id in path.as_posix() and task_id in path.as_posix()
+    )
+    if not candidates:
+        return ""
+
+    excerpts: list[str] = []
+    for path in candidates[-3:]:
+        try:
+            with path.open("rb") as log_file:
+                log_file.seek(0, os.SEEK_END)
+                size = log_file.tell()
+                log_file.seek(max(0, size - 64_000))
+                text = log_file.read().decode("utf-8", errors="replace")
+        except OSError:
+            continue
+
+        lines = text.splitlines()
+        error_indices = [
+            index
+            for index, line in enumerate(lines)
+            if re.search(
+                r"(?i)(traceback|exception|error|failed|failure|\braise\b)", line
+            )
+        ]
+        if error_indices:
+            selected_indices = sorted(
+                {
+                    index
+                    for error_index in error_indices[-6:]
+                    for index in range(
+                        max(0, error_index - 1), min(len(lines), error_index + 3)
+                    )
+                }
+            )
+            excerpt_lines = [lines[index] for index in selected_indices]
+        else:
+            excerpt_lines = lines[-10:]
+        excerpt = "\n".join(_redact_task_log_line(line) for line in excerpt_lines)
+        if excerpt:
+            excerpts.append(excerpt[-4_000:])
+
+    return "\n--- task log attempt ---\n".join(excerpts)[-6_000:]
+
+
+def _backfill_failure_diagnostics(
+    database: Path, home: Path, backfill_runs: list[dict[str, object]]
+) -> dict[str, object]:
+    failed_runs = [
+        run
+        for run in backfill_runs
+        if run.get("run_type") == "backfill"
+        and run.get("state") in {"failed", "canceled"}
+    ]
+    failed_run_ids = [str(run["run_id"]) for run in failed_runs]
+    task_instances = _task_instances_for_runs(database, failed_run_ids)
+    failed_tasks = [
+        task
+        for task in task_instances
+        if task.get("state") in {"failed", "upstream_failed"}
+    ]
+    task_logs = [
+        {
+            "run_id": task["run_id"],
+            "task_id": task["task_id"],
+            "excerpt": _task_log_excerpt(
+                home, str(task["run_id"]), str(task["task_id"])
+            ),
+        }
+        for task in failed_tasks
+    ]
+    return {
+        "failed_runs": failed_runs,
+        "task_instances": task_instances,
+        "task_log_excerpts": task_logs,
+    }
 
 
 def _ledger(path: Path) -> list[dict[str, object]]:
@@ -317,17 +462,18 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             backfill_runs: list[dict[str, object]] = []
             for _ in range(600):
                 backfill_runs = _all_dag_runs(database)
-                if len(backfill_runs) == 5 and all(
-                    row["run_type"] == "backfill" and row["state"] == "success"
-                    for row in backfill_runs
-                ):
+                if _backfill_poll_should_stop(backfill_runs):
                     break
                 time.sleep(1)
             if len(backfill_runs) != 5 or any(
                 row["run_type"] != "backfill" or row["state"] != "success"
                 for row in backfill_runs
             ):
-                raise TimeoutError(f"five successful backfill runs were not recorded: {backfill_runs}")
+                diagnostics = _backfill_failure_diagnostics(database, home, backfill_runs)
+                raise TimeoutError(
+                    "five successful backfill runs were not recorded: "
+                    f"runs={backfill_runs}; diagnostics={json.dumps(diagnostics, sort_keys=True)}"
+                )
 
             target_run = backfill_runs[2]
             run_id = str(target_run["run_id"])
