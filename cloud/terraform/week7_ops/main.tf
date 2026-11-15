@@ -45,7 +45,7 @@ resource "google_monitoring_notification_channel" "week7_ops_email" {
 resource "google_billing_budget" "week7" {
   count           = var.enable_budget ? 1 : 0
   billing_account = var.billing_account_id
-  display_name    = "DataForge Week 7 - USD 20"
+  display_name    = "DataForge Week 7 - USD 20 equivalent (VND)"
 
   budget_filter {
     projects               = [format("projects/%s", data.google_project.target.number)]
@@ -55,8 +55,10 @@ resource "google_billing_budget" "week7" {
 
   amount {
     specified_amount {
-      currency_code = "USD"
-      units         = "20"
+      # The linked billing account is VND. Convert the signed USD 20 limit
+      # using the latest SBV central rate available before this plan (2026-11-13).
+      currency_code = "VND"
+      units         = "512740"
     }
   }
 
