@@ -402,9 +402,10 @@ def _execute_cloud_run_job(job_name: str, args: list[str]) -> dict[str, str]:
             raise AirflowFailException("Cloud Run returned malformed operation state") from exc
         if not isinstance(operation_state, dict):
             raise AirflowFailException("Cloud Run operation state is not a JSON object")
-        if not isinstance(operation_state.get("done"), bool):
-            raise AirflowFailException("Cloud Run operation state has no boolean done flag")
-        if operation_state.get("done") is True:
+        done = operation_state.get("done", False)
+        if not isinstance(done, bool):
+            raise AirflowFailException("Cloud Run operation state has an invalid done flag")
+        if done:
             if operation_state.get("error"):
                 if is_retryable_cloud_operation_error(operation_state["error"]):
                     raise AirflowException(
@@ -481,9 +482,12 @@ class CloudRunExecutionReceiptSensor(BaseSensorOperator):
             operation_state = operation_response.json()
         except (AttributeError, TypeError, ValueError) as exc:
             raise AirflowFailException("Cloud Run returned malformed operation state") from exc
-        if not isinstance(operation_state, dict) or not isinstance(operation_state.get("done"), bool):
-            raise AirflowFailException("Cloud Run operation state has no boolean done flag")
-        if operation_state["done"] is False:
+        if not isinstance(operation_state, dict):
+            raise AirflowFailException("Cloud Run operation state is not a JSON object")
+        done = operation_state.get("done", False)
+        if not isinstance(done, bool):
+            raise AirflowFailException("Cloud Run operation state has an invalid done flag")
+        if not done:
             return False
         if operation_state.get("error"):
             if is_retryable_cloud_operation_error(operation_state["error"]):
