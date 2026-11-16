@@ -140,8 +140,10 @@ if _TEST_SCENARIO == "backfill":
 
     _landing.python_callable = _load_landing_with_fake_session
 
+# Avoid one-second LocalExecutor state churn during the five-date backfill.
+_sensor_poke_interval = 5 if _TEST_SCENARIO == "backfill" else 1
 for _sensor_task_id in _sensor_task_ids:
-    dag.get_task(_sensor_task_id).poke_interval = 1
+    dag.get_task(_sensor_task_id).poke_interval = _sensor_poke_interval
 _production_sensor_poke = production.CloudRunExecutionReceiptSensor.poke
 
 
