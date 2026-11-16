@@ -157,19 +157,35 @@ $driverArgs = @(
     '--output-uri', $OutputUri
 )
 
-& gcloud dataproc batches submit pyspark $MainPythonUri `
-    --project $ProjectId `
-    --region $Region `
-    --batch $BatchId `
-    --ttl 30m `
-    --version $RuntimeVersion `
-    --service-account $ServiceAccount `
-    --staging-bucket $StagingBucket `
-    --py-files $PyFilesUri `
-    --properties $sparkProperties `
-    '--labels=application=dataforge,phase=week6' `
-    --user-workload-authentication-type SERVICE_ACCOUNT `
-    -- $driverArgs
+$gcloudArgs = @(
+    $MainPythonUri
+    '--project'
+    $ProjectId
+    '--region'
+    $Region
+    '--batch'
+    $BatchId
+    '--ttl'
+    '30m'
+    '--version'
+    $RuntimeVersion
+    '--service-account'
+    $ServiceAccount
+    '--staging-bucket'
+    $StagingBucket
+    '--py-files'
+    $PyFilesUri
+    '--properties'
+    $sparkProperties
+    '--labels=application=dataforge,phase=week6'
+    '--user-workload-authentication-type'
+    'SERVICE_ACCOUNT'
+    '--'
+) + $driverArgs
+
+# Invoke the PowerShell gcloud.ps1 shim with an argument array. Passing a bare
+# `--` token in command syntax makes PowerShell consume it before gcloud sees it.
+& gcloud dataproc batches submit pyspark @gcloudArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Dataproc Serverless submit failed with exit code $LASTEXITCODE; no automatic retry is configured."
 }
