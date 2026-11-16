@@ -167,7 +167,7 @@ $driverArgs = @(
     --staging-bucket $StagingBucket `
     --py-files $PyFilesUri `
     --properties $sparkProperties `
-    --labels application=dataforge,phase=week6 `
+    '--labels=application=dataforge,phase=week6' `
     --user-workload-authentication-type SERVICE_ACCOUNT `
     -- $driverArgs
 if ($LASTEXITCODE -ne 0) {
