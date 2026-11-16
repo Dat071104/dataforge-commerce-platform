@@ -172,7 +172,12 @@ def _redact_task_log_line(line: str) -> str:
 
     line = json_sensitive_field.sub(redact_json_value, line)
     line = re.sub(
-        r"(?i)\b(password|secret|token|api[_-]?key|authorization|cookie|email)"
+        r"(?i)\b(authorization|cookie)(\s*[:=]\s*).*$",
+        r"\1\2<redacted>",
+        line,
+    )
+    line = re.sub(
+        r"(?i)\b(password|secret|token|api[_-]?key|email)"
         r"(\s*[:=]\s*)\S+",
         r"\1\2<redacted>",
         line,

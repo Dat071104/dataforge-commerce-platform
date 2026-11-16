@@ -115,6 +115,18 @@ class BackfillDiagnosticTests(unittest.TestCase):
             self.assertNotIn("secret-value", excerpt)
             self.assertNotIn("user@example.com", excerpt)
 
+            authorization_line = _redact_task_log_line(
+                "Authorization: Bearer abc.SECRET123"
+            )
+            self.assertNotIn("abc.SECRET123", authorization_line)
+            self.assertIn("Authorization: <redacted>", authorization_line)
+
+            cookie_line = _redact_task_log_line(
+                "cookie: sessionid=abc; other=secret"
+            )
+            self.assertNotIn("sessionid=abc", cookie_line)
+            self.assertNotIn("other=secret", cookie_line)
+
             json_values = {
                 "password": "json-password-value",
                 "secret": "json-secret-value",

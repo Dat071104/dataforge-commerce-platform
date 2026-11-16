@@ -90,6 +90,7 @@ jobs:
       - name: Run offline and isolated PostgreSQL suites
         run: |
           python -m pytest -q tests dashboards/P5/tests
+          python -m pytest -q labs/airflow_reference/harness/test_backfill_diagnostics.py
           RUN_POSTGRES_TESTS=1 python -m pytest -q -o faulthandler_timeout=60 tests dashboards/P5/tests
       - name: Prepare deterministic synthetic Gold export
         run: |
