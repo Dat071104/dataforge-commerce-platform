@@ -255,6 +255,18 @@ resource "google_storage_bucket_iam_member" "runtime_bucket_viewer" {
   member = "serviceAccount:${google_service_account.runtime.email}"
 }
 
+resource "google_storage_bucket_iam_member" "runtime_tlc_managed_object_creator" {
+  bucket = google_storage_bucket.bronze.name
+  role   = "roles/storage.objectCreator"
+  member = "serviceAccount:${google_service_account.runtime.email}"
+
+  condition {
+    title       = "C7 managed TLC prefix"
+    description = "Allow Dataproc Serverless to create output objects only under tlc_managed/."
+    expression  = "resource.name.startsWith('projects/_/buckets/${google_storage_bucket.bronze.name}/objects/tlc_managed/')"
+  }
+}
+
 resource "google_project_iam_member" "runtime_bigquery_job_user" {
   project = var.project_id
   role    = "roles/bigquery.jobUser"
@@ -264,6 +276,12 @@ resource "google_project_iam_member" "runtime_bigquery_job_user" {
 resource "google_project_iam_member" "runtime_service_usage_consumer" {
   project = var.project_id
   role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
+}
+
+resource "google_project_iam_member" "runtime_dataproc_worker" {
+  project = var.project_id
+  role    = "roles/dataproc.worker"
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 

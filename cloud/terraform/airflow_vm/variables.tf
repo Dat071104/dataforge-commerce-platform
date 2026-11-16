@@ -65,6 +65,17 @@ variable "enable_secrets" {
   }
 }
 
+variable "enable_runtime_iam" {
+  description = "Create only the approved VM runtime IAM bindings before secrets and VM apply."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_runtime_iam || var.airflow_service_account_email != null
+    error_message = "VM runtime IAM requires the explicitly verified Airflow service account."
+  }
+}
+
 variable "airflow_service_account_email" {
   description = "The explicitly verified existing least-privilege Airflow service account. Do not create a key."
   type        = string

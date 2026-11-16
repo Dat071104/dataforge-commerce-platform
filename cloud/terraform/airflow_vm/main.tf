@@ -4,7 +4,8 @@ locals {
     "metadata_db_password",
     "admin_password",
   ])
-  airflow_startup_script = var.airflow_startup_script != null ? var.airflow_startup_script : file("${path.module}/../../../deploy/airflow_vm/startup.sh")
+  airflow_startup_script      = var.airflow_startup_script != null ? var.airflow_startup_script : file("${path.module}/../../../deploy/airflow_vm/startup.sh")
+  airflow_runtime_iam_enabled = var.enable_runtime_iam || var.enable_vm
 }
 
 resource "google_project_service" "compute" {
@@ -32,10 +33,26 @@ resource "google_project_service" "secretmanager" {
 }
 
 resource "google_project_iam_member" "airflow_vm_logging_writer" {
-  count   = var.enable_vm ? 1 : 0
+  count   = local.airflow_runtime_iam_enabled ? 1 : 0
   project = var.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${var.airflow_service_account_email}"
+}
+
+resource "google_project_iam_member" "airflow_vm_metric_writer" {
+  count   = local.airflow_runtime_iam_enabled ? 1 : 0
+  project = var.project_id
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${var.airflow_service_account_email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "airflow_vm_reader" {
+  count      = local.airflow_runtime_iam_enabled ? 1 : 0
+  project    = var.project_id
+  location   = var.region
+  repository = "dataforge-week7"
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${var.airflow_service_account_email}"
 }
 
 resource "google_compute_network" "airflow" {
@@ -101,7 +118,7 @@ resource "google_compute_firewall" "airflow_iap" {
   source_ranges = [
     "35.235.240.0/20",
   ]
-  target_service_accounts = [var.airflow_service_account_email]
+  target_tags = ["dataforge-week7-airflow"]
 
   allow {
     protocol = "tcp"
@@ -155,8 +172,13 @@ resource "google_compute_instance" "airflow" {
   metadata_startup_script = local.airflow_startup_script
 
   scheduling {
-    automatic_restart   = true
-    on_host_maintenance = "MIGRATE"
+    automatic_restart           = true
+    on_host_maintenance         = "MIGRATE"
+    instance_termination_action = "DELETE"
+
+    max_run_duration {
+      seconds = 432000
+    }
   }
 
   shielded_instance_config {
@@ -179,6 +201,8 @@ resource "google_compute_instance" "airflow" {
     google_compute_router_nat.airflow,
     google_compute_firewall.airflow_iap,
     google_project_iam_member.airflow_vm_logging_writer,
+    google_project_iam_member.airflow_vm_metric_writer,
+    google_artifact_registry_repository_iam_member.airflow_vm_reader,
     google_secret_manager_secret_version.airflow,
   ]
 }
