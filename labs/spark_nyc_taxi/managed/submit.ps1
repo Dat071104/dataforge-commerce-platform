@@ -156,6 +156,7 @@ $driverArgs = @(
     '--local-oracle-uri', $LocalOracleUri,
     '--output-uri', $OutputUri
 )
+$stagingBucketName = ($StagingBucket -replace '^gs://', '').TrimEnd('/')
 
 $gcloudArgs = @(
     $MainPythonUri
@@ -172,7 +173,7 @@ $gcloudArgs = @(
     '--service-account'
     $ServiceAccount
     '--staging-bucket'
-    $StagingBucket
+    $stagingBucketName
     '--py-files'
     $PyFilesUri
     '--properties'
