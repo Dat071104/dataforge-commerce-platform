@@ -160,6 +160,17 @@ def _task_instances_for_runs(
 
 
 def _redact_task_log_line(line: str) -> str:
+    json_sensitive_field = re.compile(
+        r'(?i)((?:\\?")?(?:password|secret|token|api[_-]?key|authorization|cookie|email)'
+        r'(?:\\?")?\s*:\s*)((?:\\?")(?:\\.|[^"\\])*(?:\\?"))'
+    )
+
+    def redact_json_value(match: re.Match[str]) -> str:
+        value = match.group(2)
+        quote = r'\"' if value.startswith(r'\"') else '"'
+        return f"{match.group(1)}{quote}<redacted>{quote}"
+
+    line = json_sensitive_field.sub(redact_json_value, line)
     line = re.sub(
         r"(?i)\b(password|secret|token|api[_-]?key|authorization|cookie|email)"
         r"(\s*[:=]\s*)\S+",

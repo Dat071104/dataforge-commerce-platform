@@ -7,6 +7,7 @@ from pathlib import Path
 from run_scheduler_harness import (
     _backfill_failure_diagnostics,
     _backfill_poll_should_stop,
+    _redact_task_log_line,
     _task_instances_for_runs,
     _task_log_excerpt,
 )
@@ -113,6 +114,30 @@ class BackfillDiagnosticTests(unittest.TestCase):
             self.assertNotIn("private-value", excerpt)
             self.assertNotIn("secret-value", excerpt)
             self.assertNotIn("user@example.com", excerpt)
+
+            json_values = {
+                "password": "json-password-value",
+                "secret": "json-secret-value",
+                "token": "json-token-value",
+                "api_key": "json-api-key-value",
+                "authorization": "Bearer json-authorization-value",
+                "cookie": "json-cookie-value",
+                "email": "json-user@example.com",
+            }
+            json_line = "{" + ",".join(
+                f'"{key}": "{value}"' for key, value in json_values.items()
+            ) + "}"
+            redacted_json = _redact_task_log_line(json_line)
+            for value in json_values.values():
+                self.assertNotIn(value, redacted_json)
+
+            escaped_json = (
+                r'payload="{\"password\":\"escaped-password-value\",'
+                r'\"api_key\":\"escaped-api-key-value\"}"'
+            )
+            redacted_escaped_json = _redact_task_log_line(escaped_json)
+            self.assertNotIn("escaped-password-value", redacted_escaped_json)
+            self.assertNotIn("escaped-api-key-value", redacted_escaped_json)
 
             diagnostics = _backfill_failure_diagnostics(database, root, failed_runs)
             self.assertEqual(diagnostics["failed_runs"], failed_runs)
