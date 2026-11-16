@@ -28,7 +28,9 @@ resource "google_logging_metric" "week7_airflow_failed" {
   description = "Counts terminal Airflow PIPELINE_FAILED events from the scoped gcplogs container."
   filter      = <<-EOT
     resource.type="gce_instance"
-    AND labels.container_name="${var.airflow_container_label}"
+    AND jsonPayload.container.metadata.application="dataforge"
+    AND jsonPayload.container.metadata.phase="week7"
+    AND jsonPayload.container.metadata.container_name="${var.airflow_container_label}"
     AND (
       textPayload:"PIPELINE_FAILED"
       OR jsonPayload.event_type="PIPELINE_FAILED"
@@ -51,7 +53,9 @@ resource "google_logging_metric" "week7_airflow_deadline_missed" {
   description = "Counts Airflow PIPELINE_DEADLINE_MISSED events from the scoped gcplogs container."
   filter      = <<-EOT
     resource.type="gce_instance"
-    AND labels.container_name="${var.airflow_container_label}"
+    AND jsonPayload.container.metadata.application="dataforge"
+    AND jsonPayload.container.metadata.phase="week7"
+    AND jsonPayload.container.metadata.container_name="${var.airflow_container_label}"
     AND (
       textPayload:"PIPELINE_DEADLINE_MISSED"
       OR jsonPayload.event_type="PIPELINE_DEADLINE_MISSED"
