@@ -175,7 +175,8 @@ def main(argv: list[str] | None = None) -> int:
     _require_gcs_uri(args.local_oracle_uri, name="local_oracle_uri")
 
     from pyspark.sql import SparkSession
-    from labs.spark_nyc_taxi.quality import apply_quality_policy, validate_tlc_schema, validate_zone_lookup
+    from labs.spark_nyc_taxi.job import validate_tlc_schema
+    from labs.spark_nyc_taxi.quality import apply_quality_policy, validate_zone_lookup
     from labs.spark_nyc_taxi.transforms import aggregate_dataframe
 
     spark = (
