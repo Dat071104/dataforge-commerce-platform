@@ -13,7 +13,7 @@ With `topic.prefix=dataforge`, the connector publishes `dataforge.dataforge_oper
 | PostgreSQL | `postgres:16.16-alpine3.23@sha256:c20bbcd4348a9f727d4b9c06e9bf042ca6fa4e90b201edfdfe8daeb200e8ca91` | Same major as the operational source lab; logical WAL enabled. Platform: linux/amd64. |
 | Kafka / KRaft | `confluentinc/cp-kafka:7.9.11.amd64@sha256:fc0ba252389cf7509b92b20ba6d0e2cde92408812c98127d30d3a1810ca41a68` | Kafka 3.9; one local broker, three partitions per CDC topic, RF=1. Platform: linux/amd64. |
 | Schema Registry | `confluentinc/cp-schema-registry:7.9.11.amd64@sha256:8fa2069cd2a1f22dd32dea021151b90639ed2e2aa8caac63952b094a64374733` | Avro, BACKWARD compatibility. Platform: linux/amd64. |
-| Kafka Connect base | `confluentinc/cp-kafka-connect:7.9.11.amd64@sha256:82ef611a6547fd513cb52891326c3d5a8a5e30c8ea511e71f9813c93ad98482f` | Local image adds the pinned Debezium PostgreSQL connector 3.1.3 plugin. |
+| Kafka Connect base | `confluentinc/cp-kafka-connect:7.9.11.amd64@sha256:82ef611a6547fd513cb52891326c3d5a8a5e30c8ea511e71f9813c93ad98482f` | Local image adds the Debezium PostgreSQL 3.1.3.Final plugin archive from Maven Central, verified by SHA-256. |
 | Spark base | `python:3.11.18-slim-bookworm@sha256:e8c69d86735f6df3efa06b324694fe51f0422785f83a3bd463052636c2421944` | Local image adds Spark 3.5.9, Delta 3.3.3, and Java 17. |
 | Spark runtime | 3.5.9 | Reuses the Week 6 Spark baseline. |
 | Java | 17 | Shared runtime target for Spark 3.5 and Kafka Connect. |
