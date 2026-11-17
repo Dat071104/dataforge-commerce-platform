@@ -598,8 +598,14 @@ def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
         f"UPDATE dataforge_operational.orders SET {nullable_field}=%s, event_time=clock_timestamp() WHERE order_id=%s",
         ("backward-compatible", T4_ORDER_ID),
     )
+    def new_schema_versions():
+        result = requests.get(topic_versions_url, timeout=5)
+        result.raise_for_status()
+        versions = result.json()
+        return versions if len(versions) > prior_count else None
+
     versions = _wait_until(
-        lambda: (result.json() if (result := requests.get(topic_versions_url, timeout=5)).status_code == 200 else None),
+        new_schema_versions,
         "nullable Avro schema version registration",
         timeout=60,
     )

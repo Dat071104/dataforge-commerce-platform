@@ -87,12 +87,19 @@ def _confluent_frame_columns() -> tuple[Any, Any]:
 
 def _normalized_order_changes(event_df: Any) -> Any:
     from pyspark.sql import functions as F
+    from pyspark.sql.types import IntegerType
 
     op_code = F.col("event.op")
     op = _normalized_op(op_code)
     row = F.when(op_code == F.lit("d"), F.col("event.before")).otherwise(F.col("event.after"))
     record_type = event_df.schema["event"].dataType["after"].dataType
-    record_columns = [row[field.name].alias(field.name) for field in record_type.fields]
+    record_columns = []
+    for field in record_type.fields:
+        value = row[field.name]
+        if field.name == "order_date" and isinstance(field.dataType, IntegerType):
+            # Debezium encodes io.debezium.time.Date as days since 1970-01-01.
+            value = F.date_add(F.lit("1970-01-01").cast("date"), value.cast("int"))
+        record_columns.append(value.alias(field.name))
     return event_df.select(
         *record_columns,
         F.col("event.source.lsn").cast("long").alias("source_lsn"),
