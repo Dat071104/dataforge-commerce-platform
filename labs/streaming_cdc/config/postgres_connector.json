@@ -1,0 +1,30 @@
+{
+  "name": "dataforge-w8-postgres",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "dataforge_w8",
+    "database.password": "__DATAFORGE_W8_DB_PASSWORD__",
+    "database.dbname": "dataforge_operational",
+    "topic.prefix": "dataforge",
+    "schema.include.list": "dataforge_operational",
+    "table.include.list": "dataforge_operational.orders,dataforge_operational.payment_events,dataforge_operational.change_journal",
+    "plugin.name": "pgoutput",
+    "slot.name": "dataforge_w8_slot",
+    "publication.name": "dataforge_w8_publication",
+    "publication.autocreate.mode": "filtered",
+    "slot.drop.on.stop": "false",
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "true",
+    "decimal.handling.mode": "precise",
+    "provide.transaction.metadata": "true",
+    "heartbeat.interval.ms": "5000",
+    "include.schema.changes": "false",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081"
+  }
+}
