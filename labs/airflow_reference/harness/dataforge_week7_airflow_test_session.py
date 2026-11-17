@@ -180,7 +180,8 @@ class _FakeAuthorizedSession:
             )
             pending_pokes = 8 if self.scenario == "deadline" else 1
             if poll_number <= pending_pokes:
-                return _Response(200, {"done": False})
+                # Proto3 JSON omits Operation.done when its default is false.
+                return _Response(200, {})
             return _Response(
                 200,
                 {
