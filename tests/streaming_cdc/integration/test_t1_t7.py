@@ -35,6 +35,7 @@ schemaless_reader = fastavro.schemaless_reader
 parse_schema = fastavro.parse_schema
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+RUN_ID = uuid.uuid4().hex[:8]
 STATE_DIR = REPO_ROOT / "labs" / "streaming_cdc" / "_state"
 LOCAL_ENV_FILE = REPO_ROOT / "labs" / "streaming_cdc" / "w8.env"
 EVIDENCE_DIR = REPO_ROOT / "docs" / "week8" / "evidence"
@@ -45,6 +46,7 @@ REGISTRY_URL = "http://127.0.0.1:18081"
 ORDERS_TOPIC = "dataforge.dataforge_operational.orders"
 VALUE_SUBJECT = f"{ORDERS_TOPIC}-value"
 KEY_SUBJECT = f"{ORDERS_TOPIC}-key"
+T4_ORDER_ID = f"w8-{RUN_ID}-t4-sequence"
 BASE_FIELDS = (
     "order_id",
     "customer_id",
@@ -277,20 +279,23 @@ def test_t1_snapshot_insert_update_delete_matches_postgres_by_row_hash():
     }
     _wait_for_silver_row("w8-seed-001")
     _wait_for_silver_row("w8-seed-002")
-    _insert_order("w8-t1-001", amount="10.00")
-    _insert_order("w8-t1-002", amount="20.00")
-    _insert_order("w8-t1-003", amount="30.00")
-    _update_order("w8-t1-001", status="paid", amount="12.50")
+    _insert_order(f"w8-{RUN_ID}-t1-001", amount="10.00")
+    _insert_order(f"w8-{RUN_ID}-t1-002", amount="20.00")
+    _insert_order(f"w8-{RUN_ID}-t1-003", amount="30.00")
+    _update_order(f"w8-{RUN_ID}-t1-001", status="paid", amount="12.50")
     _update_order("w8-seed-001", status="settled", amount="121.00")
-    _db_execute("DELETE FROM dataforge_operational.orders WHERE order_id = %s", ("w8-t1-002",))
+    _db_execute(
+        "DELETE FROM dataforge_operational.orders WHERE order_id = %s",
+        (f"w8-{RUN_ID}-t1-002",),
+    )
 
     source_hashes, silver_hashes = _wait_for_source_parity(timeout=60)
     assert silver_hashes == source_hashes
     silver_ids = [order_id for order_id, _ in silver_hashes]
     assert len(silver_ids) == len(set(silver_ids))
-    assert "w8-t1-001" in silver_ids
-    assert "w8-t1-002" not in silver_ids
-    assert "w8-t1-003" in silver_ids
+    assert f"w8-{RUN_ID}-t1-001" in silver_ids
+    assert f"w8-{RUN_ID}-t1-002" not in silver_ids
+    assert f"w8-{RUN_ID}-t1-003" in silver_ids
     _write_evidence(
         "t1_row_hashes.json",
         {
@@ -309,7 +314,7 @@ def test_t2_restart_replays_uncheckpointed_sink_batch_without_duplicates():
     pause_path.write_text("pause", encoding="utf-8")
     applied_path.unlink(missing_ok=True)
 
-    order_id = "w8-t2-restart"
+    order_id = f"w8-{RUN_ID}-t2-restart"
     _insert_order(order_id, amount="51.00")
     _wait_until(
         lambda: applied_path.exists() and any(
@@ -332,7 +337,7 @@ def test_t2_restart_replays_uncheckpointed_sink_batch_without_duplicates():
 
 
 def test_t3_replaying_the_same_microbatch_leaves_delta_unchanged():
-    order_id = "w8-t3-replay"
+    order_id = f"w8-{RUN_ID}-t3-replay"
     _insert_order(order_id, amount="33.00")
     _wait_for_silver_row(order_id)
 
@@ -356,7 +361,7 @@ def test_t3_replaying_the_same_microbatch_leaves_delta_unchanged():
 
 
 def test_t4_rapid_per_key_updates_end_at_last_lsn_and_partition():
-    order_id = "w8-t4-sequence"
+    order_id = T4_ORDER_ID
     _insert_order(order_id, status="seq-00", amount="100.00")
     for index in range(1, 16):
         _update_order(order_id, status=f"seq-{index:02d}", amount=f"{100 + index:.2f}")
@@ -415,12 +420,12 @@ def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metr
     initial_size = progress_history.stat().st_size if progress_history.exists() else 0
     progress = _latest_progress("gold")
     _insert_order(
-        "w8-t5-anchor",
+        f"w8-{RUN_ID}-t5-anchor",
         amount="1.00",
-        province_id="province-t5-anchor",
+        province_id=f"province-t5-anchor-{RUN_ID}",
         event_time=anchor,
     )
-    _wait_for_silver_row("w8-t5-anchor")
+    _wait_for_silver_row(f"w8-{RUN_ID}-t5-anchor")
     progress = _wait_for_gold_progress_after(
         progress, anchor, "gold watermark to observe the anchor event"
     )
@@ -429,30 +434,30 @@ def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metr
     beyond_time = anchor - timedelta(minutes=20)
     previous = progress
     _insert_order(
-        "w8-t5-within",
+        f"w8-{RUN_ID}-t5-within",
         amount="22.00",
-        province_id="province-t5-late",
+        province_id=f"province-t5-late-{RUN_ID}",
         event_time=within_time,
     )
-    _wait_for_silver_row("w8-t5-within")
+    _wait_for_silver_row(f"w8-{RUN_ID}-t5-within")
     progress = _wait_for_gold_progress_after(previous, anchor, "gold query to consume within-watermark row")
     previous = progress
     _insert_order(
-        "w8-t5-beyond",
+        f"w8-{RUN_ID}-t5-beyond",
         amount="33.00",
-        province_id="province-t5-dropped",
+        province_id=f"province-t5-dropped-{RUN_ID}",
         event_time=beyond_time,
     )
-    _wait_for_silver_row("w8-t5-beyond")
+    _wait_for_silver_row(f"w8-{RUN_ID}-t5-beyond")
     progress = _wait_for_gold_progress_after(previous, anchor, "gold query to consume beyond-watermark row")
     previous = progress
     _insert_order(
-        "w8-t5-advance",
+        f"w8-{RUN_ID}-t5-advance",
         amount="2.00",
-        province_id="province-t5-advance",
+        province_id=f"province-t5-advance-{RUN_ID}",
         event_time=anchor + timedelta(minutes=30),
     )
-    _wait_for_silver_row("w8-t5-advance")
+    _wait_for_silver_row(f"w8-{RUN_ID}-t5-advance")
     _wait_for_gold_progress_after(
         previous, anchor + timedelta(minutes=30), "gold watermark to advance past late windows"
     )
@@ -463,7 +468,7 @@ def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metr
             (
                 row
                 for row in rows
-                if row.get("province_id") == "province-t5-late"
+                if row.get("province_id") == f"province-t5-late-{RUN_ID}"
                 and Decimal(str(row.get("revenue_delta"))) == Decimal("22.00")
             ),
             None,
@@ -471,7 +476,7 @@ def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metr
 
     within_row = _wait_until(finalized_within_window, "finalized recent-late revenue window", timeout=90)
     gold_rows = _get_json("/tables/gold")
-    assert not any(row.get("province_id") == "province-t5-dropped" for row in gold_rows)
+    assert not any(row.get("province_id") == f"province-t5-dropped-{RUN_ID}" for row in gold_rows)
 
     history_lines = []
     if progress_history.exists():
@@ -494,16 +499,19 @@ def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metr
 
 
 def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
+    nullable_field = f"nullable_note_{RUN_ID}"
     topic_versions_url = f"{REGISTRY_URL}/subjects/{VALUE_SUBJECT}/versions"
     prior_versions = requests.get(topic_versions_url, timeout=10)
     prior_versions.raise_for_status()
     prior_count = len(prior_versions.json())
 
     _compose("stop", "spark")
-    _db_execute("ALTER TABLE dataforge_operational.orders ADD COLUMN IF NOT EXISTS nullable_note TEXT")
     _db_execute(
-        "UPDATE dataforge_operational.orders SET nullable_note=%s, event_time=clock_timestamp() WHERE order_id=%s",
-        ("backward-compatible", "w8-t4-sequence"),
+        f"ALTER TABLE dataforge_operational.orders ADD COLUMN IF NOT EXISTS {nullable_field} TEXT"
+    )
+    _db_execute(
+        f"UPDATE dataforge_operational.orders SET {nullable_field}=%s, event_time=clock_timestamp() WHERE order_id=%s",
+        ("backward-compatible", T4_ORDER_ID),
     )
     versions = _wait_until(
         lambda: (result.json() if (result := requests.get(topic_versions_url, timeout=5)).status_code == 200 else None),
@@ -517,8 +525,8 @@ def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
             (
                 item
                 for item in _get_json("/tables/silver")
-                if item.get("order_id") == "w8-t4-sequence"
-                and item.get("nullable_note") == "backward-compatible"
+                if item.get("order_id") == T4_ORDER_ID
+                and item.get(nullable_field) == "backward-compatible"
             ),
             None,
         ),
@@ -559,7 +567,8 @@ def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
         "t6_schema_evolution.json",
         {
             "nullable_versions": len(versions),
-            "flowed_field": row.get("nullable_note"),
+            "nullable_field": nullable_field,
+            "flowed_value": row.get(nullable_field),
             "breaking_status": registration.status_code,
         },
     )
