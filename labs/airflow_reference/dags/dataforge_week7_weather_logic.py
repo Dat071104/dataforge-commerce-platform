@@ -133,12 +133,17 @@ def resolve_request(
     """
     if not isinstance(params, Mapping):
         raise ContractError("Airflow Params must be a JSON object")
-    if set(params) - {"mode", "observation_date"}:
+    if set(params) - {"mode", "observation_date", "fault_injection"}:
         raise ContractError("Airflow Params contain unsupported keys")
 
     mode = params.get("mode", "scheduled")
     if not isinstance(mode, str) or mode not in {"scheduled", "manual"}:
         raise ContractError("mode must be either 'scheduled' or 'manual'")
+    fault_injection = params.get("fault_injection")
+    if fault_injection not in (None, "transient_once"):
+        raise ContractError("fault_injection must be null or 'transient_once'")
+    if fault_injection is not None and mode != "manual":
+        raise ContractError("fault_injection is available only for manual runs")
     raw_date = params.get("observation_date")
     if mode == "scheduled" and raw_date is not None:
         raise ContractError("scheduled runs cannot override observation_date; use manual mode")
@@ -168,7 +173,7 @@ def resolve_request(
     if observation_date > latest_safe_date:
         raise ContractError("observation_date is newer than the seven-day source-settling limit")
 
-    return {
+    request = {
         "mode": mode,
         "project_id": PROJECT_ID,
         "region": REGION,
@@ -178,6 +183,9 @@ def resolve_request(
         "invocation_id": make_invocation_id(dag_id, run_id),
         "dag_run_id": run_id,
     }
+    if fault_injection is not None:
+        request["fault_injection"] = fault_injection
+    return request
 
 
 def validate_execution_receipt(

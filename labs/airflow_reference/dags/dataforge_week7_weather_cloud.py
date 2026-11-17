@@ -679,6 +679,11 @@ def _read_cloud_execution_receipt(
             type=["null", "string"],
             pattern=r"^\d{4}-\d{2}-\d{2}$",
         ),
+        "fault_injection": Param(
+            None,
+            type=["null", "string"],
+            enum=[None, "transient_once"],
+        ),
     },
     default_args={
         "owner": "dataforge-week7-reference",
@@ -775,6 +780,34 @@ def dataforge_week7_weather_cloud():
         ),
     )
     def execute_api_ingest(request: dict[str, Any]) -> str:
+        fault_injection = request.get("fault_injection")
+        if fault_injection is not None:
+            if fault_injection != "transient_once" or request.get("mode") != "manual":
+                raise AirflowFailException(
+                    "fault injection is restricted to manual transient_once runs"
+                )
+            context = get_current_context()
+            task_instance = context.get("ti")
+            try_number = getattr(task_instance, "try_number", None)
+            if isinstance(try_number, bool) or not isinstance(try_number, int) or try_number < 1:
+                raise AirflowFailException("fault injection requires a valid task try number")
+            if try_number == 1:
+                _LOGGER.warning(
+                    "DATAFORGE_AIRFLOW_WEATHER_FAULT_INJECTION %s",
+                    json.dumps(
+                        {
+                            "fault": fault_injection,
+                            "mode": request["mode"],
+                            "invocation_id": request["invocation_id"],
+                            "try_number": try_number,
+                            "cloud_run_submitted": False,
+                        },
+                        sort_keys=True,
+                    ),
+                )
+                raise AirflowException(
+                    "injected transient failure before Cloud Run submission"
+                )
         return _submit_cloud_run_job(
             INGEST_JOB,
             [

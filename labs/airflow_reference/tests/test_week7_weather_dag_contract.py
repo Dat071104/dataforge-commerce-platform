@@ -66,6 +66,10 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             self.dag.params.get_param("observation_date").schema["type"],
             ["null", "string"],
         )
+        self.assertEqual(
+            self.dag.params.get_param("fault_injection").schema["enum"],
+            [None, "transient_once"],
+        )
 
     def test_real_integration_stages_are_distinct_and_cloud_gate_precedes_calls(self) -> None:
         expected = {
@@ -330,6 +334,68 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
         self.assertEqual(submitted_args[0][-1], request["invocation_id"])
         self.assertEqual(result, operation_name)
         session.get.assert_not_called()
+
+    def test_manual_transient_fault_fails_before_cloud_submit_and_retry_reuses_request(self) -> None:
+        request = {
+            "mode": "manual",
+            "observation_date": "2026-11-06",
+            "invocation_id": "a" * 64,
+            "fault_injection": "transient_once",
+        }
+        task = self.dag.get_task("execute_api_ingest")
+        attempts = [
+            {"ti": SimpleNamespace(try_number=1)},
+            {"ti": SimpleNamespace(try_number=2)},
+        ]
+        with (
+            patch.object(weather_cloud, "get_current_context", side_effect=attempts),
+            patch.object(
+                weather_cloud, "_submit_cloud_run_job", return_value="operation"
+            ) as submit,
+            patch.object(weather_cloud._LOGGER, "warning") as warning,
+        ):
+            with self.assertRaises(AirflowException):
+                task.python_callable(request)
+            result = task.python_callable(request)
+
+        self.assertEqual(result, "operation")
+        submit.assert_called_once_with(
+            weather_cloud.INGEST_JOB,
+            [
+                "ingest",
+                "--observation-date",
+                request["observation_date"],
+                "--provinces",
+                ",".join(weather_cloud.PROVINCES),
+                "--invocation-id",
+                request["invocation_id"],
+            ],
+        )
+        event = json.loads(warning.call_args.args[1])
+        self.assertEqual(event["fault"], "transient_once")
+        self.assertEqual(event["try_number"], 1)
+        self.assertFalse(event["cloud_run_submitted"])
+
+    def test_scheduled_fault_injection_fails_closed_before_cloud_submit(self) -> None:
+        task = self.dag.get_task("execute_api_ingest")
+        with (
+            patch.object(
+                weather_cloud,
+                "get_current_context",
+                return_value={"ti": SimpleNamespace(try_number=1)},
+            ),
+            patch.object(weather_cloud, "_submit_cloud_run_job") as submit,
+        ):
+            with self.assertRaises(AirflowFailException):
+                task.python_callable(
+                    {
+                        "mode": "scheduled",
+                        "observation_date": "2026-11-06",
+                        "invocation_id": "a" * 64,
+                        "fault_injection": "transient_once",
+                    }
+                )
+        submit.assert_not_called()
 
     def test_reschedule_sensor_pokes_operation_execution_and_receipt(self) -> None:
         operation_name = (

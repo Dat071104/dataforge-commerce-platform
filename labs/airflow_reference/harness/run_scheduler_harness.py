@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -341,6 +342,12 @@ def _failure_events(home: Path, service_log: Path) -> list[dict[str, object]]:
     return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_WEATHER_FAILURE ")
 
 
+def _fault_injection_events(home: Path, service_log: Path) -> list[dict[str, object]]:
+    return _structured_events(
+        home, service_log, "DATAFORGE_AIRFLOW_WEATHER_FAULT_INJECTION "
+    )
+
+
 def _deadline_events(home: Path, service_log: Path) -> list[dict[str, object]]:
     return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_WEATHER_DEADLINE ")
 
@@ -557,10 +564,10 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             }
         else:
             run_id = f"manual__scheduler_harness_{scenario}"
-            conf = json.dumps(
-                {"mode": "manual", "observation_date": "2026-11-06"},
-                separators=(",", ":"),
-            )
+            run_conf = {"mode": "manual", "observation_date": "2026-11-06"}
+            if scenario == "fault_injection":
+                run_conf["fault_injection"] = "transient_once"
+            conf = json.dumps(run_conf, separators=(",", ":"))
             _run_cli(
                 [
                     "dags",
@@ -661,6 +668,56 @@ def _run_scenario(scenario: str) -> dict[str, object]:
                 "sensor_reschedules": sensor_reschedules,
                 "post_args_by_attempt": args,
                 "fake_io_calls": calls,
+            }
+        elif scenario == "fault_injection":
+            history = snapshot["attempts"].get("execute_api_ingest", [])
+            posts = [call for call in calls if call.get("method") == "POST"]
+            args = [call["args"] for call in posts]
+            injection_events = _fault_injection_events(home, service_log)
+            failure_events = _failure_events(home, service_log)
+            expected_invocation_id = hashlib.sha256(
+                f"{DAG_ID}\0{run_id}".encode("utf-8")
+            ).hexdigest()
+            if (
+                snapshot["dag_run_state"] != "success"
+                or snapshot["run_type"] != "manual"
+                or len(snapshot["dag_runs"]) != 1
+                or ingest != {"state": "success", "try_number": 2}
+                or sensor != {"state": "success", "try_number": 1}
+                or sensor_reschedules < 1
+                or not any(
+                    row["state"] == "failed"
+                    and row["try_number"] == 1
+                    and row["working_set"] is None
+                    and row["archived_reason"] == "retry"
+                    for row in history
+                )
+                or len(posts) != 1
+                or args[0][-1] != expected_invocation_id
+                or len(injection_events) != 1
+                or injection_events[0].get("fault") != "transient_once"
+                or injection_events[0].get("mode") != "manual"
+                or injection_events[0].get("invocation_id") != expected_invocation_id
+                or injection_events[0].get("try_number") != 1
+                or injection_events[0].get("cloud_run_submitted") is not False
+                or failure_events
+            ):
+                raise AssertionError(
+                    "manual transient fault retry evidence mismatch: "
+                    f"ingest={ingest}; sensor={sensor}; history={history}; "
+                    f"post_args={args}; fault_events={injection_events}; "
+                    f"failure_events={failure_events}"
+                )
+            evidence["execute_api_ingest"] = {
+                "attempt_1_state": history,
+                "current_state": ingest,
+                "sensor_state": sensor,
+                "sensor_reschedules": sensor_reschedules,
+                "attempt_1_cloud_run_submissions": 0,
+                "attempt_2_invocation_id": args[0][-1],
+                "fault_events": injection_events,
+                "fake_io_calls": calls,
+                "failure_events": failure_events,
             }
         elif scenario == "forbidden":
             posts = [call for call in calls if call.get("method") == "POST"]
@@ -838,6 +895,7 @@ def _run_scenario(scenario: str) -> dict[str, object]:
 
 def main() -> int:
     for scenario in (
+        "fault_injection",
         "retry_once",
         "forbidden",
         "gate_off",
