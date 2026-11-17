@@ -634,7 +634,8 @@ def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
     def make_breaking(node) -> bool:
         if isinstance(node, dict):
             if node.get("name") == "order_net_amount" and "type" in node:
-                node["type"] = ["null", "string"]
+                # Avro permits bytes/string promotion; boolean is incompatible.
+                node["type"] = ["null", "boolean"]
                 node["default"] = None
                 return True
             for value in node.values():
