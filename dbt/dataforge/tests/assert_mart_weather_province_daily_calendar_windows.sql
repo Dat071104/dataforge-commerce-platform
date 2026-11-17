@@ -68,7 +68,19 @@ with weather as (
 select *
 from comparison
 where precipitation_observed_days_7d != expected_precipitation_observed_days_7d
-   or precipitation_7d_mm is distinct from expected_precipitation_7d_mm
+   -- BigQuery FLOAT64 aggregations can differ by a few ULPs when the same
+   -- calendar-window sum is evaluated with different aggregation plans.
+   -- Retain exact NULL parity, but compare non-NULL results with a tight tolerance.
+   or coalesce(
+        abs(precipitation_7d_mm - expected_precipitation_7d_mm) > 1e-12,
+        precipitation_7d_mm is distinct from expected_precipitation_7d_mm
+   )
    or temp_max_observed_days_30d != expected_temp_max_observed_days_30d
-   or temp_max_30d_mean_c is distinct from expected_temp_max_30d_mean_c
-   or temp_max_30d_anomaly_c is distinct from expected_temp_max_30d_anomaly_c
+   or coalesce(
+        abs(temp_max_30d_mean_c - expected_temp_max_30d_mean_c) > 1e-12,
+        temp_max_30d_mean_c is distinct from expected_temp_max_30d_mean_c
+   )
+   or coalesce(
+        abs(temp_max_30d_anomaly_c - expected_temp_max_30d_anomaly_c) > 1e-12,
+        temp_max_30d_anomaly_c is distinct from expected_temp_max_30d_anomaly_c
+   )
