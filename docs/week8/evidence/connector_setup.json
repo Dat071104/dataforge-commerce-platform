@@ -1,0 +1,15 @@
+{
+  "connector": "dataforge-w8-postgres",
+  "connector_state": "RUNNING",
+  "heartbeat_topic": "__debezium-heartbeat.dataforge",
+  "plugin": "pgoutput",
+  "publication": "dataforge_w8_publication",
+  "registered_value_subjects": [
+    "dataforge.dataforge_operational.change_journal-value",
+    "dataforge.dataforge_operational.orders-value",
+    "dataforge.dataforge_operational.payment_events-value"
+  ],
+  "replication_objects_verified": true,
+  "slot": "dataforge_w8_slot",
+  "topic_partition_count": 3
+}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+from decimal import Decimal
 from io import BytesIO
 
 import pytest
@@ -7,8 +9,10 @@ import pytest
 from labs.streaming_cdc.envelopes import (
     decode_confluent_avro,
     decode_debezium_envelope,
+    to_order_change_row,
     unpack_confluent_frame,
 )
+from labs.streaming_cdc.operations import OP_DELETE, OP_TOMBSTONE, OP_UPSERT
 
 fastavro = pytest.importorskip(
     "fastavro", reason="Week 8 CI installs the lane's Avro test dependency"
@@ -21,8 +25,25 @@ ORDER = {
     "name": "Order",
     "fields": [
         {"name": "order_id", "type": "string"},
+        {"name": "customer_id", "type": "string"},
+        {
+            "name": "order_date",
+            "type": {"type": "int", "connect.name": "io.debezium.time.Date"},
+        },
+        {"name": "province_id", "type": "string"},
         {"name": "status", "type": "string"},
-        {"name": "amount", "type": "string"},
+        {
+            "name": "order_net_amount",
+            "type": {
+                "type": "bytes",
+                "connect.name": "org.apache.kafka.connect.data.Decimal",
+                "connect.parameters": {"scale": "2"},
+            },
+        },
+        {
+            "name": "event_time",
+            "type": {"type": "string", "connect.name": "io.debezium.time.ZonedTimestamp"},
+        },
     ],
 }
 SCHEMA = parse_schema(
@@ -63,8 +84,26 @@ SCHEMA = parse_schema(
 )
 
 
-def _order(status: str, amount: str = "10.00") -> dict[str, str]:
-    return {"order_id": "ord-1", "status": status, "amount": amount}
+def _decimal_bytes(value: str) -> bytes:
+    scaled = int(Decimal(value) * 100)
+    length = max(1, (scaled.bit_length() + 8) // 8)
+    while True:
+        try:
+            return scaled.to_bytes(length, byteorder="big", signed=True)
+        except OverflowError:
+            length += 1
+
+
+def _order(status: str, amount: str = "10.00") -> dict:
+    return {
+        "order_id": "ord-1",
+        "customer_id": "customer-1",
+        "order_date": (date(2026, 11, 17) - date(1970, 1, 1)).days,
+        "province_id": "province-1",
+        "status": status,
+        "order_net_amount": _decimal_bytes(amount),
+        "event_time": "2026-11-17T10:00:00Z",
+    }
 
 
 def _frame(envelope: dict, schema_id: int = 42) -> bytes:
@@ -103,6 +142,7 @@ def test_avro_frame_decodes_debezium_cudr_envelopes(op, before, after, expected_
     assert decoded.source_lsn == 101
     assert decoded.transaction_order == 1
     assert decoded.ts_ms == 1760000000100
+    assert decoded.source_ts_ms == 1760000000000
     assert decoded.before == before
     assert decoded.after == after
 
@@ -113,6 +153,7 @@ def test_null_value_is_a_tombstone_and_keeps_its_kafka_key():
     assert decoded.operation == "tombstone"
     assert decoded.op_code is None
     assert decoded.key == {"order_id": "ord-1"}
+    assert to_order_change_row(decoded)["op"] == OP_TOMBSTONE
 
 
 def test_confluent_frame_extracts_schema_id_and_payload():
@@ -134,3 +175,23 @@ def test_unknown_operation_and_invalid_source_lsn_fail_closed():
         decode_debezium_envelope(
             {"op": "c", "after": _order("created"), "source": {"lsn": "bad"}}
         )
+
+
+@pytest.mark.parametrize("op", ["t", "m"])
+def test_truncate_and_message_operations_fail_closed(op):
+    with pytest.raises(ValueError, match="unsupported Debezium operation"):
+        decode_debezium_envelope({"op": op})
+
+
+def test_decoded_operation_uses_the_merge_vocabulary():
+    deleted = decode_debezium_envelope(
+        _envelope("d", before=_order("paid", "12.00"), after=None),
+        key={"order_id": "ord-1"},
+    )
+    inserted = decode_debezium_envelope(
+        _envelope("c", before=None, after=_order("created")),
+        key={"order_id": "ord-1"},
+    )
+
+    assert to_order_change_row(deleted)["op"] == OP_DELETE
+    assert to_order_change_row(inserted)["op"] == OP_UPSERT

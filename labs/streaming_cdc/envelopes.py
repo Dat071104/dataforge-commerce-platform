@@ -6,6 +6,12 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, Mapping
 
+from labs.streaming_cdc.operations import (
+    DEBEZIUM_OPERATIONS,
+    OP_DELETE,
+    OP_TOMBSTONE,
+)
+
 
 @dataclass(frozen=True)
 class DecodedChange:
@@ -19,6 +25,7 @@ class DecodedChange:
     source_lsn: int | None
     transaction_order: int | None
     ts_ms: int | None
+    source_ts_ms: int | None
 
 
 def unpack_confluent_frame(value: bytes | bytearray | memoryview | None) -> tuple[int, bytes] | None:
@@ -66,12 +73,13 @@ def decode_debezium_envelope(
             source_lsn=None,
             transaction_order=None,
             ts_ms=None,
+            source_ts_ms=None,
         )
     if not isinstance(envelope, Mapping):
         raise TypeError("Debezium envelope must be a mapping or a null tombstone")
 
     op_code = envelope.get("op")
-    if op_code not in {"c", "u", "d", "r"}:
+    if op_code not in DEBEZIUM_OPERATIONS:
         raise ValueError(f"unsupported Debezium operation: {op_code!r}")
 
     before = envelope.get("before")
@@ -93,7 +101,7 @@ def decode_debezium_envelope(
         raise ValueError("Debezium transaction metadata must be a record")
 
     return DecodedChange(
-        operation="delete" if op_code == "d" else "upsert",
+        operation=DEBEZIUM_OPERATIONS[op_code],
         op_code=str(op_code),
         key=key,
         before=before,
@@ -103,7 +111,32 @@ def decode_debezium_envelope(
             transaction.get("total_order"), "transaction.total_order"
         ),
         ts_ms=_optional_nonnegative_int(envelope.get("ts_ms"), "ts_ms"),
+        source_ts_ms=_optional_nonnegative_int(source.get("ts_ms"), "source.ts_ms"),
     )
+
+
+def to_order_change_row(change: DecodedChange) -> dict[str, Any]:
+    """Map a decoded envelope to the shared Silver MERGE vocabulary."""
+    if change.operation == OP_TOMBSTONE:
+        order_id = change.key.get("order_id") if isinstance(change.key, Mapping) else change.key
+        return {
+            "order_id": order_id,
+            "op": OP_TOMBSTONE,
+            "source_lsn": None,
+            "transaction_order": None,
+            "source_ts_ms": None,
+        }
+
+    row = change.before if change.operation == OP_DELETE else change.after
+    if row is None:
+        raise ValueError(f"{change.operation!r} change has no source row")
+    return {
+        **row,
+        "op": change.operation,
+        "source_lsn": change.source_lsn,
+        "transaction_order": change.transaction_order,
+        "source_ts_ms": change.source_ts_ms,
+    }
 
 
 def decode_confluent_avro(
