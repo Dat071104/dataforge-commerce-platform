@@ -1,0 +1,27 @@
+{
+  "hashes": [
+    {
+      "order_id": "w8-701505ae-t1-001",
+      "sha256": "5a90741f48a10198a1afddbdd6984a021a08bb18f38eb849400ede5ad3c070c1"
+    },
+    {
+      "order_id": "w8-701505ae-t1-003",
+      "sha256": "1656097bb26569545ea4d676708416059e697fe8f4efbcd201b976845b94ea16"
+    },
+    {
+      "order_id": "w8-seed-001",
+      "sha256": "c4e3d2812e29174718563026809dcd7596e96f9419be2782aafca819d376fe3e"
+    },
+    {
+      "order_id": "w8-seed-002",
+      "sha256": "c138bc3982b509a9c669ac4f3838a9642b45eee3e6b3358c18fad497658ddc7b"
+    }
+  ],
+  "replica_identity_full": {
+    "change_journal": "f",
+    "orders": "f",
+    "payment_events": "f"
+  },
+  "silver_rows": 4,
+  "source_rows": 4
+}
