@@ -654,7 +654,7 @@ def test_t6_nullable_schema_addition_flows_and_breaking_schema_is_rejected():
         json={"schema": json.dumps(schema)},
         timeout=10,
     )
-    assert registration.status_code in {409, 422}
+    assert registration.status_code == 409
     _write_evidence(
         "t6_schema_evolution.json",
         {
@@ -673,19 +673,58 @@ def test_t7_consumer_group_offsets_show_zero_lag_after_catchup():
         re.search(rf"Partition:\s*{partition}\b", topic_description) for partition in range(3)
     )
     assert "LAG" in described
+    assert "LOG-END-OFFSET" in described
     assert ORDERS_TOPIC in described
     partition_lines = [line for line in described.splitlines() if ORDERS_TOPIC in line]
     assert partition_lines
+    topic_end_offsets = {}
     for line in partition_lines:
         fields = re.split(r"\s+", line.strip())
         assert len(fields) >= 6
         assert fields[3] not in {"-", "-1"}
+        assert fields[4] not in {"-", "-1"}
         assert fields[5] == "0"
+        topic_end_offsets[fields[2]] = int(fields[4])
+    assert set(topic_end_offsets) == {"0", "1", "2"}
+
+    def spark_offsets_match_topic_end():
+        progress = _latest_progress("silver")
+        kafka_source = next(
+            (
+                source
+                for source in progress.get("sources", [])
+                if ORDERS_TOPIC in (source.get("endOffset") or {})
+            ),
+            None,
+        )
+        if kafka_source is None:
+            return None
+        spark_end_offsets = {
+            str(partition): int(offset)
+            for partition, offset in kafka_source["endOffset"][ORDERS_TOPIC].items()
+        }
+        if spark_end_offsets != topic_end_offsets:
+            return None
+        return progress, spark_end_offsets
+
+    spark_progress, spark_end_offsets = _wait_until(
+        spark_offsets_match_topic_end,
+        "Spark lastProgress offsets to match Kafka LOG-END-OFFSET by partition",
+        timeout=60,
+    )
     history = _get_json("/history/silver")
     assert history
     assert any(row.get("operation") == "MERGE" for row in history)
     _write_evidence(
         "t7_consumer_groups.txt",
         f"Consumed records:\n{consumed}\nTopic partitions:\n{topic_description}\n{described}",
+    )
+    _write_evidence(
+        "t7_offset_comparison.json",
+        {
+            "spark_last_progress_end_offsets": spark_end_offsets,
+            "kafka_log_end_offsets": topic_end_offsets,
+            "spark_last_progress": spark_progress,
+        },
     )
     _write_evidence("delta_silver_history.json", history)

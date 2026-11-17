@@ -64,16 +64,24 @@ def _schema_decoder(spark: Any, kafka_df: Any, registry_url: str) -> Any:
         raise RuntimeError(f"Schema Registry has no writer schemas for {VALUE_SUBJECT}")
     reader_schema = json.dumps(latest_subject_schema(registry_url, VALUE_SUBJECT))
 
-    event = None
-    for schema_id_value, writer_schema in sorted(writer_schemas.items()):
+    unknown_schema = F.raise_error(
+        F.concat(
+            F.lit("Unknown Confluent schema ID: "),
+            F.coalesce(schema_id.cast("string"), F.lit("<null>")),
+        )
+    )
+    event = unknown_schema
+    for schema_id_value, writer_schema in sorted(writer_schemas.items(), reverse=True):
         decoded = from_avro(
             payload,
             json.dumps(writer_schema),
-            {"avroSchema": reader_schema, "mode": "PERMISSIVE"},
+            {"avroSchema": reader_schema, "mode": "FAILFAST"},
         )
-        branch = F.when(schema_id == F.lit(schema_id_value), decoded)
-        event = branch if event is None else branch.otherwise(event)
-    return kafka_df.withColumn("event", event)
+        event = F.when(schema_id == F.lit(schema_id_value), decoded).otherwise(event)
+    is_tombstone = F.col("value").isNull()
+    return kafka_df.withColumn("is_tombstone", is_tombstone).withColumn(
+        "event", F.when(is_tombstone, F.lit(None)).otherwise(event)
+    )
 
 
 def _confluent_frame_columns() -> tuple[Any, Any]:
@@ -90,7 +98,7 @@ def _normalized_order_changes(event_df: Any) -> Any:
     from pyspark.sql.types import IntegerType
 
     op_code = F.col("event.op")
-    op = _normalized_op(op_code)
+    op = _normalized_op(op_code, F.col("is_tombstone"))
     row = F.when(op_code == F.lit("d"), F.col("event.before")).otherwise(F.col("event.after"))
     record_type = event_df.schema["event"].dataType["after"].dataType
     record_columns = []
@@ -109,14 +117,21 @@ def _normalized_order_changes(event_df: Any) -> Any:
     )
 
 
-def _normalized_op(op_code: Any) -> Any:
+def _normalized_op(op_code: Any, is_tombstone: Any) -> Any:
     from pyspark.sql import functions as F
 
     return (
-        F.when(op_code.isNull(), F.lit(OP_TOMBSTONE))
+        F.when(is_tombstone, F.lit(OP_TOMBSTONE))
         .when(op_code == F.lit("d"), F.lit(OP_DELETE))
         .when(op_code.isin(*DEBEZIUM_OPERATIONS.keys()), F.lit(OP_UPSERT))
-        .otherwise(F.raise_error(F.concat(F.lit("Unsupported Debezium operation: "), op_code)))
+        .otherwise(
+            F.raise_error(
+                F.concat(
+                    F.lit("Unsupported Debezium operation: "),
+                    F.coalesce(op_code, F.lit("<null>")),
+                )
+            )
+        )
     )
 
 
@@ -124,7 +139,7 @@ def _gold_event_records(event_df: Any) -> Any:
     from pyspark.sql import functions as F
 
     op_code = F.col("event.op")
-    op = _normalized_op(op_code)
+    op = _normalized_op(op_code, F.col("is_tombstone"))
     source_ts = F.col("event.source.ts_ms").cast("long")
     event_time = F.when(
         op == F.lit(OP_TOMBSTONE), F.lit(None).cast("timestamp")
