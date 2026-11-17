@@ -1,0 +1,58 @@
+{
+  "batchId": 5,
+  "durationMs": {
+    "addBatch": 29256,
+    "commitOffsets": 64,
+    "getBatch": 3,
+    "latestOffset": 372,
+    "queryPlanning": 372,
+    "triggerExecution": 30194,
+    "walCommit": 52
+  },
+  "id": "0b171344-6ed4-4bbc-be3a-4aa414fd1413",
+  "inputRowsPerSecond": 0.0,
+  "name": "silver_orders_cdc",
+  "numInputRows": 4,
+  "processedRowsPerSecond": 0.1324722636198046,
+  "runId": "0f1764f0-af6a-4259-903d-4fea4d914c8f",
+  "sink": {
+    "description": "ForeachBatchSink",
+    "numOutputRows": -1
+  },
+  "sources": [
+    {
+      "description": "KafkaV2[Subscribe[dataforge.dataforge_operational.orders]]",
+      "endOffset": {
+        "dataforge.dataforge_operational.orders": {
+          "0": 6,
+          "1": 1,
+          "2": 21
+        }
+      },
+      "inputRowsPerSecond": 0.0,
+      "latestOffset": {
+        "dataforge.dataforge_operational.orders": {
+          "0": 6,
+          "1": 1,
+          "2": 21
+        }
+      },
+      "metrics": {
+        "avgOffsetsBehindLatest": "0.0",
+        "maxOffsetsBehindLatest": "0",
+        "minOffsetsBehindLatest": "0"
+      },
+      "numInputRows": 4,
+      "processedRowsPerSecond": 0.1324722636198046,
+      "startOffset": {
+        "dataforge.dataforge_operational.orders": {
+          "0": 6,
+          "1": 1,
+          "2": 20
+        }
+      }
+    }
+  ],
+  "stateOperators": [],
+  "timestamp": "2026-11-17T14:20:02.222Z"
+}
