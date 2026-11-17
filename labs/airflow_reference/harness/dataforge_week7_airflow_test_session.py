@@ -197,10 +197,33 @@ class _FakeAuthorizedSession:
             )
         if "/executions/" in url:
             _record({"method": "GET", "target": "cloud_run_execution", "timeout": timeout})
-            completion_status = (
-                "EXECUTION_FAILED" if self.scenario == "execution_failed" else "EXECUTION_SUCCEEDED"
+            if self.scenario == "execution_failed":
+                return _Response(
+                    200,
+                    {
+                        "conditions": [
+                            {
+                                "type": "Completed",
+                                "state": "CONDITION_FAILED",
+                                "executionReason": "NON_ZERO_EXIT_CODE",
+                            }
+                        ],
+                        "taskCount": 1,
+                        "succeededCount": 0,
+                        "failedCount": 1,
+                        "cancelledCount": 0,
+                    },
+                )
+            return _Response(
+                200,
+                {
+                    "conditions": [{"type": "Completed", "state": "CONDITION_SUCCEEDED"}],
+                    "taskCount": 1,
+                    "succeededCount": 1,
+                    "failedCount": 0,
+                    "cancelledCount": 0,
+                },
             )
-            return _Response(200, {"completionStatus": completion_status})
         if "storage.googleapis.com/storage/v1/b/" in url:
             receipt_key = hashlib.sha256(url.encode()).hexdigest()[:16]
             receipt_number = self._next_counter(f"receipt-metadata-{receipt_key}")

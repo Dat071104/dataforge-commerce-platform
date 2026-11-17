@@ -528,13 +528,55 @@ class CloudRunExecutionReceiptSensor(BaseSensorOperator):
             raise AirflowFailException("Cloud Run returned malformed execution state") from exc
         if not isinstance(execution, dict):
             raise AirflowFailException("Cloud Run execution state is not a JSON object")
-        completion_status = execution.get("completionStatus")
-        if completion_status in {"EXECUTION_FAILED", "EXECUTION_CANCELLED"}:
-            raise AirflowFailException(
-                f"Cloud Run execution reached terminal status {completion_status}"
-            )
-        if completion_status != "EXECUTION_SUCCEEDED":
+        conditions = execution.get("conditions", [])
+        if not isinstance(conditions, list):
+            raise AirflowFailException("Cloud Run execution conditions are malformed")
+        completed_condition = next(
+            (
+                condition
+                for condition in conditions
+                if isinstance(condition, dict) and condition.get("type") == "Completed"
+            ),
+            None,
+        )
+        if completed_condition is None:
             return False
+        condition_state = completed_condition.get("state")
+        if condition_state == "CONDITION_FAILED":
+            reason = (
+                completed_condition.get("executionReason")
+                or completed_condition.get("reason")
+                or condition_state
+            )
+            raise AirflowFailException(
+                f"Cloud Run execution reached terminal condition {reason}"
+            )
+        if condition_state != "CONDITION_SUCCEEDED":
+            return False
+
+        for count_field in ("failedCount", "cancelledCount"):
+            count = execution.get(count_field, 0)
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise AirflowFailException("Cloud Run execution task counts are malformed")
+            if count > 0:
+                raise AirflowFailException(
+                    f"Cloud Run execution has terminal {count_field}={count}"
+                )
+
+        task_count = execution.get("taskCount")
+        succeeded_count = execution.get("succeededCount")
+        if task_count is not None or succeeded_count is not None:
+            if (
+                isinstance(task_count, bool)
+                or not isinstance(task_count, int)
+                or task_count < 0
+                or isinstance(succeeded_count, bool)
+                or not isinstance(succeeded_count, int)
+                or succeeded_count < 0
+            ):
+                raise AirflowFailException("Cloud Run execution task counts are malformed")
+            if succeeded_count < task_count:
+                return False
 
         result: dict[str, Any] = {"execution_name": execution_name}
         if self.require_receipt:
@@ -679,6 +721,11 @@ def _read_cloud_execution_receipt(
             type=["null", "string"],
             pattern=r"^\d{4}-\d{2}-\d{2}$",
         ),
+        "fault_injection": Param(
+            None,
+            type=["null", "string"],
+            enum=[None, "transient_once"],
+        ),
     },
     default_args={
         "owner": "dataforge-week7-reference",
@@ -775,6 +822,34 @@ def dataforge_week7_weather_cloud():
         ),
     )
     def execute_api_ingest(request: dict[str, Any]) -> str:
+        fault_injection = request.get("fault_injection")
+        if fault_injection is not None:
+            if fault_injection != "transient_once" or request.get("mode") != "manual":
+                raise AirflowFailException(
+                    "fault injection is restricted to manual transient_once runs"
+                )
+            context = get_current_context()
+            task_instance = context.get("ti")
+            try_number = getattr(task_instance, "try_number", None)
+            if isinstance(try_number, bool) or not isinstance(try_number, int) or try_number < 1:
+                raise AirflowFailException("fault injection requires a valid task try number")
+            if try_number == 1:
+                _LOGGER.warning(
+                    "DATAFORGE_AIRFLOW_WEATHER_FAULT_INJECTION %s",
+                    json.dumps(
+                        {
+                            "fault": fault_injection,
+                            "mode": request["mode"],
+                            "invocation_id": request["invocation_id"],
+                            "try_number": try_number,
+                            "cloud_run_submitted": False,
+                        },
+                        sort_keys=True,
+                    ),
+                )
+                raise AirflowException(
+                    "injected transient failure before Cloud Run submission"
+                )
         return _submit_cloud_run_job(
             INGEST_JOB,
             [
