@@ -24,13 +24,16 @@ SCHEMA = StructType(
 
 
 def _row(order_id, status, amount, lsn, txn_order, op):
-    return (order_id, status, Decimal(amount), lsn, txn_order, op)
+    parsed_amount = None if amount is None else Decimal(amount)
+    return (order_id, status, parsed_amount, lsn, txn_order, op)
 
 
 def test_merge_builder_uses_pk_and_monotonic_source_version():
     assert build_merge_condition() == "t.order_id = s.order_id"
-    assert "s.source_lsn > t.source_lsn" in build_newer_version_condition()
-    assert "s.transaction_order" in build_newer_version_condition()
+    version_guard = build_newer_version_condition()
+    assert "coalesce(s.source_lsn, -1) > coalesce(t.source_lsn, -1)" in version_guard
+    assert "coalesce(s.source_lsn, -1) = coalesce(t.source_lsn, -1)" in version_guard
+    assert "coalesce(s.transaction_order, -1) > coalesce(t.transaction_order, -1)" in version_guard
 
 
 def test_merge_builder_rejects_unsafe_identifiers():
