@@ -528,13 +528,55 @@ class CloudRunExecutionReceiptSensor(BaseSensorOperator):
             raise AirflowFailException("Cloud Run returned malformed execution state") from exc
         if not isinstance(execution, dict):
             raise AirflowFailException("Cloud Run execution state is not a JSON object")
-        completion_status = execution.get("completionStatus")
-        if completion_status in {"EXECUTION_FAILED", "EXECUTION_CANCELLED"}:
-            raise AirflowFailException(
-                f"Cloud Run execution reached terminal status {completion_status}"
-            )
-        if completion_status != "EXECUTION_SUCCEEDED":
+        conditions = execution.get("conditions", [])
+        if not isinstance(conditions, list):
+            raise AirflowFailException("Cloud Run execution conditions are malformed")
+        completed_condition = next(
+            (
+                condition
+                for condition in conditions
+                if isinstance(condition, dict) and condition.get("type") == "Completed"
+            ),
+            None,
+        )
+        if completed_condition is None:
             return False
+        condition_state = completed_condition.get("state")
+        if condition_state == "CONDITION_FAILED":
+            reason = (
+                completed_condition.get("executionReason")
+                or completed_condition.get("reason")
+                or condition_state
+            )
+            raise AirflowFailException(
+                f"Cloud Run execution reached terminal condition {reason}"
+            )
+        if condition_state != "CONDITION_SUCCEEDED":
+            return False
+
+        for count_field in ("failedCount", "cancelledCount"):
+            count = execution.get(count_field, 0)
+            if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+                raise AirflowFailException("Cloud Run execution task counts are malformed")
+            if count > 0:
+                raise AirflowFailException(
+                    f"Cloud Run execution has terminal {count_field}={count}"
+                )
+
+        task_count = execution.get("taskCount")
+        succeeded_count = execution.get("succeededCount")
+        if task_count is not None or succeeded_count is not None:
+            if (
+                isinstance(task_count, bool)
+                or not isinstance(task_count, int)
+                or task_count < 0
+                or isinstance(succeeded_count, bool)
+                or not isinstance(succeeded_count, int)
+                or succeeded_count < 0
+            ):
+                raise AirflowFailException("Cloud Run execution task counts are malformed")
+            if succeeded_count < task_count:
+                return False
 
         result: dict[str, Any] = {"execution_name": execution_name}
         if self.require_receipt:
