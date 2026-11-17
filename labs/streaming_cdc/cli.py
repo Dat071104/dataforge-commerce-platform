@@ -64,6 +64,40 @@ def _run_compose(*args: str, timeout_seconds: int | None = None) -> None:
         raise TimeoutError(f"docker compose exceeded {timeout_seconds} seconds") from exc
 
 
+def _redact_local_secrets(text: str) -> str:
+    """Remove local credential values before startup logs become evidence."""
+    if not LOCAL_ENV_FILE.exists():
+        return text
+    for line in LOCAL_ENV_FILE.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if value.strip() and any(
+            marker in key.upper() for marker in ("PASSWORD", "SECRET", "TOKEN")
+        ):
+            text = text.replace(value.strip(), "[REDACTED]")
+    return text
+
+
+def _capture_startup_compose_logs() -> str:
+    try:
+        result = subprocess.run(
+            _compose_command("logs", "--no-color"),
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        output = (
+            f"docker compose logs exit_code={result.returncode}\n"
+            f"{result.stdout}\n[stderr]\n{result.stderr}"
+        )
+    except Exception as exc:  # keep startup failure as the primary exception
+        output = f"docker compose logs capture failed: {type(exc).__name__}: {exc}"
+    return _redact_local_secrets(output)
+
+
 def _check_shared_docker_lock() -> None:
     if os.name == "nt" and DOCKER_LOCK.exists():
         owner = DOCKER_LOCK.read_text(encoding="utf-8", errors="replace").strip()
@@ -324,7 +358,18 @@ def start_stack() -> None:
             "spark",
             timeout_seconds=spark_timeout,
         )
-    except Exception:
+    except Exception as startup_error:
+        try:
+            startup_log = EVIDENCE_DIR / "startup_failure.log"
+            startup_log.write_text(
+                _redact_local_secrets(
+                    f"Week 8 startup failed: {type(startup_error).__name__}: {startup_error}\n\n"
+                    + _capture_startup_compose_logs()
+                ),
+                encoding="utf-8",
+            )
+        except Exception as log_error:  # keep the original startup failure
+            print(f"Could not capture Week 8 startup logs: {log_error}", file=sys.stderr)
         try:
             _run_compose("down", "--remove-orphans", timeout_seconds=30)
         except Exception as cleanup_error:  # keep the original startup failure
