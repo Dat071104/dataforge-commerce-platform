@@ -426,14 +426,23 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             # Cloud Run omits default-valued done=false and unspecified status.
             _Response(200, {}),
             operation_done,
-            _Response(200, {}),
-            operation_done,
             _Response(
                 200,
                 {
                     "conditions": [{"type": "Completed", "state": "CONDITION_RECONCILING"}],
                     "taskCount": 1,
                     "succeededCount": 0,
+                    "failedCount": 0,
+                    "cancelledCount": 0,
+                },
+            ),
+            operation_done,
+            _Response(
+                200,
+                {
+                    "conditions": [{"type": "Completed", "state": "CONDITION_SUCCEEDED"}],
+                    "taskCount": 1,
+                    "succeededCount": 1,
                     "failedCount": 0,
                     "cancelledCount": 0,
                 },
