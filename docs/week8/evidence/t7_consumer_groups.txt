@@ -2,24 +2,6 @@ Consumed records:
 Partition:2	Offset:0
 Partition:2	Offset:1
 Partition:2	Offset:2
-Partition:2	Offset:3
-Partition:2	Offset:4
-Partition:2	Offset:5
-Partition:2	Offset:6
-Partition:2	Offset:7
-Partition:2	Offset:8
-Partition:2	Offset:9
-Partition:2	Offset:10
-Partition:2	Offset:11
-Partition:2	Offset:12
-Partition:2	Offset:13
-Partition:2	Offset:14
-Partition:2	Offset:15
-Partition:2	Offset:16
-Partition:2	Offset:17
-Partition:2	Offset:18
-Partition:2	Offset:19
-Partition:2	Offset:20
 Partition:1	Offset:0
 Partition:0	Offset:0
 Partition:0	Offset:1
@@ -27,15 +9,33 @@ Partition:0	Offset:2
 Partition:0	Offset:3
 Partition:0	Offset:4
 Partition:0	Offset:5
+Partition:0	Offset:6
+Partition:0	Offset:7
+Partition:0	Offset:8
+Partition:0	Offset:9
+Partition:0	Offset:10
+Partition:0	Offset:11
+Partition:0	Offset:12
+Partition:0	Offset:13
+Partition:0	Offset:14
+Partition:0	Offset:15
+Partition:0	Offset:16
+Partition:0	Offset:17
+Partition:0	Offset:18
+Partition:0	Offset:19
+Partition:0	Offset:20
+Partition:0	Offset:21
+Partition:0	Offset:22
+Partition:0	Offset:23
 
 Topic partitions:
-Topic: dataforge.dataforge_operational.orders	TopicId: h5YODwRpTHi8csWEQP6UNg	PartitionCount: 3	ReplicationFactor: 1	Configs: 
+Topic: dataforge.dataforge_operational.orders	TopicId: j5eTmDLtSUWo45Vs9QNxkw	PartitionCount: 3	ReplicationFactor: 1	Configs:
 	Topic: dataforge.dataforge_operational.orders	Partition: 0	Leader: 1	Replicas: 1	Isr: 1	Elr: 	LastKnownElr: 
 	Topic: dataforge.dataforge_operational.orders	Partition: 1	Leader: 1	Replicas: 1	Isr: 1	Elr: 	LastKnownElr: 
 	Topic: dataforge.dataforge_operational.orders	Partition: 2	Leader: 1	Replicas: 1	Isr: 1	Elr: 	LastKnownElr: 
 
 
 GROUP                     TOPIC                                  PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
-dataforge-w8-offset-probe dataforge.dataforge_operational.orders 2          21              21              0               -               -               -
+dataforge-w8-offset-probe dataforge.dataforge_operational.orders 2          3               3               0               -               -               -
 dataforge-w8-offset-probe dataforge.dataforge_operational.orders 1          1               1               0               -               -               -
-dataforge-w8-offset-probe dataforge.dataforge_operational.orders 0          6               6               0               -               -               -
+dataforge-w8-offset-probe dataforge.dataforge_operational.orders 0          24              24              0               -               -               -

@@ -1,28 +1,28 @@
 {
   "dropped_by_watermark": 2,
   "latest_progress": {
-    "batchId": 9,
+    "batchId": 11,
     "durationMs": {
-      "addBatch": 1194,
-      "commitOffsets": 24,
-      "getBatch": 5,
-      "latestOffset": 41,
-      "queryPlanning": 9,
-      "triggerExecution": 1302,
-      "walCommit": 29
+      "addBatch": 613,
+      "commitOffsets": 26,
+      "getBatch": 4,
+      "latestOffset": 28,
+      "queryPlanning": 5,
+      "triggerExecution": 700,
+      "walCommit": 22
     },
     "eventTime": {
-      "avg": "2026-11-17T13:57:00.000Z",
-      "max": "2026-11-17T13:57:00.000Z",
-      "min": "2026-11-17T13:57:00.000Z",
-      "watermark": "2026-11-17T14:08:55.000Z"
+      "avg": "2026-11-17T14:47:00.000Z",
+      "max": "2026-11-17T14:47:00.000Z",
+      "min": "2026-11-17T14:47:00.000Z",
+      "watermark": "2026-11-17T14:57:00.000Z"
     },
-    "id": "2a0e81d4-cc82-4a48-9eb4-3cc625ed01d1",
+    "id": "c78d27db-d930-4d21-bc7d-0523ebb33d48",
     "inputRowsPerSecond": 0.0,
     "name": "gold_revenue_5m",
     "numInputRows": 0,
     "processedRowsPerSecond": 0.0,
-    "runId": "169292ec-2644-409e-95db-6a4d9f51a5a7",
+    "runId": "578082ac-3bea-4f57-a8f2-e1087ebe138b",
     "sink": {
       "description": "ForeachBatchSink",
       "numOutputRows": -1
@@ -32,17 +32,17 @@
         "description": "KafkaV2[Subscribe[dataforge.dataforge_operational.orders]]",
         "endOffset": {
           "dataforge.dataforge_operational.orders": {
-            "0": 6,
+            "0": 23,
             "1": 1,
-            "2": 20
+            "2": 3
           }
         },
         "inputRowsPerSecond": 0.0,
         "latestOffset": {
           "dataforge.dataforge_operational.orders": {
-            "0": 6,
+            "0": 23,
             "1": 1,
-            "2": 20
+            "2": 3
           }
         },
         "metrics": {
@@ -54,9 +54,9 @@
         "processedRowsPerSecond": 0.0,
         "startOffset": {
           "dataforge.dataforge_operational.orders": {
-            "0": 6,
+            "0": 23,
             "1": 1,
-            "2": 20
+            "2": 3
           }
         }
       },
@@ -77,15 +77,15 @@
     "stateOperators": [
       {
         "allRemovalsTimeMs": 0,
-        "allUpdatesTimeMs": 58,
-        "commitTimeMs": 316,
+        "allUpdatesTimeMs": 49,
+        "commitTimeMs": 211,
         "customMetrics": {
-          "loadedMapCacheHitCount": 116,
+          "loadedMapCacheHitCount": 148,
           "loadedMapCacheMissCount": 248,
           "numDroppedDuplicateRows": 0,
-          "stateOnCurrentVersionSizeBytes": 13712
+          "stateOnCurrentVersionSizeBytes": 13728
         },
-        "memoryUsedBytes": 16848,
+        "memoryUsedBytes": 16872,
         "numRowsDroppedByWatermark": 2,
         "numRowsRemoved": 0,
         "numRowsTotal": 56,
@@ -95,13 +95,13 @@
         "operatorName": "dedupeWithinWatermark"
       }
     ],
-    "timestamp": "2026-11-17T14:19:38.000Z"
+    "timestamp": "2026-11-17T15:06:56.000Z"
   },
   "within_window": {
     "change_count": 2,
-    "province_id": "province-t5-late-e699a7c5",
+    "province_id": "province-t5-late-701505ae",
     "revenue_delta": 23.0,
-    "window_end": "2026-11-17T14:20:00.000Z",
-    "window_start": "2026-11-17T14:15:00.000Z"
+    "window_end": "2026-11-17T15:10:00.000Z",
+    "window_start": "2026-11-17T15:05:00.000Z"
   }
 }

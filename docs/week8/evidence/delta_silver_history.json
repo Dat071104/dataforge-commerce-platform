@@ -13,7 +13,7 @@
       "mode": "ErrorIfExists",
       "partitionBy": "[]"
     },
-    "timestamp": "2026-11-17T14:17:13.735Z",
+    "timestamp": "2026-11-17T15:05:11.084Z",
     "version": 0
   },
   {
@@ -22,8 +22,8 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "9233",
-      "materializeSourceTimeMs": "374",
+      "executionTimeMs": "5526",
+      "materializeSourceTimeMs": "164",
       "numOutputRows": "2",
       "numSourceRows": "2",
       "numTargetBytesAdded": "3066",
@@ -42,17 +42,17 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "0",
-      "rewriteTimeMs": "440",
-      "scanTimeMs": "8411"
+      "rewriteTimeMs": "260",
+      "scanTimeMs": "5098"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#1401L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#1401L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#1402L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#1510L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#1510L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#1511L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#1394 = order_id#40)\"]"
+      "predicate": "[\"(order_id#1503 = order_id#40)\"]"
     },
     "readVersion": 0,
-    "timestamp": "2026-11-17T14:17:24.182Z",
+    "timestamp": "2026-11-17T15:05:17.022Z",
     "version": 1
   },
   {
@@ -61,11 +61,11 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "3680",
-      "materializeSourceTimeMs": "81",
+      "executionTimeMs": "1930",
+      "materializeSourceTimeMs": "333",
       "numOutputRows": "5",
       "numSourceRows": "4",
-      "numTargetBytesAdded": "9870",
+      "numTargetBytesAdded": "9869",
       "numTargetBytesRemoved": "3066",
       "numTargetChangeFilesAdded": "0",
       "numTargetDeletionVectorsAdded": "0",
@@ -81,17 +81,17 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "1",
-      "rewriteTimeMs": "741",
-      "scanTimeMs": "2849"
+      "rewriteTimeMs": "292",
+      "scanTimeMs": "1301"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#8769L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#8769L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#8770L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#8712L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#8712L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#8713L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#8762 = order_id#40)\"]"
+      "predicate": "[\"(order_id#8705 = order_id#40)\"]"
     },
     "readVersion": 1,
-    "timestamp": "2026-11-17T14:17:44.242Z",
+    "timestamp": "2026-11-17T15:05:29.876Z",
     "version": 2
   },
   {
@@ -100,8 +100,8 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "1956",
-      "materializeSourceTimeMs": "69",
+      "executionTimeMs": "1556",
+      "materializeSourceTimeMs": "192",
       "numOutputRows": "1",
       "numSourceRows": "1",
       "numTargetBytesAdded": "3373",
@@ -120,17 +120,17 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "0",
-      "rewriteTimeMs": "248",
-      "scanTimeMs": "1634"
+      "rewriteTimeMs": "194",
+      "scanTimeMs": "1166"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#16031L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#16031L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#16032L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#15738L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#15738L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#15739L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#16024 = order_id#40)\"]"
+      "predicate": "[\"(order_id#15731 = order_id#40)\"]"
     },
     "readVersion": 2,
-    "timestamp": "2026-11-17T14:17:58.565Z",
+    "timestamp": "2026-11-17T15:05:39.492Z",
     "version": 3
   },
   {
@@ -139,8 +139,8 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "2429",
-      "materializeSourceTimeMs": "84",
+      "executionTimeMs": "2104",
+      "materializeSourceTimeMs": "473",
       "numOutputRows": "1",
       "numSourceRows": "1",
       "numTargetBytesAdded": "3358",
@@ -159,17 +159,17 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "0",
-      "rewriteTimeMs": "263",
-      "scanTimeMs": "2078"
+      "rewriteTimeMs": "160",
+      "scanTimeMs": "1465"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#5653L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#5653L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#5654L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#5928L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#5928L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#5929L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#5646 = order_id#40)\"]"
+      "predicate": "[\"(order_id#5921 = order_id#40)\"]"
     },
     "readVersion": 3,
-    "timestamp": "2026-11-17T14:18:44.935Z",
+    "timestamp": "2026-11-17T15:06:11.562Z",
     "version": 4
   },
   {
@@ -178,8 +178,8 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "3745",
-      "materializeSourceTimeMs": "58",
+      "executionTimeMs": "2568",
+      "materializeSourceTimeMs": "269",
       "numOutputRows": "1",
       "numSourceRows": "1",
       "numTargetBytesAdded": "3380",
@@ -198,18 +198,57 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "0",
-      "rewriteTimeMs": "241",
-      "scanTimeMs": "3442"
+      "rewriteTimeMs": "112",
+      "scanTimeMs": "2184"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#13873L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#13873L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#13874L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#13879L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#13879L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#13880L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#13866 = order_id#40)\"]"
+      "predicate": "[\"(order_id#13872 = order_id#40)\"]"
     },
     "readVersion": 4,
-    "timestamp": "2026-11-17T14:19:05.207Z",
+    "timestamp": "2026-11-17T15:06:25.211Z",
     "version": 5
+  },
+  {
+    "engineInfo": "Apache-Spark/3.5.9 Delta-Lake/3.3.3",
+    "isBlindAppend": false,
+    "isolationLevel": "Serializable",
+    "operation": "MERGE",
+    "operationMetrics": {
+      "executionTimeMs": "1639",
+      "materializeSourceTimeMs": "114",
+      "numOutputRows": "1",
+      "numSourceRows": "1",
+      "numTargetBytesAdded": "3380",
+      "numTargetBytesRemoved": "3380",
+      "numTargetChangeFilesAdded": "0",
+      "numTargetDeletionVectorsAdded": "0",
+      "numTargetDeletionVectorsRemoved": "0",
+      "numTargetDeletionVectorsUpdated": "0",
+      "numTargetFilesAdded": "1",
+      "numTargetFilesRemoved": "1",
+      "numTargetRowsCopied": "0",
+      "numTargetRowsDeleted": "0",
+      "numTargetRowsInserted": "0",
+      "numTargetRowsMatchedDeleted": "0",
+      "numTargetRowsMatchedUpdated": "1",
+      "numTargetRowsNotMatchedBySourceDeleted": "0",
+      "numTargetRowsNotMatchedBySourceUpdated": "0",
+      "numTargetRowsUpdated": "1",
+      "rewriteTimeMs": "200",
+      "scanTimeMs": "1320"
+    },
+    "operationParameters": {
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#47L, -1) > coalesce(source_lsn#19356L, -1)) OR ((coalesce(source_lsn#47L, -1) = coalesce(source_lsn#19356L, -1)) AND (coalesce(transaction_order#48L, -1) > coalesce(transaction_order#19357L, -1))))\",\"actionType\":\"update\"}]",
+      "notMatchedBySourcePredicates": "[]",
+      "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
+      "predicate": "[\"(order_id#19349 = order_id#40)\"]"
+    },
+    "readVersion": 5,
+    "timestamp": "2026-11-17T15:06:31.653Z",
+    "version": 6
   },
   {
     "engineInfo": "Apache-Spark/3.5.9 Delta-Lake/3.3.3",
@@ -218,11 +257,11 @@
     "operation": "ADD COLUMNS",
     "operationMetrics": {},
     "operationParameters": {
-      "columns": "[{\"column\":{\"name\":\"nullable_note_e699a7c5\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}}]"
+      "columns": "[{\"column\":{\"name\":\"nullable_note_701505ae\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}}]"
     },
-    "readVersion": 5,
-    "timestamp": "2026-11-17T14:20:19.324Z",
-    "version": 6
+    "readVersion": 6,
+    "timestamp": "2026-11-17T15:07:29.964Z",
+    "version": 7
   },
   {
     "engineInfo": "Apache-Spark/3.5.9 Delta-Lake/3.3.3",
@@ -230,8 +269,8 @@
     "isolationLevel": "Serializable",
     "operation": "MERGE",
     "operationMetrics": {
-      "executionTimeMs": "8059",
-      "materializeSourceTimeMs": "294",
+      "executionTimeMs": "5675",
+      "materializeSourceTimeMs": "252",
       "numOutputRows": "1",
       "numSourceRows": "1",
       "numTargetBytesAdded": "3771",
@@ -250,17 +289,17 @@
       "numTargetRowsNotMatchedBySourceDeleted": "0",
       "numTargetRowsNotMatchedBySourceUpdated": "0",
       "numTargetRowsUpdated": "1",
-      "rewriteTimeMs": "1466",
-      "scanTimeMs": "6279"
+      "rewriteTimeMs": "1543",
+      "scanTimeMs": "3873"
     },
     "operationParameters": {
-      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#48L, -1) > coalesce(source_lsn#2852L, -1)) OR ((coalesce(source_lsn#48L, -1) = coalesce(source_lsn#2852L, -1)) AND (coalesce(transaction_order#49L, -1) > coalesce(transaction_order#2853L, -1))))\",\"actionType\":\"update\"}]",
+      "matchedPredicates": "[{\"predicate\":\"((coalesce(source_lsn#48L, -1) > coalesce(source_lsn#3598L, -1)) OR ((coalesce(source_lsn#48L, -1) = coalesce(source_lsn#3598L, -1)) AND (coalesce(transaction_order#49L, -1) > coalesce(transaction_order#3599L, -1))))\",\"actionType\":\"update\"}]",
       "notMatchedBySourcePredicates": "[]",
       "notMatchedPredicates": "[{\"actionType\":\"insert\"}]",
-      "predicate": "[\"(order_id#2845 = order_id#40)\"]"
+      "predicate": "[\"(order_id#3591 = order_id#40)\"]"
     },
-    "readVersion": 6,
-    "timestamp": "2026-11-17T14:20:27.874Z",
-    "version": 7
+    "readVersion": 7,
+    "timestamp": "2026-11-17T15:07:35.965Z",
+    "version": 8
   }
 ]

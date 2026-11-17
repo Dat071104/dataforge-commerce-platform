@@ -1,9 +1,9 @@
 {
-  "captured_at": "2026-11-17T14:17:08.996193+00:00",
+  "captured_at": "2026-11-17T15:05:05.033816+00:00",
   "compose_memory_cap_mib": 5376,
-  "docker_memory_mib": 15986,
+  "docker_memory_mib": 15983,
   "healthy": true,
-  "host_available_ram_mib_before_start": 14667,
+  "host_available_ram_mib_before_start": 14363,
   "project": "dataforge-w8",
-  "startup_seconds": 203.51
+  "startup_seconds": 193.12
 }

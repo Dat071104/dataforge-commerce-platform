@@ -1,23 +1,23 @@
 {
-  "batchId": 11,
+  "batchId": 13,
   "durationMs": {
-    "addBatch": 1296,
-    "commitOffsets": 43,
+    "addBatch": 1342,
+    "commitOffsets": 52,
     "getBatch": 0,
-    "latestOffset": 9,
-    "queryPlanning": 32,
-    "triggerExecution": 1445,
-    "walCommit": 58
+    "latestOffset": 11,
+    "queryPlanning": 39,
+    "triggerExecution": 1572,
+    "walCommit": 124
   },
   "eventTime": {
-    "watermark": "2026-11-17T14:09:52.000Z"
+    "watermark": "2026-11-17T14:57:08.000Z"
   },
-  "id": "2a0e81d4-cc82-4a48-9eb4-3cc625ed01d1",
+  "id": "c78d27db-d930-4d21-bc7d-0523ebb33d48",
   "inputRowsPerSecond": 0.0,
   "name": "gold_revenue_5m",
   "numInputRows": 0,
   "processedRowsPerSecond": 0.0,
-  "runId": "4c58c6cc-1943-4a54-a544-2ba5dbb42f07",
+  "runId": "fd1059de-29e2-4468-8392-b66655f04306",
   "sink": {
     "description": "ForeachBatchSink",
     "numOutputRows": -1
@@ -27,17 +27,17 @@
       "description": "KafkaV2[Subscribe[dataforge.dataforge_operational.orders]]",
       "endOffset": {
         "dataforge.dataforge_operational.orders": {
-          "0": 6,
+          "0": 24,
           "1": 1,
-          "2": 21
+          "2": 3
         }
       },
       "inputRowsPerSecond": 0.0,
       "latestOffset": {
         "dataforge.dataforge_operational.orders": {
-          "0": 6,
+          "0": 24,
           "1": 1,
-          "2": 21
+          "2": 3
         }
       },
       "metrics": {
@@ -49,9 +49,9 @@
       "processedRowsPerSecond": 0.0,
       "startOffset": {
         "dataforge.dataforge_operational.orders": {
-          "0": 6,
+          "0": 24,
           "1": 1,
-          "2": 21
+          "2": 3
         }
       }
     },
@@ -71,16 +71,16 @@
   ],
   "stateOperators": [
     {
-      "allRemovalsTimeMs": 1,
-      "allUpdatesTimeMs": 82,
-      "commitTimeMs": 410,
+      "allRemovalsTimeMs": 0,
+      "allUpdatesTimeMs": 29,
+      "commitTimeMs": 320,
       "customMetrics": {
         "loadedMapCacheHitCount": 20,
         "loadedMapCacheMissCount": 56,
         "numDroppedDuplicateRows": 0,
-        "stateOnCurrentVersionSizeBytes": 14144
+        "stateOnCurrentVersionSizeBytes": 14416
       },
-      "memoryUsedBytes": 17312,
+      "memoryUsedBytes": 17592,
       "numRowsDroppedByWatermark": 0,
       "numRowsRemoved": 0,
       "numRowsTotal": 58,
@@ -90,5 +90,5 @@
       "operatorName": "dedupeWithinWatermark"
     }
   ],
-  "timestamp": "2026-11-17T14:20:34.875Z"
+  "timestamp": "2026-11-17T15:07:37.953Z"
 }
