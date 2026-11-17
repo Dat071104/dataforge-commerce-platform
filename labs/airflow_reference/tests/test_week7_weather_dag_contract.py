@@ -428,10 +428,28 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             operation_done,
             _Response(200, {}),
             operation_done,
-            _Response(200, {"completionStatus": "EXECUTION_SUCCEEDED"}),
+            _Response(
+                200,
+                {
+                    "conditions": [{"type": "Completed", "state": "CONDITION_RECONCILING"}],
+                    "taskCount": 1,
+                    "succeededCount": 0,
+                    "failedCount": 0,
+                    "cancelledCount": 0,
+                },
+            ),
             _Response(404, {}),
             operation_done,
-            _Response(200, {"completionStatus": "EXECUTION_SUCCEEDED"}),
+            _Response(
+                200,
+                {
+                    "conditions": [{"type": "Completed", "state": "CONDITION_SUCCEEDED"}],
+                    "taskCount": 1,
+                    "succeededCount": 1,
+                    "failedCount": 0,
+                    "cancelledCount": 0,
+                },
+            ),
             _Response(200, {"generation": "123"}),
         ]
         with patch.object(weather_cloud, "_authorized_session", return_value=session):
@@ -467,7 +485,22 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
         session = Mock()
         session.get.side_effect = [
             _Response(200, {"done": True, "response": {"name": execution_name}}),
-            _Response(200, {"completionStatus": "EXECUTION_FAILED"}),
+            _Response(
+                200,
+                {
+                    "conditions": [
+                        {
+                            "type": "Completed",
+                            "state": "CONDITION_FAILED",
+                            "executionReason": "NON_ZERO_EXIT_CODE",
+                        }
+                    ],
+                    "taskCount": 1,
+                    "succeededCount": 0,
+                    "failedCount": 1,
+                    "cancelledCount": 0,
+                },
+            ),
         ]
         with patch.object(weather_cloud, "_authorized_session", return_value=session):
             with self.assertRaises(AirflowFailException):
