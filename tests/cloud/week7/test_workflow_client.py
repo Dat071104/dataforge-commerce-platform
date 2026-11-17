@@ -102,6 +102,9 @@ class _RequestSession:
 
     def get(self, url: str, *, headers: dict[str, str], timeout: int):
         self.gets += 1
+        if self.gets == 1:
+            # Workflow Execution.state defaults to unspecified and may be omitted.
+            return _Response({"name": url.split("/v1/", 1)[1]})
         return _Response(
             {
                 "state": "SUCCEEDED",
@@ -128,7 +131,7 @@ def test_workflow_execution_uses_adc_and_returns_a_sanitized_terminal_receipt():
     assert result["state"] == "SUCCEEDED"
     assert result["result"] == {"status": "NO_NEW_BATCH"}
     assert result["workflow_execution_name"].endswith("/test-execution")
-    assert session.gets == 1
+    assert session.gets == 2
     assert "must-never-be-printed" not in json.dumps(result)
 
 

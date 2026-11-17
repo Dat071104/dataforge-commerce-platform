@@ -357,9 +357,10 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
         session = Mock()
         operation_done = _Response(200, {"done": True, "response": {"name": execution_name}})
         session.get.side_effect = [
-            _Response(200, {"done": False}),
+            # Cloud Run omits default-valued done=false and unspecified status.
+            _Response(200, {}),
             operation_done,
-            _Response(200, {"completionStatus": "EXECUTION_RUNNING"}),
+            _Response(200, {}),
             operation_done,
             _Response(200, {"completionStatus": "EXECUTION_SUCCEEDED"}),
             _Response(404, {}),
@@ -455,7 +456,8 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
                 )
             },
         )
-        session.get.return_value = _Response(200, {"done": False})
+        # Pending Operation.done defaults to false and may be omitted in JSON.
+        session.get.return_value = _Response(200, {})
         with (
             patch.object(weather_cloud, "_authorized_session", return_value=session),
             patch.object(weather_cloud, "_CLOUD_RUN_POLL_TIMEOUT_SECONDS", 10),
