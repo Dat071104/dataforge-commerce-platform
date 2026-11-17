@@ -245,12 +245,38 @@ def _current_silver_hashes() -> dict[str, str]:
 
 
 def _wait_for_source_parity(timeout: int = 60) -> tuple[dict[str, str], dict[str, str]]:
+    last_state: dict[str, object] = {}
+
     def matches():
-        source_hashes = _row_hashes(_source_rows())
-        silver_hashes = _current_silver_hashes()
+        source_rows = _source_rows()
+        silver_rows = _get_json("/tables/silver")
+        source_hashes = _row_hashes(source_rows)
+        silver_hashes = _row_hashes(silver_rows)
+        source_by_id = {row["order_id"]: row for row in source_rows}
+        silver_by_id = {row["order_id"]: row for row in silver_rows}
+        last_state.update(
+            {
+                "source_rows": source_rows,
+                "silver_rows": silver_rows,
+                "source_hashes": source_hashes,
+                "silver_hashes": silver_hashes,
+                "source_only_ids": sorted(set(source_by_id) - set(silver_by_id)),
+                "silver_only_ids": sorted(set(silver_by_id) - set(source_by_id)),
+                "mismatched_rows": {
+                    order_id: {"source": source_by_id[order_id], "silver": silver_by_id[order_id]}
+                    for order_id in sorted(set(source_by_id) & set(silver_by_id))
+                    if _row_hashes([source_by_id[order_id]])
+                    != _row_hashes([silver_by_id[order_id]])
+                },
+            }
+        )
         return (source_hashes, silver_hashes) if source_hashes == silver_hashes else None
 
-    return _wait_until(matches, "silver row hashes to equal the Postgres source", timeout=timeout)
+    try:
+        return _wait_until(matches, "silver row hashes to equal the Postgres source", timeout=timeout)
+    except AssertionError:
+        _write_evidence("t1_parity_failure.json", last_state)
+        raise
 
 
 def _latest_progress(name: str) -> dict:
@@ -316,6 +342,7 @@ def test_t1_snapshot_insert_update_delete_matches_postgres_by_row_hash():
     )
     assert connector_setup["connector_state"] == "RUNNING"
     assert connector_setup["replication_objects_verified"] is True
+    assert connector_setup["heartbeat_topic"] == "__debezium-heartbeat.dataforge"
     replica_identity = _replica_identity()
     assert replica_identity == {
         "orders": "f",

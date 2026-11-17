@@ -37,6 +37,7 @@ TOPICS = (
 )
 ORDERS_TOPIC = TOPICS[0]
 TRANSACTION_TOPIC = "dataforge.transaction"
+HEARTBEAT_TOPIC = "__debezium-heartbeat.dataforge"
 OFFSET_AUDIT_GROUP = "dataforge-w8-offset-probe"
 
 
@@ -145,6 +146,7 @@ def _ensure_local_env() -> None:
 def _create_topics(*, timeout_seconds: int = 30) -> None:
     topics = [(topic, 3, False) for topic in TOPICS] + [
         (TRANSACTION_TOPIC, 1, False),
+        (HEARTBEAT_TOPIC, 1, True),
         ("_schemas", 1, True),
         ("dataforge-w8-connect-configs", 1, True),
         ("dataforge-w8-connect-offsets", 25, True),
@@ -287,6 +289,7 @@ def register_connector(
                 "publication": "dataforge_w8_publication",
                 "slot": "dataforge_w8_slot",
                 "plugin": "pgoutput",
+                "heartbeat_topic": HEARTBEAT_TOPIC,
                 "replication_objects_verified": True,
                 "topic_partition_count": 3,
                 "registered_value_subjects": subjects,
@@ -309,6 +312,7 @@ def start_stack() -> None:
     )
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     (STATE_DIR / "control").mkdir(parents=True, exist_ok=True)
+    (STATE_DIR / "test_events").mkdir(parents=True, exist_ok=True)
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     budget = int(os.environ.get("DATAFORGE_W8_STARTUP_BUDGET_SEC", "180"))
     deadline = time.monotonic() + budget
