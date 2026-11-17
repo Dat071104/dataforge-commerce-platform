@@ -152,6 +152,7 @@ services:
       DATAFORGE_W8_TOPIC_PREFIX: dataforge
       DATAFORGE_W8_STATE_DIR: /workspace/labs/streaming_cdc/_state
       DATAFORGE_W8_EVIDENCE_DIR: /workspace/docs/week8/evidence
+      DATAFORGE_W8_TEST_EVENTS_DIR: /workspace/labs/streaming_cdc/_state/test_events
       SPARK_LOCAL_IP: 127.0.0.1
     ports:
       - "127.0.0.1:14040:4040"

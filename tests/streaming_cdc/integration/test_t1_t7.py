@@ -39,6 +39,7 @@ RUN_ID = uuid.uuid4().hex[:8]
 STATE_DIR = REPO_ROOT / "labs" / "streaming_cdc" / "_state"
 LOCAL_ENV_FILE = REPO_ROOT / "labs" / "streaming_cdc" / "w8.env"
 EVIDENCE_DIR = REPO_ROOT / "docs" / "week8" / "evidence"
+GOLD_TEST_EVENTS_DIR = STATE_DIR / "test_events"
 COMPOSE_FILE = REPO_ROOT / "labs" / "streaming_cdc" / "compose.yaml"
 PROJECT = "dataforge-w8"
 SPARK_URL = "http://127.0.0.1:17079"
@@ -98,6 +99,28 @@ def _compose(*args: str, timeout: int = 120) -> subprocess.CompletedProcess[str]
 def _db_execute(statement: str, params: tuple | None = None) -> None:
     with psycopg.connect(DB_DSN, autocommit=True) as connection:
         connection.execute(statement, params or ())
+
+
+def _replica_identity() -> dict[str, str]:
+    with psycopg.connect(DB_DSN) as connection:
+        rows = connection.execute(
+            """
+            SELECT c.relname, c.relreplident
+              FROM pg_class AS c
+              JOIN pg_namespace AS n ON n.oid = c.relnamespace
+             WHERE n.nspname = 'dataforge_operational'
+               AND c.relname = ANY(%s)
+            """,
+            (["orders", "payment_events", "change_journal"],),
+        ).fetchall()
+    return {str(name): str(identity) for name, identity in rows}
+
+
+def _write_gold_test_event(filename: str, payload: dict) -> None:
+    GOLD_TEST_EVENTS_DIR.mkdir(parents=True, exist_ok=True)
+    (GOLD_TEST_EVENTS_DIR / filename).write_text(
+        json.dumps(payload, sort_keys=True, default=str), encoding="utf-8"
+    )
 
 
 def _insert_order(
@@ -238,6 +261,29 @@ def _progress_offsets(progress: dict) -> tuple[str, ...]:
     return tuple(str(source.get("endOffset")) for source in progress.get("sources", []))
 
 
+def _test_event_offset(progress: dict) -> str | None:
+    return next(
+        (
+            str(source.get("endOffset"))
+            for source in progress.get("sources", [])
+            if "test_events" in str(source.get("description", ""))
+        ),
+        None,
+    )
+
+
+def _wait_for_test_event_file(previous: dict, label: str) -> dict:
+    previous_offset = _test_event_offset(previous)
+    assert previous_offset is not None, "gold query has no CDC test-file source"
+
+    def advanced():
+        current = _latest_progress("gold")
+        offset = _test_event_offset(current)
+        return current if offset is not None and offset != previous_offset else None
+
+    return _wait_until(advanced, label, timeout=60)
+
+
 def _wait_for_gold_progress_after(previous: dict, minimum_event_time: datetime, label: str) -> dict:
     previous_offsets = _progress_offsets(previous)
 
@@ -270,6 +316,12 @@ def test_t1_snapshot_insert_update_delete_matches_postgres_by_row_hash():
     )
     assert connector_setup["connector_state"] == "RUNNING"
     assert connector_setup["replication_objects_verified"] is True
+    replica_identity = _replica_identity()
+    assert replica_identity == {
+        "orders": "f",
+        "payment_events": "f",
+        "change_journal": "f",
+    }
     assert set(connector_setup["registered_value_subjects"]) == {
         f"{topic}-value" for topic in (
             ORDERS_TOPIC,
@@ -301,6 +353,7 @@ def test_t1_snapshot_insert_update_delete_matches_postgres_by_row_hash():
         {
             "source_rows": len(source_hashes),
             "silver_rows": len(silver_hashes),
+            "replica_identity_full": replica_identity,
             "hashes": [{"order_id": order_id, "sha256": digest} for order_id, digest in silver_hashes],
         },
     )
@@ -415,66 +468,71 @@ def test_t4_rapid_per_key_updates_end_at_last_lsn_and_partition():
 
 
 def test_t5_watermark_accepts_recent_late_event_drops_old_event_and_reports_metrics():
-    anchor = datetime.now(UTC).replace(microsecond=0)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    window_floor = now.replace(minute=(now.minute // 5) * 5)
+    anchor = window_floor + timedelta(minutes=2)
     progress_history = EVIDENCE_DIR / "streaming_progress.jsonl"
     initial_size = progress_history.stat().st_size if progress_history.exists() else 0
-    progress = _latest_progress("gold")
-    _insert_order(
-        f"w8-{RUN_ID}-t5-anchor",
-        amount="1.00",
-        province_id=f"province-t5-anchor-{RUN_ID}",
-        event_time=anchor,
-    )
-    _wait_for_silver_row(f"w8-{RUN_ID}-t5-anchor")
-    progress = _wait_for_gold_progress_after(
-        progress, anchor, "gold watermark to observe the anchor event"
-    )
+    province_id = f"province-t5-late-{RUN_ID}"
+    anchor_order = f"w8-{RUN_ID}-t5-anchor"
+    within_order = f"w8-{RUN_ID}-t5-within"
+    beyond_order = f"w8-{RUN_ID}-t5-beyond"
 
-    within_time = anchor - timedelta(minutes=5)
+    def event(order_id: str, lsn: int, event_time: datetime, province: str, amount: str):
+        return {
+            "order_id": order_id,
+            "source_lsn": lsn,
+            "transaction_order": 1,
+            "event_time": event_time.isoformat(),
+            "op": "upsert",
+            "before_province_id": None,
+            "before_order_net_amount": None,
+            "after_province_id": province,
+            "after_order_net_amount": amount,
+        }
+
+    previous = _latest_progress("gold")
+    anchor_file_event = event(anchor_order, 880_001, anchor, province_id, "1.00")
+    _write_gold_test_event(f"{RUN_ID}-t5-01-anchor.json", anchor_file_event)
+    progress = _wait_for_test_event_file(previous, "gold query to consume the watermark anchor")
+    event_max = datetime.fromisoformat(
+        str(progress.get("eventTime", {}).get("max")).replace("Z", "+00:00")
+    )
+    assert event_max.astimezone(UTC) >= anchor.astimezone(UTC)
+
+    duplicate = event(anchor_order, 880_001, anchor, province_id, "999.00")
+    duplicate["transaction_order"] = 1
+    previous = progress
+    _write_gold_test_event(f"{RUN_ID}-t5-02-duplicate.json", duplicate)
+    progress = _wait_for_test_event_file(previous, "gold query to consume the duplicate CDC event")
+
+    within_time = anchor - timedelta(minutes=1)
+    previous = progress
+    _write_gold_test_event(
+        f"{RUN_ID}-t5-03-within.json",
+        event(within_order, 880_002, within_time, province_id, "22.00"),
+    )
+    progress = _wait_for_test_event_file(previous, "gold query to consume an in-watermark event")
     beyond_time = anchor - timedelta(minutes=20)
     previous = progress
-    _insert_order(
-        f"w8-{RUN_ID}-t5-within",
-        amount="22.00",
-        province_id=f"province-t5-late-{RUN_ID}",
-        event_time=within_time,
+    _write_gold_test_event(
+        f"{RUN_ID}-t5-04-beyond.json",
+        event(beyond_order, 880_003, beyond_time, f"province-t5-dropped-{RUN_ID}", "33.00"),
     )
-    _wait_for_silver_row(f"w8-{RUN_ID}-t5-within")
-    progress = _wait_for_gold_progress_after(previous, anchor, "gold query to consume within-watermark row")
-    previous = progress
-    _insert_order(
-        f"w8-{RUN_ID}-t5-beyond",
-        amount="33.00",
-        province_id=f"province-t5-dropped-{RUN_ID}",
-        event_time=beyond_time,
-    )
-    _wait_for_silver_row(f"w8-{RUN_ID}-t5-beyond")
-    progress = _wait_for_gold_progress_after(previous, anchor, "gold query to consume beyond-watermark row")
-    previous = progress
-    _insert_order(
-        f"w8-{RUN_ID}-t5-advance",
-        amount="2.00",
-        province_id=f"province-t5-advance-{RUN_ID}",
-        event_time=anchor + timedelta(minutes=30),
-    )
-    _wait_for_silver_row(f"w8-{RUN_ID}-t5-advance")
-    _wait_for_gold_progress_after(
-        previous, anchor + timedelta(minutes=30), "gold watermark to advance past late windows"
-    )
+    progress = _wait_for_test_event_file(previous, "gold query to consume an out-of-watermark event")
 
-    def finalized_within_window():
-        rows = _get_json("/tables/gold")
+    def window_total():
         return next(
             (
                 row
-                for row in rows
-                if row.get("province_id") == f"province-t5-late-{RUN_ID}"
-                and Decimal(str(row.get("revenue_delta"))) == Decimal("22.00")
+                for row in _get_json("/tables/gold")
+                if row.get("province_id") == province_id
+                and Decimal(str(row.get("revenue_delta"))) == Decimal("23.00")
             ),
             None,
         )
 
-    within_row = _wait_until(finalized_within_window, "finalized recent-late revenue window", timeout=90)
+    within_row = _wait_until(window_total, "merged in-watermark revenue window", timeout=90)
     gold_rows = _get_json("/tables/gold")
     assert not any(row.get("province_id") == f"province-t5-dropped-{RUN_ID}" for row in gold_rows)
 

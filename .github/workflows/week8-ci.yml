@@ -46,7 +46,9 @@ jobs:
         run: ruff check labs/streaming_cdc tests/streaming_cdc
 
       - name: Run Week 8 unit tests
-        run: python -m pytest -q tests/streaming_cdc
+        run: |
+          python -m pytest -q tests/streaming_cdc --junitxml=week8-unit-results.xml
+          python -c "import xml.etree.ElementTree as ET; cases=ET.parse('week8-unit-results.xml').findall('.//testcase'); skipped=sum(case.find('skipped') is not None for case in cases); passed=len(cases)-skipped; assert passed > 0, f'Week 8 unit job ran no passing tests: {len(cases)} collected, {skipped} skipped'"
 
   integration:
     name: Compose integration (T1-T7)
@@ -75,7 +77,9 @@ jobs:
         run: python -m labs.streaming_cdc.cli up
 
       - name: Run integration tests T1-T7
-        run: python -m pytest -q tests/streaming_cdc/integration
+        run: |
+          python -m pytest -q tests/streaming_cdc/integration --junitxml=week8-integration-results.xml
+          python -c "import xml.etree.ElementTree as ET; cases=ET.parse('week8-integration-results.xml').findall('.//testcase'); skipped=sum(case.find('skipped') is not None for case in cases); assert len(cases)==7 and skipped==0, f'T1-T7 must all execute: {len(cases)} collected, {skipped} skipped'"
 
       - name: Capture Compose logs
         if: always()

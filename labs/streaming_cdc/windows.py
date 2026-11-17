@@ -5,6 +5,29 @@ from __future__ import annotations
 from typing import Any
 
 
+def deduplicate_cdc_events(
+    events_df: Any,
+    *,
+    event_time_column: str = "event_time",
+    watermark_duration: str = "10 minutes",
+) -> Any:
+    """Bound CDC replay-dedup state by event time and source identity."""
+    required = {
+        event_time_column,
+        "order_id",
+        "source_lsn",
+        "transaction_order",
+    }
+    missing = sorted(required - set(events_df.columns))
+    if missing:
+        raise ValueError(f"CDC event input is missing deduplication columns: {missing}")
+    if not watermark_duration.strip():
+        raise ValueError("watermark duration must be non-empty")
+    return events_df.withWatermark(event_time_column, watermark_duration).dropDuplicatesWithinWatermark(
+        ["order_id", "source_lsn", "transaction_order"]
+    )
+
+
 def build_windowed_revenue(
     events_df: Any,
     *,

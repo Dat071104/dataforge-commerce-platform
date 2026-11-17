@@ -2,6 +2,11 @@
 ALTER TABLE dataforge_operational.orders
     ADD COLUMN IF NOT EXISTS event_time TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp();
 
+-- Preserve complete before-images for Debezium updates and deletes.
+ALTER TABLE dataforge_operational.orders REPLICA IDENTITY FULL;
+ALTER TABLE dataforge_operational.payment_events REPLICA IDENTITY FULL;
+ALTER TABLE dataforge_operational.change_journal REPLICA IDENTITY FULL;
+
 INSERT INTO dataforge_operational.orders (
     order_id,
     customer_id,

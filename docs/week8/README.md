@@ -54,8 +54,8 @@ flowchart LR
     DBZ -. schema registration .-> SR["Schema Registry<br/>BACKWARD compatibility"]
     K --> SP["Spark Structured Streaming 3.5.9<br/>from_avro + checkpoints"]
     SR -. reader schemas .-> SP
-    SP --> SILVER["Delta silver_orders_cdc<br/>PK + LSN guarded MERGE"]
-    SP --> GOLD["Delta gold_revenue_5m<br/>5m window, 10m watermark"]
+    SP --> SILVER["Delta Silver<br/>PK + LSN guarded soft-delete MERGE"]
+    SP --> GOLD["Delta Gold<br/>source.ts_ms, signed CDC, 5m window, 10m watermark"]
 ```
 
 ## Production mapping

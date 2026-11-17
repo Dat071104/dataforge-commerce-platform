@@ -13,14 +13,20 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from labs.streaming_cdc.merge import merge_order_changes
+from labs.streaming_cdc.gold import merge_gold_revenue_batch
+from labs.streaming_cdc.merge import CURRENT_ORDERS_VIEW, merge_order_changes
+from labs.streaming_cdc.operations import (
+    DEBEZIUM_OPERATIONS,
+    OP_DELETE,
+    OP_TOMBSTONE,
+    OP_UPSERT,
+)
 from labs.streaming_cdc.registry import latest_subject_schema, subject_schemas
-from labs.streaming_cdc.windows import build_windowed_revenue
+from labs.streaming_cdc.windows import deduplicate_cdc_events
 
 LOGGER = logging.getLogger("dataforge.week8.streaming")
 TOPIC = "dataforge.dataforge_operational.orders"
 VALUE_SUBJECT = f"{TOPIC}-value"
-SILVER_APP_ID = "dataforge-w8-silver-orders"
 WINDOW_DURATION = "5 minutes"
 WATERMARK_DURATION = "10 minutes"
 HTTP_PORT = 7079
@@ -65,38 +71,80 @@ def _schema_decoder(spark: Any, kafka_df: Any, registry_url: str) -> Any:
 def _normalized_order_changes(event_df: Any) -> Any:
     from pyspark.sql import functions as F
 
-    op = F.coalesce(F.col("event.op"), F.lit("tombstone"))
-    row = F.when(op == F.lit("d"), F.col("event.before")).otherwise(F.col("event.after"))
+    op_code = F.col("event.op")
+    op = _normalized_op(op_code)
+    row = F.when(op_code == F.lit("d"), F.col("event.before")).otherwise(F.col("event.after"))
+    record_type = event_df.schema["event"].dataType["after"].dataType
+    record_columns = [row[field.name].alias(field.name) for field in record_type.fields]
     return event_df.select(
-        row["order_id"].cast("string").alias("order_id"),
-        row["customer_id"].cast("string").alias("customer_id"),
-        row["order_date"].alias("order_date"),
-        row["province_id"].cast("string").alias("province_id"),
-        row["status"].cast("string").alias("status"),
-        row["order_net_amount"].alias("order_net_amount"),
-        F.to_timestamp(row["event_time"]).alias("event_time"),
+        *record_columns,
         F.col("event.source.lsn").cast("long").alias("source_lsn"),
         F.col("event.transaction.total_order").cast("long").alias("transaction_order"),
-        F.col("event.ts_ms").cast("long").alias("source_ts_ms"),
+        F.col("event.source.ts_ms").cast("long").alias("source_ts_ms"),
         op.alias("op"),
     )
 
 
-def _signed_revenue_changes(event_df: Any) -> Any:
+def _normalized_op(op_code: Any) -> Any:
     from pyspark.sql import functions as F
 
-    op = F.coalesce(F.col("event.op"), F.lit("tombstone"))
-    before = event_df.filter(op.isin("u", "d")).select(
-        F.to_timestamp(F.col("event.before.event_time")).alias("event_time"),
-        F.col("event.before.province_id").cast("string").alias("province_id"),
-        (-F.col("event.before.order_net_amount")).alias("revenue_delta"),
+    return (
+        F.when(op_code.isNull(), F.lit(OP_TOMBSTONE))
+        .when(op_code == F.lit("d"), F.lit(OP_DELETE))
+        .when(op_code.isin(*DEBEZIUM_OPERATIONS.keys()), F.lit(OP_UPSERT))
+        .otherwise(F.raise_error(F.concat(F.lit("Unsupported Debezium operation: "), op_code)))
     )
-    after = event_df.filter(op.isin("c", "u", "r")).select(
-        F.to_timestamp(F.col("event.after.event_time")).alias("event_time"),
-        F.col("event.after.province_id").cast("string").alias("province_id"),
-        F.col("event.after.order_net_amount").alias("revenue_delta"),
+
+
+def _gold_event_records(event_df: Any) -> Any:
+    from pyspark.sql import functions as F
+
+    op_code = F.col("event.op")
+    op = _normalized_op(op_code)
+    source_ts = F.col("event.source.ts_ms").cast("long")
+    event_time = F.when(
+        op == F.lit(OP_TOMBSTONE), F.lit(None).cast("timestamp")
+    ).otherwise(F.to_timestamp(F.from_unixtime(source_ts.cast("double") / F.lit(1000.0))))
+    order_id = F.coalesce(F.col("event.after.order_id"), F.col("event.before.order_id"))
+    return (
+        event_df.select(
+            order_id.cast("string").alias("order_id"),
+            F.col("event.source.lsn").cast("long").alias("source_lsn"),
+            F.col("event.transaction.total_order").cast("long").alias("transaction_order"),
+            event_time.alias("event_time"),
+            op.alias("op"),
+            F.col("event.before.province_id").cast("string").alias("before_province_id"),
+            F.col("event.before.order_net_amount").alias("before_order_net_amount"),
+            F.col("event.after.province_id").cast("string").alias("after_province_id"),
+            F.col("event.after.order_net_amount").alias("after_order_net_amount"),
+        )
+        .filter(F.col("op") != F.lit(OP_TOMBSTONE))
     )
-    return before.unionByName(after)
+
+
+def _gold_test_event_schema() -> Any:
+    from pyspark.sql.types import (
+        DecimalType,
+        LongType,
+        StringType,
+        StructField,
+        StructType,
+        TimestampType,
+    )
+
+    return StructType(
+        [
+            StructField("order_id", StringType(), False),
+            StructField("source_lsn", LongType(), True),
+            StructField("transaction_order", LongType(), True),
+            StructField("event_time", TimestampType(), True),
+            StructField("op", StringType(), False),
+            StructField("before_province_id", StringType(), True),
+            StructField("before_order_net_amount", DecimalType(18, 2), True),
+            StructField("after_province_id", StringType(), True),
+            StructField("after_order_net_amount", DecimalType(18, 2), True),
+        ]
+    )
 
 
 def _wait_if_paused(state_dir: Path, batch_id: int) -> None:
@@ -135,7 +183,19 @@ def _make_http_handler(
 
             if not DeltaTable.isDeltaTable(spark, str(path)):
                 return []
-            rows = spark.read.format("delta").load(str(path)).orderBy("order_id").toJSON().collect()
+            frame = spark.read.format("delta").load(str(path))
+            if path == silver_path:
+                from pyspark.sql import functions as F
+
+                frame = frame.filter(~F.coalesce(F.col("is_deleted"), F.lit(False))).drop(
+                    "is_deleted"
+                )
+                frame.createOrReplaceTempView(CURRENT_ORDERS_VIEW)
+                frame = spark.table(CURRENT_ORDERS_VIEW)
+                order_by = "order_id"
+            else:
+                order_by = "window_start"
+            rows = frame.orderBy(order_by).toJSON().collect()
             return [json.loads(row) for row in rows]
 
         def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
@@ -177,7 +237,7 @@ def _make_http_handler(
                 rows = (
                     spark.read.format("delta")
                     .load(str(gold_path))
-                    .orderBy("window.start", "province_id")
+                    .orderBy("window_start", "window_end", "province_id")
                     .toJSON()
                     .collect()
                 )
@@ -211,7 +271,7 @@ def _make_http_handler(
                 batch,
                 silver_path,
                 batch_id=batch_id,
-                transaction_app_id=SILVER_APP_ID,
+                transaction_app_id=str(queries["silver_orders_cdc"].id),
             )
             self._send(200, {"batch_id": batch_id, "applied": applied})
 
@@ -328,6 +388,7 @@ def run_streaming_app() -> None:
     )
     silver_path = state_dir / "delta" / "silver_orders_cdc"
     gold_path = state_dir / "delta" / "gold_revenue_5m"
+    gold_changes_path = state_dir / "delta" / "gold_revenue_changes"
     checkpoint_root = state_dir / "checkpoints"
 
     topic = os.environ.get("DATAFORGE_W8_TOPIC", TOPIC)
@@ -342,16 +403,25 @@ def run_streaming_app() -> None:
     )
     decoded = _schema_decoder(spark, raw, registry_url)
     order_changes = _normalized_order_changes(decoded)
-    revenue_changes = _signed_revenue_changes(decoded)
-    windowed = build_windowed_revenue(
-        revenue_changes,
-        event_time_column="event_time",
-        revenue_delta_column="revenue_delta",
-        window_duration=WINDOW_DURATION,
-        watermark_duration=WATERMARK_DURATION,
+    gold_events = _gold_event_records(decoded)
+    test_event_dir = os.environ.get("DATAFORGE_W8_TEST_EVENTS_DIR")
+    if test_event_dir:
+        Path(test_event_dir).mkdir(parents=True, exist_ok=True)
+        injected_events = (
+            spark.readStream.schema(_gold_test_event_schema())
+            .option("maxFilesPerTrigger", 1)
+            .json(test_event_dir)
+        )
+        gold_events = gold_events.unionByName(injected_events)
+    watermarked_gold_events = deduplicate_cdc_events(
+        gold_events, watermark_duration=WATERMARK_DURATION
     )
 
+    silver_query_id: dict[str, str | None] = {"id": None}
+    silver_query_ready = threading.Event()
     def apply_silver_batch(batch_df: Any, batch_id: int) -> None:
+        if not silver_query_ready.wait(timeout=30) or silver_query_id["id"] is None:
+            raise RuntimeError("Silver StreamingQuery ID was not ready for its batch callback")
         if batch_df.rdd.isEmpty():
             return
         replay_path = state_dir / "replay" / "silver_latest"
@@ -364,9 +434,17 @@ def run_streaming_app() -> None:
             batch_df,
             silver_path,
             batch_id=int(batch_id),
-            transaction_app_id=SILVER_APP_ID,
+            transaction_app_id=silver_query_id["id"],
         )
         _wait_if_paused(state_dir, int(batch_id))
+
+    def apply_gold_batch(batch_df: Any, _batch_id: int) -> None:
+        merge_gold_revenue_batch(
+            batch_df,
+            gold_path,
+            gold_changes_path,
+            window_duration=WINDOW_DURATION,
+        )
 
     _start_progress_listener(spark, evidence_dir)
     queries: dict[str, Any] = {}
@@ -379,13 +457,15 @@ def run_streaming_app() -> None:
         .start()
     )
     queries["silver_orders_cdc"] = silver_query
+    silver_query_id["id"] = str(silver_query.id)
+    silver_query_ready.set()
     gold_query = (
-        windowed.writeStream.queryName("gold_revenue_5m")
+        watermarked_gold_events.writeStream.queryName("gold_revenue_5m")
         .outputMode("append")
-        .format("delta")
         .option("checkpointLocation", str(checkpoint_root / "gold"))
+        .foreachBatch(apply_gold_batch)
         .trigger(processingTime="1 second")
-        .start(str(gold_path))
+        .start()
     )
     queries["gold_revenue_5m"] = gold_query
 

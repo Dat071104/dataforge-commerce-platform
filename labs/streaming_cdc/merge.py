@@ -6,7 +6,10 @@ import re
 from pathlib import Path
 from typing import Any
 
+from labs.streaming_cdc.operations import OP_DELETE, OP_TOMBSTONE, OP_UPSERT
+
 _SQL_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+CURRENT_ORDERS_VIEW = "silver_orders_cdc_current"
 _REQUIRED_MERGE_COLUMNS = {
     "order_id",
     "op",
@@ -51,7 +54,7 @@ def build_newer_version_condition(
 
 
 def prepare_merge_batch(batch_df: Any, *, key_column: str = "order_id") -> Any:
-    """Keep the newest non-tombstone event per key in a micro-batch."""
+    """Keep the newest supported non-tombstone event per key in a micro-batch."""
     missing = sorted(_REQUIRED_MERGE_COLUMNS - set(batch_df.columns))
     if missing:
         raise ValueError(f"CDC batch is missing merge columns: {missing}")
@@ -61,7 +64,14 @@ def prepare_merge_batch(batch_df: Any, *, key_column: str = "order_id") -> Any:
     from pyspark.sql import Window
     from pyspark.sql import functions as F
 
-    ranked = batch_df.filter(F.col("op") != F.lit("tombstone"))
+    supported_ops = (OP_UPSERT, OP_DELETE, OP_TOMBSTONE)
+    invalid = batch_df.filter(
+        F.col("op").isNull() | ~F.col("op").isin(*supported_ops)
+    ).limit(1)
+    if not invalid.rdd.isEmpty():
+        raise ValueError(f"CDC batch contains an unsupported operation: {invalid.first()['op']!r}")
+
+    ranked = batch_df.filter(F.col("op") != F.lit(OP_TOMBSTONE))
     order = [F.col("source_lsn").desc_nulls_last()]
     if "transaction_order" in ranked.columns:
         order.append(F.col("transaction_order").desc_nulls_last())
@@ -110,6 +120,19 @@ def _add_missing_delta_columns(spark: Any, target_path: str, source_df: Any) -> 
     spark.sql(f"ALTER TABLE delta.`{target_path}` ADD COLUMNS ({additions})")
 
 
+def _refresh_current_orders_view(spark: Any, target_path: str) -> None:
+    """Expose Silver rows without soft-deleted keys to readers."""
+    from pyspark.sql import functions as F
+
+    (
+        spark.read.format("delta")
+        .load(target_path)
+        .filter(~F.coalesce(F.col("is_deleted"), F.lit(False)))
+        .drop("is_deleted")
+        .createOrReplaceTempView(CURRENT_ORDERS_VIEW)
+    )
+
+
 def merge_order_changes(
     batch_df: Any,
     target_path: str | Path,
@@ -117,13 +140,13 @@ def merge_order_changes(
     batch_id: int,
     transaction_app_id: str,
 ) -> bool:
-    """Apply one micro-batch and record its txnAppId/txnVersion idempotently.
+    """Apply one micro-batch with source-version guarded, replay-safe state.
 
-    The MERGE itself is safe to replay because it is keyed by the PK and only
-    applies newer `(source_lsn, transaction_order)` values. A separate Delta
-    transaction ledger records `(transaction_app_id, batch_id)` atomically for
-    marker writes. If a process stops after MERGE but before the marker commit,
-    replaying the MERGE is still a no-op on table state.
+    The MERGE is idempotent at the row-state boundary: the retained LSN and
+    transaction order reject stale replays, including updates after a delete.
+    The separate transaction ledger is a replay optimization, not an atomic
+    transaction with the Silver MERGE. If a process stops after the MERGE but
+    before the ledger write, the LSN guard makes replaying the batch a no-op.
     """
     if batch_id < 0:
         raise ValueError("batch_id must be non-negative")
@@ -145,6 +168,9 @@ def merge_order_changes(
             return False
 
         source = prepared.drop("source_ts_ms") if "source_ts_ms" in prepared.columns else prepared
+        from pyspark.sql import functions as F
+
+        source = source.withColumn("is_deleted", F.col("op") == F.lit(OP_DELETE))
         payload_columns = [column for column in source.columns if column != "op"]
         if not _has_delta_table(prepared.sparkSession, path):
             (
@@ -158,20 +184,19 @@ def merge_order_changes(
 
         from delta.tables import DeltaTable
 
-        updates = {column: f"s.`{column}`" for column in payload_columns}
+        updates = {
+            _identifier(column): f"s.`{_identifier(column)}`" for column in payload_columns
+        }
         newer = build_newer_version_condition()
         (
             DeltaTable.forPath(prepared.sparkSession, path)
             .alias("t")
             .merge(source.alias("s"), build_merge_condition())
-            .whenMatchedDelete(condition=f"s.op = 'd' AND ({newer})")
-            .whenMatchedUpdate(condition=f"s.op <> 'd' AND ({newer})", set=updates)
-            .whenNotMatchedInsert(
-                condition="s.op <> 'd'",
-                values=updates,
-            )
+            .whenMatchedUpdate(condition=newer, set=updates)
+            .whenNotMatchedInsert(values=updates)
             .execute()
         )
+        _refresh_current_orders_view(prepared.sparkSession, path)
 
         marker = prepared.sparkSession.createDataFrame(
             [(transaction_app_id, int(batch_id))], "app_id STRING, batch_id LONG"
