@@ -125,6 +125,31 @@ class WeatherRequestContractTests(unittest.TestCase):
         )
         self.assertNotEqual(request["invocation_id"], duplicate["invocation_id"])
 
+    def test_transient_fault_injection_is_manual_only(self) -> None:
+        interval_end = datetime(2026, 11, 13, 9, tzinfo=timezone.utc)
+        manual = resolve_request(
+            params={"mode": "manual", "fault_injection": "transient_once"},
+            dag_id="dataforge_week7_weather_cloud",
+            run_id="manual__fault-injection",
+            logical_date=interval_end,
+            data_interval_end=interval_end,
+        )
+        self.assertEqual(manual["fault_injection"], "transient_once")
+        self.assertEqual(len(manual["invocation_id"]), 64)
+
+        for params in (
+            {"mode": "scheduled", "fault_injection": "transient_once"},
+            {"mode": "manual", "fault_injection": "always"},
+        ):
+            with self.subTest(params=params), self.assertRaises(ContractError):
+                resolve_request(
+                    params=params,
+                    dag_id="dataforge_week7_weather_cloud",
+                    run_id="scheduled__fault-injection",
+                    logical_date=interval_end,
+                    data_interval_end=interval_end,
+                )
+
     def test_default_date_uses_fixed_interval_end_not_wall_clock(self) -> None:
         interval_end = datetime(2026, 11, 13, 2, tzinfo=timezone.utc)
         request = resolve_request(
