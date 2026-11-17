@@ -117,7 +117,7 @@ def test_static_dataframe_dedupes_by_lsn_and_delta_merge_is_replay_safe(spark, t
         SCHEMA,
     )
     assert merge_order_changes(update, target, batch_id=5, transaction_app_id="unit-silver")
-    row = spark.read.format("delta").load(str(target)).first()
+    row = spark.read.format("delta").load(str(target)).filter("order_id = 'ord-4'").first()
     assert row.order_id == "ord-4"
     assert row.status == "paid"
     assert row.order_net_amount == Decimal("2.00")
