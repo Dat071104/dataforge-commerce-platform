@@ -58,12 +58,11 @@ def _schema_decoder(spark: Any, kafka_df: Any, registry_url: str) -> Any:
     from pyspark.sql import functions as F
     from pyspark.sql.avro.functions import from_avro
 
+    schema_id, payload = _confluent_frame_columns()
     writer_schemas = subject_schemas(registry_url, VALUE_SUBJECT)
     if not writer_schemas:
         raise RuntimeError(f"Schema Registry has no writer schemas for {VALUE_SUBJECT}")
     reader_schema = json.dumps(latest_subject_schema(registry_url, VALUE_SUBJECT))
-    schema_id = F.conv(F.hex(F.substring(F.col("value"), 2, 4)), 16, 10).cast("long")
-    payload = F.substring(F.col("value"), 6, F.length(F.col("value")) - 5)
 
     event = None
     for schema_id_value, writer_schema in sorted(writer_schemas.items()):
@@ -75,6 +74,15 @@ def _schema_decoder(spark: Any, kafka_df: Any, registry_url: str) -> Any:
         branch = F.when(schema_id == F.lit(schema_id_value), decoded)
         event = branch if event is None else branch.otherwise(event)
     return kafka_df.withColumn("event", event)
+
+
+def _confluent_frame_columns() -> tuple[Any, Any]:
+    """Return Spark expressions for the Confluent schema ID and Avro payload."""
+    from pyspark.sql import functions as F
+
+    schema_id = F.conv(F.hex(F.substring(F.col("value"), 2, 4)), 16, 10).cast("long")
+    payload = F.expr("substring(value, 6, length(value) - 5)")
+    return schema_id, payload
 
 
 def _normalized_order_changes(event_df: Any) -> Any:
