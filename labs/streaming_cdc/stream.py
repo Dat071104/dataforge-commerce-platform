@@ -30,6 +30,10 @@ VALUE_SUBJECT = f"{TOPIC}-value"
 WINDOW_DURATION = "5 minutes"
 WATERMARK_DURATION = "10 minutes"
 HTTP_PORT = 7079
+SPARK_EXTRA_PACKAGES = (
+    "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.9",
+    "org.apache.spark:spark-avro_2.12:3.5.9",
+)
 
 
 def _write_json(path: Path, value: dict[str, Any]) -> None:
@@ -37,6 +41,11 @@ def _write_json(path: Path, value: dict[str, Any]) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, sort_keys=True, indent=2), encoding="utf-8")
     temporary.replace(path)
+
+
+def _configure_spark_builder(builder: Any, delta_configurator: Any) -> Any:
+    """Add Spark Kafka/Avro packages through Delta's builder wrapper."""
+    return delta_configurator(builder, extra_packages=list(SPARK_EXTRA_PACKAGES))
 
 
 def _schema_decoder(spark: Any, kafka_df: Any, registry_url: str) -> Any:
@@ -354,12 +363,6 @@ def run_streaming_app() -> None:
     state_dir.mkdir(parents=True, exist_ok=True)
     evidence_dir.mkdir(parents=True, exist_ok=True)
 
-    package_list = ",".join(
-        [
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.9",
-            "org.apache.spark:spark-avro_2.12:3.5.9",
-        ]
-    )
     builder = (
         SparkSession.builder.appName("dataforge-week8-cdc")
         .master("local[2]")
@@ -372,14 +375,13 @@ def run_streaming_app() -> None:
         .config("spark.driver.host", "127.0.0.1")
         .config("spark.driver.memory", "1g")
         .config("spark.driver.maxResultSize", "256m")
-        .config("spark.jars.packages", package_list)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
     )
-    spark = configure_spark_with_delta_pip(builder, extra_packages=[]).getOrCreate()
+    spark = _configure_spark_builder(builder, configure_spark_with_delta_pip).getOrCreate()
     spark.sparkContext.setLogLevel(os.environ.get("DATAFORGE_W8_SPARK_LOG_LEVEL", "WARN"))
 
     brokers = os.environ.get("DATAFORGE_W8_BROKERS", "kafka:9092")
