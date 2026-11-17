@@ -106,3 +106,12 @@ The count is only a roll-up of this matrix. It does not imply C_CODE_GO, C_CLOUD
 - Week 8–12 Kafka, Mini-project 4, AI, and certificate work are outside this Week 7 scope.
 - The GCP-for-Azure/Fabric approval is user-reported; there is no signed mentor artifact in the repository. GCP services are not described as exact Azure/Fabric equivalents.
 - The integrator checklist at D:\DATA_ENGINEER\DataForge_D_Week7_Final\03_CHECKLIST.md is local and unversioned; it is the current operational record for release and live-state status.
+
+## Week 8 — Streaming with Kafka
+
+| ID | Requirement | Evidence and verification | Status |
+|---|---|---|---|
+| W8-01 | Kafka topics, partitions, offsets, consumer groups, and delivery semantics | The [Week 8 lab](week8/README.md) configures three topic partitions. Exact-head [T1–T7 CI](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/44058731041) verifies restart replay without duplicate Silver rows (T2), idempotent sink replay (T3), and zero consumer-group lag after catch-up (T7). This demonstrates replay-safe at-least-once handling; exactly-once delivery is not claimed. | **PARTIAL** |
+| W8-02 | Schema Registry with Avro/Protobuf and Debezium CDC | The [Week 8 ADR](week8/adr_cdc_streaming.md) and exact-head [T1–T7 CI](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/44058731041) verify Debezium Avro subjects, a nullable schema addition flowing through Spark/Delta, and rejection of a breaking schema (T6). Protobuf is not implemented. | **PARTIAL** |
+| W8-03 | Spark Structured Streaming or introductory Flink, including window, watermark, and state | T5 evidence in exact-head [T1–T7 CI](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/44058731041) records the 5-minute revenue window, 10-minute watermark, state operators, and two dropped late rows. Spark Structured Streaming is used; Flink is not part of this exercise. | **MET** |
+| W8-04 | Postgres CDC through Debezium, Kafka, Spark Streaming, and Delta/Iceberg with near-real-time updates | Exact-head [T1–T7 CI](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/44058731041) verifies Postgres-to-Silver row-hash parity (T1), restart/replay behavior (T2–T3), per-key LSN ordering (T4), windowed Gold updates (T5), schema evolution (T6), and lag-free catch-up (T7). Evidence is a bounded local Compose exercise in CI, not a production service. | **MET** |
