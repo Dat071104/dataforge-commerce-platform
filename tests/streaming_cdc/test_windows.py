@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
+
+pytest.importorskip("pyspark", reason="Week 8 CI installs the lane's Spark test dependency")
+
 from pyspark.sql.types import DecimalType, StringType, StructField, StructType, TimestampType
 
 from labs.streaming_cdc.windows import build_windowed_revenue

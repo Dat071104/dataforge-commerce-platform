@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
+
+pytest.importorskip("pyspark", reason="Week 8 CI installs the lane's Spark test dependency")
+
 from pyspark.sql.types import DecimalType, LongType, StringType, StructField, StructType
 
 from labs.streaming_cdc.merge import (
@@ -37,8 +41,6 @@ def test_merge_builder_uses_pk_and_monotonic_source_version():
 
 
 def test_merge_builder_rejects_unsafe_identifiers():
-    import pytest
-
     with pytest.raises(ValueError, match="invalid SQL identifier"):
         build_merge_condition(key_column="order_id OR 1=1")
 

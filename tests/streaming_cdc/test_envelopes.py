@@ -3,13 +3,18 @@ from __future__ import annotations
 from io import BytesIO
 
 import pytest
-from fastavro import parse_schema, schemaless_writer
 
 from labs.streaming_cdc.envelopes import (
     decode_confluent_avro,
     decode_debezium_envelope,
     unpack_confluent_frame,
 )
+
+fastavro = pytest.importorskip(
+    "fastavro", reason="Week 8 CI installs the lane's Avro test dependency"
+)
+parse_schema = fastavro.parse_schema
+schemaless_writer = fastavro.schemaless_writer
 
 ORDER = {
     "type": "record",
