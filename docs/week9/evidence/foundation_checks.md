@@ -30,7 +30,7 @@ The dbt offline profile points to the non-existent project `dataforge-offline-pr
 
 ## Not yet evidenced
 
-- Live GCP isolated-dataset build, WIF, access tests, alert receipt, or lineage: not run. One read-only copy from the prod weather source is recorded below; no W9 GCP write has occurred.
-- No gitleaks executable is installed locally. A high-confidence staged-diff scan for private keys, GitHub/Slack/Google/AWS tokens, and credential URLs passed with zero matches; this is a manual pattern scan, not gitleaks or CI evidence.
-- Full fault matrix and F-N0: not implemented.
+- Live GCP isolated-dataset build, WIF workflow test, access tests, alert receipt, or lineage: not run. I-1 applied the authorized control-plane resources; the first apply missed the WIF provider due to an overlength display name, then a reviewed provider-only plan created it. Terraform state and read-only GCP inventory confirm 24/24 resources. No BigQuery data rows or secret versions were written and no API was enabled. The read-only prod-source slice is recorded above.
+- Gitleaks itself remains **UNVERIFIED** locally and in CI because no exact-head run has been possible. The earlier W9-A staged-diff pattern scan found zero matches. Before W9-2 push, the integrator scanned the changed/untracked files in O/Q/G worktrees (21/33/24 files) for private-key headers, GitHub/Slack/Google/AWS tokens, bearer tokens, and credential URLs: zero matches. These are manual high-confidence pattern scans, not Gitleaks evidence or a substitute for the exact-head CI hook.
+- Fault matrix: local harness has 13 PASS and 2 UNVERIFIED (F07/F10 need isolated BigQuery/dbt). F-N0 passed only in the local harness with zero P1/P2 failures; live alert channels were not attempted.
 - Mentor review: pending; RFC status is Draft.
