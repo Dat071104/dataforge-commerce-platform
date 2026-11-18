@@ -19,5 +19,6 @@
 
 select *
 from {{ ref('mart_weather_province_daily') }}
-where rain_day is true
+where
+    rain_day is true
     and {{ dq_float_equal('precipitation_mm', '0.0') }}

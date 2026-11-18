@@ -11,6 +11,7 @@ Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds t
 - G1/DQ: `quality/gx/weather_landing.yml`; `src/dataforge/dq/{__init__.py,__main__.py,gate.py,results.py,wap.py}`.
 - G0: `cloud/jobs/week7_weather/validation.py`, `cloud/jobs/week7_weather/weather_job.py`, and the optional response-validator callback in `src/dataforge/weather.py`. The parent explicitly authorized the `weather.py` callback as a scoped exception.
 - G2: `dbt/dataforge/models/week9_tests.yml`; `dbt/dataforge/macros/dq_float_equal.sql`, `dq_pk_tests.sql`, `dq_write_results.sql`; `dbt/dataforge/tests/assert_week9_rain_precip_consistency.sql`; severity/metadata for the existing F02 defense in `dbt/dataforge/tests/assert_mini3_weather_grains_unique.sql`.
+- CI dependency fix: `pyproject.toml` and `requirements-py311.lock` add the ADR-pinned GX Core dependency.
 - Local fault harness/evidence: `scripts/week9_fault_inject.py`; `tests/week9/test_gate.py`, `test_weather_validation.py`, `test_model_pk_config.py`, `test_results.py`, `test_wap.py`; `tests/week9/faults/cases.py`, `manifest.yml`, the captured 7-date Parquet fixture, and the captured Open-Meteo JSON plus metadata; `tests/week9/fault_matrix_report.md`; local quarantine evidence under `tests/week9/evidence/`.
 - Runbook and lane report: `docs/week9/runbooks/quarantine-release.md`, this file.
 
@@ -105,9 +106,9 @@ The file-based WAP harness snapshots the last-good Parquet, writes a quarantined
 
 ### Q-PR1 exact-head CI RCA
 
-Runs `44361556271`, `44361676034`, `44361676432`, and `44361676242` failed. The failing steps were the offline suite and lint; Pages passed. The offline suite could not find `tests/week9/faults/weather_7date_slice.parquet` because `.gitignore:48` ignores `*.parquet`. The existing file's SHA-256 was verified as `ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798` (10,160 bytes) and it is now force-tracked without changing its bytes.
+Runs `44361556271`, `44361676034`, `44361676432`, and `44361676242` failed. The failing steps were the offline suite and lint; Pages passed. The offline suite could not find `tests/week9/faults/weather_7date_slice.parquet` because `.gitignore:48` ignores `*.parquet`. The existing file's SHA-256 was verified as `ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798` (10,160 bytes) and it is now force-tracked without changing its bytes. The offline suite also failed to import `great_expectations` from the DQ gate because GX was missing from the dev extra and Python 3.11 constraints; Q added the ADR-pinned 1.25.0 package to both.
 
-SQLFluff 3.4.2 flagged LT05 on the `dq_float_equal` macro signature and unresolved `env_var` / `dq_float_equal` references plus LT02/PRS in the F10 singular test. I wrapped the macro and config expression for layout only; the predicates and thresholds are unchanged. The integrator is adding the shared SQLFluff dbt/Jinja configuration. No CI rerun has been performed after these changes; do not treat this as green.
+SQLFluff 3.4.2 flagged LT05 on the `dq_float_equal` macro signature and unresolved `env_var` / `dq_float_equal` references plus LT02/PRS in the F10 singular test. I wrapped the macro and config expression, and put the predicate on its own line with four-space continuation indentation; the predicates and thresholds are unchanged. The integrator added the shared SQLFluff dbt/Jinja configuration in commit `7f08a3d`. No CI rerun has been performed after these changes; do not treat this as green.
 
 - `pytest tests/week9 -q` in the existing GX 1.25.0 Python 3.12 venv with the local pytest/PyYAML user-site path appended: **31 passed**. `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` avoids an unrelated global `dash` plugin import; no packages were installed.
 - `ruff check cloud/jobs/week7_weather/validation.py cloud/jobs/week7_weather/weather_job.py src/dataforge/weather.py src/dataforge/dq tests/week9 scripts/week9_fault_inject.py`: **passed**.
@@ -115,9 +116,10 @@ SQLFluff 3.4.2 flagged LT05 on the `dq_float_equal` macro signature and unresolv
 - PyYAML parse of `quality/gx/weather_landing.yml`, `dbt/dataforge/models/week9_tests.yml`, and `tests/week9/faults/manifest.yml`: **passed**.
 - Jinja syntax parse of both `dq_*.sql` macros: **passed** (not a dbt invocation).
 - `dbt parse --no-partial-parse --project-dir D:\DATA_ENGINEER\DataForge_w9_q\dbt\dataforge --profiles-dir D:\DATA_ENGINEER\_tmp\w9_q_dbt_profile_20261118 --target offline` with pinned dbt-core 1.11.17 / dbt-bigquery 1.11.3: **passed** with the flag unset and with `DATAFORGE_DQ_RESULTS_ENABLED=true`; manifest `store_failures` values were bool `False` by default and bool `True` when enabled for F02, F10, and the four baseline PK tests. No warehouse connection was made. `dbt build` and live result-hook execution remain **UNVERIFIED**.
+- Lock refresh method: `uv pip compile pyproject.toml --extra dev --extra powerbi --extra gcp --python-version 3.11 --constraint requirements-py311.lock --no-emit-package dataforge-vn-commerce --output-file requirements-py311.generated.lock`. The output preserved all 25 prior package pins and resolved 65 additional direct/transitive pins (90 total); it was reviewed and promoted to `requirements-py311.lock`. No package was installed. The lock is used as a CI constraints file.
 - The temporary profile at `D:\DATA_ENGINEER\_tmp\w9_q_dbt_profile_20261118\profiles.yml` is a copy of `profiles.example.yml` with the offline target (`dataforge-offline-project`) and no credentials. Automatic review rejected my cleanup command; I did not retry, so the temporary profile directory remains.
 - Existing `pytest tests/mini3_api/test_weather_job.py -q` in the pinned W9 Python 3.12.13 environment: **11 passed**. An earlier system-Python attempt had 2 import errors for missing `google.cloud.bigquery`; no packages were installed, and the pinned-environment rerun supersedes that mismatch.
-- CI run IDs above identify the failed exact-head runs. Post-fix exact-head status remains **UNVERIFIED**; no rerun has been performed.
+- CI run IDs above identify the failed exact-head runs. The prior 31 local `tests/week9` passes predate this dependency/SQL layout fix. Post-fix exact-head status remains **UNVERIFIED**; no rerun has been performed.
 
 ## Integrator actions
 
