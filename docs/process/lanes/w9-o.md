@@ -168,3 +168,104 @@ O1–O3 add no fault detector or fault fixture, so there is no new `check_id` �
 - Root cause: the Python version assertions were passed through a shell single-quoted `python -c '...'` argument, while the f-string expressions also contained single-quoted package names. The shell ended the argument early and Python raised `NameError: name 'dbt' is not defined`.
 - Resolution: pass the unchanged assertions through a single-quoted Bash heredoc (`python - <<'PY' ... PY`) on `docker run --interactive`. The three exact checks remain `dbt-bigquery==1.11.3`, `datacontract-cli==1.2.8`, and GX Core `1.25.0`.
 - Focused validation of the fix: strict yamllint, `bash -n` on the extracted step, and Python AST parse all passed. No local Docker run; post-fix CI result remains `UNVERIFIED`.
+
+# O-PR2 — O4–O8 DataOps delivery (code-only)
+
+**Branch/base:** `feat/w9-o-2` from `origin/main` `3a20050e813700cd0a050c69aa1dbd652ca9fc08`; the integrator's existing root commit `986d8fb` and `docs/week9/cost_ledger.md` were left untouched.
+
+## O4 — CI and keyless permission gates
+
+- Static lint/toolbox work remains on `pull_request` with no `id-token: write`. WIF-enabled jobs use `pull_request_target` and an immutable first-step repository-ID gate (`head.repo.id == repository_id`) before PR-head checkout or authentication. Fork cloud jobs emit a visible skip notice. The WIF provider event allowlist in `cloud/terraform/week9_dataops/wif.tf` now names `pull_request_target` instead of `pull_request`; this HCL change is **not planned or applied** and needs integrator review before WIF tests.
+- The allowed `week9-dataops.yml` workflow has a dispatch input `run_wif_smoke`. Its keyless job checks project context, runs positive `bq ls w9_drill`, and confirms `bq ls silver` returns an authorization denial.
+- `deploy/dataops_toolbox/wif_permission_probe.py` calls `tables.testIamPermissions` on `weather_mini3.weather_landing` as advisory evidence, then submits only a BigQuery `jobs.query` request with `dryRun=true` for an UPDATE-shaped statement. It accepts only an HTTP 403 naming `bigquery.tables.updateData`; accepted dry-runs and other errors remain `UNVERIFIED`. No actual CREATE/INSERT/UPDATE/DELETE is issued. The output explicitly records the fail-open limitation of `testIamPermissions`.
+- `.github/workflows/week9-wif-deny.yml` is a separate manual workflow deliberately excluded from the applied provider allowlist. It exchanges an OIDC token directly with STS and passes only when the rejection identifies the provider attribute condition. The OIDC token and STS response body are never printed.
+- Trusted PR builds create only `dbt_ci_pr_<number>` with 24-hour table expiration and Week/PR labels; the source slice is read from `weather_mini3` and written only to that PR dataset. dbt uses the `w9_ci` profile with a 1-GiB maximum per job, runs the slim manifest selection when available (full weather fallback otherwise), dbt unit tests, the G1 gate, and a same-date read-only data comparison. A sanitized PR comment records changed models, test counts, measured copy/diff bytes, and comparison counts; dbt adapter-reported billed bytes are included when available. The G1 Python client does not expose its job's billed bytes, so the comment labels that measurement `UNVERIFIED` and states the cap.
+- The toolbox job also runs W9 pytest, offline dbt parse, the PII guard, contract lint, and `datacontract breaking` against `origin/main`. The lock now includes `pytest==8.4.2`.
+
+## O5 — cleanup
+
+`week9-cleanup.yml` deletes only the closed PR's validated `dbt_ci_pr_<number>` dataset. A weekly/manual sweep uses GitHub PR metadata as candidate IDs, then checks each dataset's actual BigQuery `creationTime` and deletes only datasets at least 48 hours old. Fork cleanup is skipped visibly. Dataset-list project permissions are not added.
+
+## O6 — fault matrix
+
+`week9-dataops.yml` has a matrix over F01–F12, F-T1, and F-N0. Local captured-fixture faults run individually with Q's harness; F07 and F10 are explicitly deferred from the local harness and run only in the `pull_request_target` isolated BigQuery job. `week9_live_faults.py` injects stale `landed_at` and the F10 rain/precipitation mismatch only into `dbt_ci_pr_<number>`, checks the expected dbt states/check ID, restores the source/model, and compares a read-only production Gold hash before/after. It uploads `fault_matrix_report.md`; no alert is sent by these jobs.
+
+## O7 — main artifacts and Pages handoff
+
+`week9-cd.yml` is named exactly **Week 9 main artifacts**. On main it runs offline `dbt parse`, then uploads `dataforge-prod-manifest/manifest.json` and `week9-dq-report/dq-report.md` (copied from `tests/week9/fault_matrix_report.md`). The existing Pages workflow remains integrator-owned and untouched. The integrator has prepared Pages integration commit `c296eb0` on their branch for cherry-pick after this lane is ready.
+
+## O8 — ownership and review preparation
+
+- `.github/CODEOWNERS` assigns `contracts/`, `governance/`, and `cloud/terraform/week9_dataops/` to `@Dat071104`.
+- `.github/pull_request_template.md` now has a Data impact section for sources, targets, grain, contract compatibility, PII, production versus isolated reads/writes, byte cap, cost, and cleanup.
+- No GitHub ruleset was changed. Integrator action: add the verified required check names only after a green run on main.
+
+## Local evidence and limits
+
+- Strict yamllint: passed for the four Week 9 workflows and `profiles.example.yml`.
+- `pre-commit validate-config`: passed.
+- Bash syntax check: **54** workflow run blocks passed; Python AST parse: **5** embedded scripts passed.
+- Ruff and `py_compile`: both passed for `wif_permission_probe.py` and `week9_live_faults.py`.
+- Hashed dependency dry-run in a clean Python 3.12 environment: passed with **137** resolved packages.
+- No `pytest`, Docker, dbt warehouse run, GCP command, Terraform command, or WIF exchange was run locally. Exact-head CI run IDs and live F07/F10 evidence remain **UNVERIFIED**.
+- O1 retained-resource policy is unchanged. The WIF event-list change needs a reviewed plan/apply by the integrator; no Terraform plan was run because GCP auth is expired and the integrator prohibited cloud actions.
+
+## Integrator actions
+
+1. Review and apply the WIF provider event change, then run the manual `run_wif_smoke=true` workflow and the `week9-wif-deny.yml` negative test. Do not treat the advisory `testIamPermissions` response alone as proof; require the dry-run's expected authorization response.
+2. Run Gitleaks, push/open O-PR2, and record each exact-head CI run. The new workflow file paths must be present in the applied WIF allowlist before their cloud jobs can authenticate.
+3. Cherry-pick the Pages integration commit `c296eb0` after reviewing the `week9-dq-report/dq-report.md` artifact contract.
+4. Add main-ruleset required checks only after one successful run on main. No ruleset or deployment change was made by Worker O.
+
+# O-PR2 — O4–O8 (code chuẩn bị; chưa có CI/cloud evidence)
+
+**Branch/base:** `feat/w9-o-2` trên `origin/main` `3a20050e813700cd0a050c69aa1dbd652ca9fc08`. Root commit `986d8fb` và `docs/week9/cost_ledger.md` được giữ nguyên.
+
+## O4 — WIF boundary, PR CI và quality gates
+
+- `.github/workflows/week9-dataops.yml` giữ lint, Gitleaks, toolbox, Python unit/contract/PII checks ở `pull_request` với `contents: read`.
+- WIF job chuyển sang `pull_request_target`. Bước đầu tiên so sánh `github.event.pull_request.head.repo.id` với `github.repository_id`; chỉ sau đó checkout PR head cùng repo và gọi Google auth. Fork PR không được checkout hoặc cấp OIDC; có skip notice riêng.
+- Repository variables được tham chiếu đúng bằng tên, không ghi/echo giá trị: `W9_WIF_PROVIDER`, `W9_CI_DBT_SA_EMAIL`, `W9_META_READ_SA_EMAIL`.
+- Trusted/manual WIF smoke kiểm tra `bq ls w9_drill`, kỳ vọng `bq ls silver` trả authorization deny, và chạy `wif_permission_probe.py` cho `weather_mini3.weather_landing`. Probe `tables.testIamPermissions` được ghi rõ là advisory vì API có thể fail-open. Bước thứ hai gửi duy nhất `jobs.query` `dryRun=true` cho UPDATE-shaped statement; chỉ HTTP 403 nêu `bigquery.tables.updateData` mới tính là deny. Accepted dry-run hay lỗi khác là `UNVERIFIED`/fail; không có INSERT/UPDATE/DELETE thật.
+- `.github/workflows/week9-wif-deny.yml` là manual negative workflow không nằm trong provider allowlist. Nó trao đổi OIDC token với STS, chỉ pass nếu lỗi đúng `invalid_grant` do attribute condition. Token và error body không được in.
+- Cloud PR job tạo/reset riêng `dbt_ci_pr_<number>` (24h table TTL, labels), copy 7 ngày gần nhất từ `weather_mini3` vào dataset PR, rồi chạy dbt build/unit/G1 và cùng-date diff. Mọi BigQuery query có cap 1 GiB. Source reads production là read-only; writes chỉ vào dataset PR/`dataforge_dq`.
+- Toolbox gates gồm pytest, dbt parse offline, PII manifest guard, contract lint và `datacontract breaking` với `origin/main`. PR comment được post bởi job riêng, chỉ với summary JSON đã lọc; không cấp `pull-requests: write` cho job chạy dbt.
+- `w9_ci` profile trong `profiles.example.yml` đặt `maximum_bytes_billed=1073741824` và `job_execution_timeout_seconds=600`.
+
+## O5 — cleanup
+
+`week9-cleanup.yml` dùng `pull_request_target` cho closed PR, same-repository ID gate trước WIF, rồi xóa dataset có tên khớp `dbt_ci_pr_<n>`. Weekly/manual sweep lấy số PR từ GitHub metadata, kiểm tra `creationTime` BigQuery, rồi xóa dataset age ≥48h. Không cần project-wide dataset-list grant. Fork cleanup được skip rõ ràng.
+
+## O6 — fault matrix
+
+- `fault-matrix-local` chạy matrix F01–F12, F-T1, F-N0 từng fixture một bằng Q harness; F07/F10 local cases được ghi UNVERIFIED/deferred.
+- `fault-matrix-live` chạy riêng ở trusted `pull_request_target`, checks PR dataset בלבד: F07 đặt `landed_at` 73h cũ rồi yêu cầu dbt `sources.json` status `error`; F10 thay mart PR thành `rain_day=true, precipitation_mm=0`, yêu cầu G2 singular test fail với đúng `check_id`, rồi khôi phục mart/source. F10/F07 compare production Gold hash trước/sau bằng read-only query.
+- `fault-matrix-report` hợp nhất artifact rows, ưu tiên F07/F10 live CI rows, và giữ UNVERIFIED rows nếu live artifact không có.
+
+**Mapping ID ↔ fixture:** F07 → `G2.SOURCE.FRESHNESS` / isolated PR `weather_landing` stale 73h; F10 → `G2.WEATHER.RAIN_PRECIP_CONSISTENCY` / isolated PR mart mismatch. F01–F06, F08–F09, F11–F12, F-T1, F-N0 → IDs/fixtures in `tests/week9/faults/manifest.yml` and Q’s captured fixture harness. F13–F15 remain separate PR fixtures per plan.
+
+## O7/O8 — main artifact handoff and ownership
+
+- `week9-cd.yml` workflow name is exactly `Week 9 main artifacts`; it uploads `dataforge-prod-manifest/manifest.json` and `week9-dq-report/dq-report.md` (copy of `tests/week9/fault_matrix_report.md`). Pages workflow remains untouched because it is integrator-owned. Integrator’s `c296eb0` Pages integration is pending cherry-pick/review.
+- `.github/CODEOWNERS` assigns `contracts/`, `governance/`, and `cloud/terraform/week9_dataops/` to `@Dat071104`. The PR template now has a Data impact section. No GitHub ruleset was changed; integrator adds required checks only after one green main run.
+
+## Focused local checks
+
+- Strict yamllint: passed for all four W9 workflows, `profiles.example.yml`, and `CODEOWNERS`.
+- `pre-commit validate-config`: passed.
+- Bash syntax: **54** workflow `run` blocks passed; Python AST: **5** embedded scripts passed.
+- Ruff and `py_compile`: passed for both new toolbox helper scripts.
+- Hashed requirements dry-run in clean Python 3.12 environment: **137 packages, pass**.
+- No `pytest`, dbt warehouse run, WIF exchange, GCP command, Terraform command/plan/apply, Docker, or OpenMetadata was run locally.
+- O-PR2 exact-head CI run IDs and all WIF/F07/F10 live evidence: **UNVERIFIED**. The `wif.tf` event allowlist edit is code only (`pull_request` removed; `pull_request_target` added); it must be reviewed/applied before any WIF test. No provider update or cloud write was performed by Worker O.
+
+## Integrator actions
+
+1. Review and apply the WIF provider event update, then run manual WIF smoke and `week9-wif-deny.yml`; the latter must fail STS for the expected attribute-condition reason.
+2. Push/open O-PR2 only after Gitleaks; record exact-head CI IDs. Review `UNVERIFIED` outcomes explicitly, especially the non-mutating W7 write-denial probe and F07/F10 isolated tests.
+3. Cherry-pick Pages integration `c296eb0` and confirm it consumes `week9-dq-report/dq-report.md` after `Week 9 main artifacts` succeeds.
+4. Add ruleset required checks only after one green run on main. Do not apply further cloud changes from this lane.
+
+## Dispatch and ruleset prep
+
+`pull_request_target` executes the base-branch workflow. Until O-PR2 is present on main, the pre-merge I-5 WIF check must therefore be started manually from this branch with `run_wif_smoke=true`; `week9-wif-deny.yml` is separately dispatched to test the non-allowlisted workflow path. No run was started by Worker O. Candidate main-ruleset checks after one green main run are `DataOps lint`, `DataOps toolbox build and smoke`, `WIF positive and least-privilege probes`, `Isolated BigQuery PR build and G1 gate`, and the `Assemble fault_matrix_report.md` report job. The integrator owns adding them.

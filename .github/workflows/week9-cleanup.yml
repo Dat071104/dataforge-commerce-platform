@@ -1,0 +1,195 @@
+name: Week 9 PR dataset cleanup
+
+on:
+  pull_request_target:
+    types: [closed]
+  schedule:
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      run_sweep:
+        description: Sweep PR datasets older than 48 hours
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: week9-cleanup-${{ github.repository }}-${{ github.event.pull_request.number || github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  closed-pr-cleanup:
+    name: Delete the closed PR dataset
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT_ID: dataforge-p7-lab-d0f725
+      WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_DATASET: dbt_ci_pr_${{ github.event.pull_request.number }}
+    steps:
+      - name: Immutable same-repository gate before WIF
+        env:
+          HEAD_REPO_ID: ${{ github.event.pull_request.head.repo.id }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+        run: |
+          if [[ "$HEAD_REPO_ID" != "$BASE_REPO_ID" ]]; then
+            echo "::error::Refusing WIF cleanup for a fork PR"
+            exit 1
+          fi
+      - name: Require a safe dataset name and configured WIF variables
+        shell: bash
+        run: |
+          if [[ -z "$WIF_PROVIDER" || -z "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo "::error::W9 WIF repository variables are not configured"
+            exit 1
+          fi
+          if [[ ! "$PR_DATASET" =~ ^dbt_ci_pr_[0-9]+$ ]]; then
+            echo "::error::Refusing unexpected PR dataset name"
+            exit 1
+          fi
+
+      - name: Authenticate with the allowlisted cleanup workflow
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: bq
+
+      - name: Delete only this PR's isolated dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_project="$(gcloud config get-value project 2>/dev/null)"
+          [[ "$active_project" == "$PROJECT_ID" ]]
+          error_file="$RUNNER_TEMP/dataset-show-error.txt"
+          if bq show --format=json "$PROJECT_ID:$PR_DATASET" >/dev/null 2>"$error_file"; then
+            bq rm --force --recursive --dataset "$PROJECT_ID:$PR_DATASET"
+            echo "CLEANUP=deleted $PR_DATASET"
+          elif grep -Eqi 'not found|404' "$error_file"; then
+            echo "CLEANUP=already absent $PR_DATASET"
+          else
+            echo "::error::Unable to inspect the isolated PR dataset"
+            exit 1
+          fi
+
+  fork-pr-cleanup-skip:
+    name: Fork PR cleanup skipped
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id != github.repository_id
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "::notice::Fork PRs receive no WIF token and cannot create dbt_ci_pr datasets; cleanup skipped."
+
+  sweep-not-requested:
+    name: Manual sweep not selected
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "::notice::No cleanup action requested; select run_sweep=true to sweep stale datasets."
+
+  stale-dataset-sweep:
+    name: Sweep PR datasets older than 48 hours
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_sweep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    env:
+      PROJECT_ID: dataforge-p7-lab-d0f725
+      WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Require configured WIF variables
+        shell: bash
+        run: |
+          if [[ -z "$WIF_PROVIDER" || -z "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo "::error::W9 WIF repository variables are not configured"
+            exit 1
+          fi
+
+      - name: Authenticate with the allowlisted cleanup workflow
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: bq
+
+      - name: Find stale PR dataset candidates through GitHub PR metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100&sort=created&direction=asc" \
+            --jq '.[] | [.number, .created_at] | @tsv' > "$RUNNER_TEMP/pr-list.tsv"
+          python - <<'PY' > "$RUNNER_TEMP/stale-pr-numbers.txt"
+          import csv
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=2)
+          rows = csv.reader(Path("${{ runner.temp }}/pr-list.tsv").open(encoding="utf-8"), delimiter="\t")
+          for row in rows:
+              if len(row) != 2:
+                  continue
+              number, created_at = row
+              created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+              if created <= cutoff and number.isdigit():
+                  print(number)
+          PY
+
+      - name: Check dataset creation age and delete stale isolated datasets
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_project="$(gcloud config get-value project 2>/dev/null)"
+          [[ "$active_project" == "$PROJECT_ID" ]]
+          now_ms="$(date +%s%3N)"
+          stale_after_ms=$((48 * 60 * 60 * 1000))
+          while IFS= read -r number; do
+            [[ "$number" =~ ^[0-9]+$ ]] || continue
+            dataset="dbt_ci_pr_${number}"
+            [[ "$dataset" =~ ^dbt_ci_pr_[0-9]+$ ]] || exit 1
+            metadata="$RUNNER_TEMP/${dataset}.json"
+            error_file="$RUNNER_TEMP/${dataset}.error"
+            if ! bq show --format=json "$PROJECT_ID:$dataset" > "$metadata" 2>"$error_file"; then
+              if grep -Eqi 'not found|404' "$error_file"; then
+                continue
+              fi
+              echo "::error::Could not inspect candidate dataset $dataset"
+              exit 1
+            fi
+            created_ms="$(jq -r '.creationTime // empty' "$metadata")"
+            if [[ ! "$created_ms" =~ ^[0-9]+$ ]]; then
+              echo "::error::Dataset creation time was unavailable for $dataset"
+              exit 1
+            fi
+            if (( now_ms - created_ms >= stale_after_ms )); then
+              bq rm --force --recursive --dataset "$PROJECT_ID:$dataset"
+              echo "CLEANUP=deleted $dataset age_ms=$((now_ms-created_ms))"
+            fi
+          done < "$RUNNER_TEMP/stale-pr-numbers.txt"
