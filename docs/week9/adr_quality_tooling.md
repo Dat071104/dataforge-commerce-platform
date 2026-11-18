@@ -1,6 +1,6 @@
 # ADR: Week 9 quality tooling
 
-Status: Draft — D-2 selected Great Expectations Core 1.25.0 from the paired temporary local spikes; G-A controller review is pending. The criteria below were written before measurement. This ADR is owned by the Week 9 integrator.
+Status: Draft — D-2 selected Great Expectations Core 1.25.0 from the paired temporary local spikes; controller G-A returned GO. The criteria below were written before measurement. This ADR is owned by the Week 9 integrator.
 
 ## Scope
 
@@ -63,4 +63,4 @@ BigQuery support for both products is documented but was not live-tested. GX Cor
 
 Revisit D-2 if GX cannot run keylessly against BigQuery, exceeds the workflow timeout or memory budget, or remains ambiguous after the runner wrapper. Revisit D-0 if the CLI fails to lint the pinned ODCS version or becomes incompatible with the repository Python/toolbox lock.
 
-Decision log: D-2 selected GX from the paired temporary local spike; controller gate G-A is pending. Evidence level: implemented ADR decision plus local spike; no CI/Linux or live-GCP connector result is claimed.
+Decision log: D-2 selected GX from the paired temporary local spike; controller gate G-A returned GO. Evidence level: implemented ADR decision plus local spike; no CI/Linux or live-GCP connector result is claimed.

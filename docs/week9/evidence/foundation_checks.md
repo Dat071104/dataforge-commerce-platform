@@ -24,9 +24,12 @@ The dbt offline profile points to the non-existent project `dataforge-offline-pr
 - A dry-run of the October 25–31, 2026 query validated with a 2,632-byte estimate. The single read-only query job w9_spike_slice_20261118_01 completed; 8,008 bytes were processed and 10,485,760 bytes billed for the minimum charge, under maximum_bytes_billed=1 GiB.
 - Local slice: D:\DATA_ENGINEER\_tmp\w9_spikes\data\weather_7date_slice.parquet; 21 rows, 3 rows per date across seven dates, zero duplicate request/province/date keys; SHA-256 ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798.
 - Gross on-demand list-price estimate: about USD 0.00006 before any account free tier; invoice unavailable. No BigQuery or GCS destination write occurred. Evidence level: live GCP (read-only prod source), not live GCP isolated dataset.
-## Not yet evidenced
+## Completed after W9-A merge
 
 - W9-A exact-head CI (Linux runner): DataForge CI run 44302990650, Week 7 CI run 44302990427, and Pages run 44302990318 succeeded at head 49dd13c. The keyless dbt compile job was skipped and is not a required check. Post-merge runs on ab345f7 also succeeded: DataForge CI 44305441759, Week 7 CI 44305442091, and Pages 44305441845.
+
+## Not yet evidenced
+
 - Live GCP isolated-dataset build, WIF, access tests, alert receipt, or lineage: not run. One read-only copy from the prod weather source is recorded below; no W9 GCP write has occurred.
 - No gitleaks executable is installed locally. A high-confidence staged-diff scan for private keys, GitHub/Slack/Google/AWS tokens, and credential URLs passed with zero matches; this is a manual pattern scan, not gitleaks or CI evidence.
 - Full fault matrix and F-N0: not implemented.
