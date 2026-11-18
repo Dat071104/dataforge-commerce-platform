@@ -46,11 +46,11 @@ Tôi chỉ dùng synthetic Vietnamese PII, gắn nhãn `data_classification=synt
 
 ## 8. Alternatives considered
 
-Soda Core và GX Core sẽ được đo trên cùng năm checks và cùng slice trước khi chọn G1. OpenMetadata trimmed profile chạy ephemeral trong CI để khớp syllabus; Dataplex/BigQuery lineage là lớp bổ sung, không thay thế catalog. Với F06 tôi chọn block cả ngày thay vì publish 2/3 province vì báo cáo sẽ thiếu một phần population.
+Sau paired spike trên cùng năm checks và cùng slice, tôi chọn Great Expectations Core 1.25.0 cho G1 vì Apache-2.0 phù hợp public repo và clean checks chạy nhanh. Tôi chấp nhận footprint 406.3 MiB và sẽ bọc failure messages để luôn có check_id/date/severity/action. BigQuery connector support mới chỉ được xác nhận bằng docs; live isolated connector smoke còn pending. Chi tiết và trade-offs nằm trong [ADR](adr_quality_tooling.md). OpenMetadata trimmed profile chạy ephemeral trong CI để khớp syllabus; Dataplex/BigQuery lineage là lớp bổ sung, không thay thế catalog. Với F06 tôi chọn block cả ngày thay vì publish 2/3 province vì báo cáo sẽ thiếu một phần population.
 
 ## 9. Cost and operations
 
-AF0 giới hạn W9 ở USD 3, stop USD 2.4; AF8 giới hạn lineage ở USD 1, stop USD 0.8. W7 gross envelope hiện khoảng USD 12.89274; cộng W9 cap USD 3 và W8 reserve USD 0.10 là USD 15.99274, sát ngưỡng dừng chung USD 16. Đây là planning envelope, không phải invoice; invoice hiện không có. Tôi sẽ kiểm tra official list price trước mỗi paid action và ghi từng action trong [cost ledger](cost_ledger.md).
+AF0 giới hạn W9 ở USD 3, stop USD 2.4; AF8 giới hạn lineage ở USD 1, stop USD 0.8. W7 gross envelope hiện khoảng USD 12.89274; cộng W9 cap USD 3 và W8 reserve USD 0.10 là USD 15.99274, sát ngưỡng dừng chung USD 16. Đây là planning envelope, không phải invoice; invoice hiện không có. Một read-only slice query xử lý 8,008 bytes, tính 10 MiB tối thiểu; gross estimate khoảng USD 0.00006 trước free tier. Tôi sẽ kiểm tra official list price trước mỗi paid action và ghi từng action trong [cost ledger](cost_ledger.md).
 
 ## 10. Rollout and rollback
 
@@ -64,8 +64,8 @@ Rủi ro lớn nhất là chi phí còn headroom rất nhỏ theo cumulative sto
 
 - [Baseline](baseline.md) — local offline dbt parse; not CI/live-GCP.
 - [Failure catalog](failure_modes.md) — planned detector map; fixtures pending.
-- [Tool ADR](adr_quality_tooling.md) — D-2 pending paired spike.
+- [Tool ADR](adr_quality_tooling.md) — D-2 chọn GX; G-A pending.
 - Contracts: [`weather_landing.v1.yaml`](../../contracts/weather_landing.v1.yaml), [`mart_weather_province_daily.v1.yaml`](../../contracts/mart_weather_province_daily.v1.yaml), [`open_meteo_api.assumptions.yaml`](../../contracts/open_meteo_api.assumptions.yaml).
-- [Cost ledger](cost_ledger.md) — no W9 paid action recorded yet.
+- [Cost ledger](cost_ledger.md) — one read-only source query estimated at about USD 0.00006 gross; invoice unavailable.
 
 Decision log: No mentor comments received. Status remains Draft; only the mentor may move it beyond In review.
