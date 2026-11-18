@@ -8,8 +8,178 @@ sources:
     tables:
       - name: week5_orders
         description: One current row per order_id; deletes are soft tombstones.
+        columns:
+          - name: order_id
+            meta:
+              classification: confidential
+              pii_type: business_record_identifier
+              purpose: "Business-record reconciliation and analytical joins only."
+              retention_days: 365
+          - name: customer_id
+            meta:
+              classification: confidential
+              pii_type: indirect_customer_identifier
+              purpose: "Order-to-cash reconciliation by customer; no direct identity resolution."
+              retention_days: 365
+          - name: order_date
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: province_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_status
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_net_amount
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: is_deleted
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: effective_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_change_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_payload_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: source_updated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: business_event_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_batch_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: ingested_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
       - name: week5_payment_events
         description: One current row per payment_id; deletes are soft tombstones.
+        columns:
+          - name: payment_id
+            meta:
+              classification: confidential
+              pii_type: business_record_identifier
+              purpose: "Business-record reconciliation and analytical joins only."
+              retention_days: 365
+          - name: order_id
+            meta:
+              classification: confidential
+              pii_type: business_record_identifier
+              purpose: "Business-record reconciliation and analytical joins only."
+              retention_days: 365
+          - name: payment_date
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: amount
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: payment_status
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: method
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: is_deleted
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: effective_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_change_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_payload_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: source_updated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: business_event_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_batch_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: ingested_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
 
   - name: week5_ops
     description: Week-5 append-only operational events and source checkpoints.
@@ -18,8 +188,244 @@ sources:
     tables:
       - name: week5_run_events
         description: Run status events emitted by the Week-5 consumer and publisher.
+        columns:
+          - name: event_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: run_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: execution_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: batch_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: status
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: run_mode
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: source_run_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: event_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: attempt
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: manifest_uri
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: lower_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: upper_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: expected_row_count
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: row_value_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: manifest_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: manifest_generation
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: object_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: object_generation
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: stage_table_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: stage_load_job_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: stage_verify_job_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: publish_job_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: published_check_job_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: checkpoint_before
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: checkpoint_after
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: affected_order_count
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: delivered_sales_proxy
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: collected_amount
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: error_code
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: error_message
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
       - name: pipeline_checkpoints
         description: Committed source sequence checkpoint for the operational journal.
+        columns:
+          - name: source_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: committed_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: last_batch_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: row_value_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: manifest_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: manifest_generation
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: object_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: object_generation
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: updated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
 
   - name: week5_gold
     description: Week-5 published order controls used as an independent same-snapshot comparison.
@@ -28,6 +434,97 @@ sources:
     tables:
       - name: week5_order_controls
         description: Atomic Week-5 current per-order control, including soft-deleted orders.
+        columns:
+          - name: order_id
+            meta:
+              classification: confidential
+              pii_type: business_record_identifier
+              purpose: "Business-record reconciliation and analytical joins only."
+              retention_days: 365
+          - name: customer_id
+            meta:
+              classification: confidential
+              pii_type: indirect_customer_identifier
+              purpose: "Order-to-cash reconciliation by customer; no direct identity resolution."
+              retention_days: 365
+          - name: order_date
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: province_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_status
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_is_deleted
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: delivered_sales_proxy
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: collected_amount
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: collection_variance
+            meta:
+              classification: confidential
+              pii_type: none
+              purpose: "Order-to-cash financial reconciliation and aggregate controls."
+              retention_days: 365
+          - name: active_payment_count
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: successful_payment_count
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_effective_seq
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: published_batch_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: published_run_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: updated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
 
   - name: weather_mini3
     description: >-
@@ -49,26 +546,81 @@ sources:
             filter: "observation_date >= DATE_SUB(CURRENT_DATE('Asia/Ho_Chi_Minh'), INTERVAL 60 DAY)"
         columns:
           - name: province_id
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: HCM, HN, or DN, mapped from the approved city-centre coordinates.
           - name: observation_date
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: Local calendar date returned by Open-Meteo in Asia/Ho_Chi_Minh.
           - name: precipitation_mm
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: Daily precipitation sum in millimetres; null remains unknown.
           - name: temp_max_c
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: Daily maximum 2 m air temperature in Celsius; null remains unknown.
           - name: source
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: Source identifier, currently open_meteo_era5.
           - name: model
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: Provider model identifier, currently era5.
           - name: request_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Weather ingest provenance, reproducibility, and operational lineage."
+              retention_days: 365
             description: Content-addressed immutable request identity; revised payloads receive a new identity.
           - name: source_sha256
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Weather ingest provenance, reproducibility, and operational lineage."
+              retention_days: 365
             description: SHA-256 of the source payload or typed artifact tied to this landing row.
           - name: manifest_uri
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Weather ingest provenance, reproducibility, and operational lineage."
+              retention_days: 365
             description: Immutable GCS COMPLETE manifest URI.
           - name: manifest_generation
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Weather ingest provenance, reproducibility, and operational lineage."
+              retention_days: 365
             description: Exact GCS generation of the immutable manifest.
           - name: landed_at
+            meta:
+              classification: public
+              pii_type: none
+              purpose: "Province-level weather reporting and data-quality controls."
+              retention_days: 3650
             description: UTC time the typed row was first landed in BigQuery.
 
   - name: scd2_proof_input
@@ -78,3 +630,117 @@ sources:
     tables:
       - name: orders
         description: One synthetic order row; the harness advances updated_at and sets a tombstone.
+        columns:
+          - name: order_id
+            meta:
+              classification: confidential
+              pii_type: business_record_identifier
+              purpose: "Business-record reconciliation and analytical joins only."
+              retention_days: 365
+          - name: order_status
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: order_amount
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: is_deleted
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: business_effective_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: updated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+
+  - name: restricted_pii
+    description: >-
+      Isolated Week-9 synthetic-only raw customer-profile table. Raw identity
+      fields are written only here and remain unavailable to analyst readers.
+    database: "{{ target.database }}"
+    schema: restricted_pii
+    tables:
+      - name: customer_profile
+        description: Fixed-seed synthetic Vietnamese profiles with raw PII and HMAC token.
+        columns:
+          - name: fixture_id
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365
+          - name: customer_token
+            meta:
+              classification: confidential
+              pii_type: pseudonymous_customer_identifier
+              purpose: "Synthetic customer grouping after HMAC-SHA256 pseudonymization at ingest."
+              retention_days: 365
+          - name: full_name
+            meta:
+              classification: restricted
+              pii_type: full_name
+              purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+              retention_days: 7
+          - name: cccd
+            meta:
+              classification: restricted
+              pii_type: national_id
+              purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+              retention_days: 7
+          - name: email
+            meta:
+              classification: restricted
+              pii_type: email
+              purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+              retention_days: 7
+          - name: phone
+            meta:
+              classification: restricted
+              pii_type: phone_number
+              purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+              retention_days: 7
+          - name: birth_date
+            meta:
+              classification: restricted
+              pii_type: date_of_birth
+              purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+              retention_days: 7
+          - name: province_id
+            meta:
+              classification: internal
+              pii_type: generalized_demographic
+              purpose: "Synthetic customer grouping with generalized geography or age."
+              retention_days: 365
+          - name: age_band
+            meta:
+              classification: internal
+              pii_type: generalized_demographic
+              purpose: "Synthetic customer grouping with generalized geography or age."
+              retention_days: 365
+          - name: data_classification
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
+              retention_days: 365
+          - name: generated_at
+            meta:
+              classification: internal
+              pii_type: none
+              purpose: "Operational audit, reproducibility, or pipeline lineage."
+              retention_days: 365

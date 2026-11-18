@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-TEST_CONFIG = REPO_ROOT / "dbt" / "dataforge" / "models" / "week9_tests.yml"
+TEST_CONFIG = REPO_ROOT / "dbt" / "dataforge" / "models" / "schema.yml"
 PK_TEST_MACROS = REPO_ROOT / "dbt" / "dataforge" / "macros" / "dq_pk_tests.sql"
 EXPECTED_KEYS = {
     "stg_week5_run_events": "event_id",

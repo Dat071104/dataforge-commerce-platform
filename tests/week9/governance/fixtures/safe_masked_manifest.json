@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "project_name": "dataforge",
+    "adapter_type": "bigquery"
+  },
+  "nodes": {
+    "model.dataforge.dim_customer_profile_safe": {
+      "unique_id": "model.dataforge.dim_customer_profile_safe",
+      "resource_type": "model",
+      "name": "dim_customer_profile_safe",
+      "schema": "pii_safe",
+      "config": {"materialized": "table", "schema": "pii_safe"},
+      "depends_on": {"nodes": ["source.dataforge.restricted_pii.customer_profile"]},
+      "columns": {
+        "customer_token": {
+          "name": "customer_token",
+          "meta": {
+            "classification": "confidential",
+            "pii_type": "pseudonymous_customer_identifier",
+            "purpose": "HMAC token",
+            "retention_days": 365
+          }
+        },
+        "age_band": {
+          "name": "age_band",
+          "meta": {
+            "classification": "internal",
+            "pii_type": "generalized_demographic",
+            "purpose": "Generalized age band",
+            "retention_days": 365
+          }
+        },
+        "province_id": {
+          "name": "province_id",
+          "meta": {
+            "classification": "internal",
+            "pii_type": "generalized_geography",
+            "purpose": "Province-level category",
+            "retention_days": 365
+          }
+        },
+        "email_masked": {
+          "name": "email_masked",
+          "meta": {
+            "classification": "confidential",
+            "pii_type": "masked_email",
+            "purpose": "Masked display field",
+            "retention_days": 365
+          }
+        },
+        "data_classification": {
+          "name": "data_classification",
+          "meta": {
+            "classification": "internal",
+            "pii_type": "none",
+            "purpose": "Synthetic data label",
+            "retention_days": 365
+          }
+        }
+      }
+    }
+  },
+  "sources": {
+    "source.dataforge.restricted_pii.customer_profile": {
+      "unique_id": "source.dataforge.restricted_pii.customer_profile",
+      "resource_type": "source",
+      "name": "customer_profile",
+      "source_name": "restricted_pii",
+      "schema": "restricted_pii",
+      "columns": {
+        "email": {
+          "name": "email",
+          "meta": {
+            "classification": "restricted",
+            "pii_type": "email",
+            "purpose": "Synthetic source field",
+            "retention_days": 7
+          }
+        }
+      }
+    }
+  },
+  "parent_map": {
+    "model.dataforge.dim_customer_profile_safe": ["source.dataforge.restricted_pii.customer_profile"]
+  }
+}

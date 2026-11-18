@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: dim_customer_profile_safe
+    description: >-
+      Minimized synthetic customer mart. Raw name, CCCD, phone, and birth date
+      remain in restricted_pii; this table contains only an HMAC token,
+      generalized age band and province, a masked example-domain e-mail, and a
+      synthetic-data label.
+    config:
+      contract:
+        enforced: true
+      persist_docs:
+        relation: true
+        columns: true
+    columns:
+      - name: customer_token
+        data_type: STRING
+        description: HMAC-SHA256 token generated at ingest; never a raw CCCD.
+        meta:
+          classification: confidential
+          pii_type: pseudonymous_customer_identifier
+          purpose: "Synthetic customer grouping after HMAC-SHA256 pseudonymization at ingest."
+          retention_days: 365
+      - name: age_band
+        data_type: STRING
+        description: Generalized age band derived in the synthetic fixture generator.
+        meta:
+          classification: internal
+          pii_type: generalized_demographic
+          purpose: "Synthetic customer grouping with generalized age."
+          retention_days: 365
+      - name: province_id
+        data_type: STRING
+        description: Province-level category; no street-level location is exposed.
+        meta:
+          classification: internal
+          pii_type: generalized_geography
+          purpose: "Synthetic customer grouping with province-level geography."
+          retention_days: 365
+      - name: email_masked
+        data_type: STRING
+        description: Masked display string produced by the pii_mask_email macro.
+        meta:
+          classification: confidential
+          pii_type: masked_email
+          purpose: "Synthetic customer display in the minimized pii_safe mart."
+          retention_days: 365
+      - name: data_classification
+        data_type: STRING
+        description: Explicit synthetic-data label carried from the fixture.
+        meta:
+          classification: internal
+          pii_type: none
+          purpose: "Explicitly distinguish synthetic data from real customer information."
+          retention_days: 365

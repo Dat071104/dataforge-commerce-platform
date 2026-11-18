@@ -16,9 +16,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "Faker==40.54.0",
   "datacontract-cli==1.2.8",
   "great-expectations==1.25.0",
+  "Jinja2>=3.1,<4",
   "polars>=1.36.1,<2",
+  "PyYAML>=6,<7",
   "pytest>=8,<10",
   "ruff>=0.9,<1",
 ]

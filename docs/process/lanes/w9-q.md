@@ -4,7 +4,7 @@ Branch: `feat/w9-q-1` from `origin/main` at `ab345f7`. Scope stopped at Q1–Q6 
 
 ## Status
 
-Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 #44 exact-head runs failed as recorded below; no post-fix rerun is claimed.
+Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 #44 merged normally at `659ba8a` after the exact-head runs listed below passed.
 
 ## Changed files
 
@@ -119,7 +119,8 @@ SQLFluff 3.4.2 flagged LT05 on the `dq_float_equal` macro signature and unresolv
 - Lock refresh method: `uv pip compile pyproject.toml --extra dev --extra powerbi --extra gcp --python-version 3.11 --constraint requirements-py311.lock --no-emit-package dataforge-vn-commerce --output-file requirements-py311.generated.lock`. The output preserved all 25 prior package pins and resolved 65 additional direct/transitive pins (90 total); it was reviewed and promoted to `requirements-py311.lock`. No package was installed. The lock is used as a CI constraints file.
 - The temporary profile at `D:\DATA_ENGINEER\_tmp\w9_q_dbt_profile_20261118\profiles.yml` is a copy of `profiles.example.yml` with the offline target (`dataforge-offline-project`) and no credentials. Automatic review rejected my cleanup command; I did not retry, so the temporary profile directory remains.
 - Existing `pytest tests/mini3_api/test_weather_job.py -q` in the pinned W9 Python 3.12.13 environment: **11 passed**. An earlier system-Python attempt had 2 import errors for missing `google.cloud.bigquery`; no packages were installed, and the pinned-environment rerun supersedes that mismatch.
-- CI run IDs above identify the failed exact-head runs. The prior 31 local `tests/week9` passes predate this dependency/SQL layout fix. Post-fix exact-head status remains **UNVERIFIED**; no rerun has been performed.
+- Q-PR1 exact-head runs on `97080a87` all passed: DataForge push `44370690828`, DataForge PR `44370708719`, Week 7 `44370708289`, Pages `44370708248`, and Week 9 DataOps `44370708408` (including Gitleaks and toolbox smoke). PR #44 merged at `659ba8a`. The failed runs above were corrected by tracking the fixture, pinning GX for dev CI, and fixing SQLFluff/Jinja config and layout.
+- A later G-PR1 parse found the Q test entries duplicated G's existing schema entries. The integrator moved those two test blocks into the G-owned `models/schema.yml` with check IDs/thresholds unchanged, removed `week9_tests.yml`, and updated the Q key-config test path. G-PR1 exact-head CI is handling that integration.
 
 ## Integrator actions
 

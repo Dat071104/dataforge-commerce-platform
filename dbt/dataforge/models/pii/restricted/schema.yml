@@ -1,0 +1,95 @@
+version: 2
+
+models:
+  - name: stg_customer_profile_restricted
+    description: >-
+      Restricted-only view over the synthetic customer profile. It preserves
+      source policy tags and never moves raw profile fields outside the
+      restricted_pii dataset.
+    config:
+      persist_docs:
+        relation: true
+        columns: true
+    columns:
+      - name: fixture_id
+        data_type: STRING
+        meta:
+          classification: internal
+          pii_type: none
+          purpose: "Synthetic fixture record identity for privacy drill checks."
+          retention_days: 365
+      - name: customer_token
+        data_type: STRING
+        meta:
+          classification: confidential
+          pii_type: pseudonymous_customer_identifier
+          purpose: "Synthetic customer grouping after HMAC-SHA256 pseudonymization at ingest."
+          retention_days: 365
+      - name: full_name
+        data_type: STRING
+        policy_tags: ["{{ env_var('DATAFORGE_W9_POLICY_TAG_IDENTITY', 'UNCONFIGURED') }}"]
+        meta:
+          classification: restricted
+          pii_type: full_name
+          purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+          retention_days: 7
+      - name: cccd
+        data_type: STRING
+        policy_tags: ["{{ env_var('DATAFORGE_W9_POLICY_TAG_IDENTITY', 'UNCONFIGURED') }}"]
+        meta:
+          classification: restricted
+          pii_type: national_id
+          purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+          retention_days: 7
+      - name: email
+        data_type: STRING
+        policy_tags: ["{{ env_var('DATAFORGE_W9_POLICY_TAG_EMAIL', 'UNCONFIGURED') }}"]
+        meta:
+          classification: restricted
+          pii_type: email
+          purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+          retention_days: 7
+      - name: phone
+        data_type: STRING
+        policy_tags: ["{{ env_var('DATAFORGE_W9_POLICY_TAG_PHONE', 'UNCONFIGURED') }}"]
+        meta:
+          classification: restricted
+          pii_type: phone_number
+          purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+          retention_days: 7
+      - name: birth_date
+        data_type: DATE
+        policy_tags: ["{{ env_var('DATAFORGE_W9_POLICY_TAG_BIRTH_DATE', 'UNCONFIGURED') }}"]
+        meta:
+          classification: restricted
+          pii_type: date_of_birth
+          purpose: "Synthetic-only identity drill; raw value must remain in restricted_pii."
+          retention_days: 7
+      - name: province_id
+        data_type: STRING
+        meta:
+          classification: internal
+          pii_type: generalized_geography
+          purpose: "Synthetic customer grouping with province-level geography."
+          retention_days: 365
+      - name: age_band
+        data_type: STRING
+        meta:
+          classification: internal
+          pii_type: generalized_demographic
+          purpose: "Synthetic customer grouping with generalized age."
+          retention_days: 365
+      - name: data_classification
+        data_type: STRING
+        meta:
+          classification: internal
+          pii_type: none
+          purpose: "Explicitly distinguish synthetic data from real customer information."
+          retention_days: 365
+      - name: generated_at
+        data_type: TIMESTAMP
+        meta:
+          classification: internal
+          pii_type: none
+          purpose: "Operational audit, reproducibility, or pipeline lineage."
+          retention_days: 365

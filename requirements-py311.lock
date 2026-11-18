@@ -52,6 +52,7 @@ et-xmlfile==2.0.0
     # via
     #   -c requirements-py311.lock
     #   openpyxl
+Faker==40.54.0
 fastjsonschema==2.22.3
     # via datacontract-cli
 google-api-core==2.44.0
