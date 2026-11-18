@@ -41,6 +41,22 @@ def test_manual_cloud_build_is_bound_to_exact_open_same_repo_pr_head() -> None:
     )
 
 
+def test_manual_offline_checks_use_the_dispatched_sha_without_cloud_permissions() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    input_spec = workflow["on"]["workflow_dispatch"]["inputs"]["run_offline_checks"]
+    assert input_spec["type"] == "boolean"
+    assert input_spec["default"] == "false"
+
+    for name in ("lint", "toolbox"):
+        job = workflow["jobs"][name]
+        assert "github.event_name == 'pull_request'" in job["if"]
+        assert "github.event_name == 'workflow_dispatch'" in job["if"]
+        assert "inputs.run_offline_checks" in job["if"]
+        assert job["permissions"] == {"contents": "read"}
+        checkout = next(step for step in job["steps"] if step.get("name") == "Check out repository")
+        assert checkout["with"]["ref"] == "${{ github.sha }}"
+
+
 def test_manual_cloud_build_comments_with_its_sanitized_run_artifact() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     cloud = workflow["jobs"]["cloud-pr"]
