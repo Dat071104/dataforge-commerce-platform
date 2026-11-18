@@ -1,0 +1,3 @@
+dbt-bigquery==1.11.3
+datacontract-cli==1.2.8
+great-expectations==1.25.0

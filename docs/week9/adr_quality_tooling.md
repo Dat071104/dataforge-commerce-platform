@@ -1,6 +1,6 @@
 # ADR: Week 9 quality tooling
 
-Status: Draft — selection of the landing quality engine is pending the paired Soda Core / Great Expectations (GX) spike. The criteria below were written before those measurements. This ADR is owned by the Week 9 integrator.
+Status: Draft — D-2 selected Great Expectations Core 1.25.0 from the paired temporary local spikes; controller G-A returned GO. The criteria below were written before measurement. This ADR is owned by the Week 9 integrator.
 
 ## Scope
 
@@ -28,16 +28,28 @@ Sources: [Data Contract CLI ODCS docs](https://github.com/datacontract/datacontr
 
 ## D-2 — G1 landing quality engine
 
-Candidates: Soda Core and Great Expectations Core. Decision is pending both spikes running the same five checks on the same immutable seven-date slice. No LOC, runtime, RAM, or error-quality measurements are claimed yet.
+Both spikes used the same immutable seven-date local Parquet slice. Evidence level is temporary local spike only; this is not CI or live BigQuery connector evidence. After G-A, the integrator independently timed five clean Soda CLI verifications and sampled the full process tree; the runtime methods differ from GX in-process validation timing and are not a direct apples-to-apples comparison.
 
-| Check | Planned owner |
-|---|---|
-| API response shape, requested date coverage, retry semantics | G0 Python validation |
-| Landing schema, expected 3 rows/date, duplicates, allowed provinces, physical ranges, freshness | G1 — D-2 winner |
-| Weather transform consistency and model grain | G2 dbt tests |
-| Contract YAML structure | `datacontract lint` |
-| Monitoring and alert delivery | Observability monitors read `dataforge_dq.dq_results`; they do not re-run gate logic |
+| Criterion | Soda Core v4.31.0 | Great Expectations Core 1.25.0 |
+|---|---|---|
+| License | PyPI says Proprietary; upstream LICENSE is Elastic License 2.0 | Apache-2.0 |
+| Same five checks | Clean 5/5; F06 isolated volume fault failed only the expected check | Clean 5/5; all five isolated mutations were detected |
+| LOC | 60 nonblank contract-check lines; no standalone runner | 263 nonblank, noncomment Python lines |
+| Runtime | Integrator post-G-A: 2.7039 s median / 4.3044 s max over five clean Soda CLI verifications; separate agent contract-test-plus-verify run was 4.646 s | 0.2857 s median / 0.3367 s max over five GX validation runs, excluding Parquet load |
+| Peak RSS | Integrator process-tree sample: 100.7 MiB maximum during Soda CLI verify (20-ms sampling) | 215.6 MiB |
+| Install footprint | 84.62 MiB site-packages | 406.3 MiB site-packages |
+| BigQuery support | Official v4 docs list soda-bigquery and ADC; not live-tested | Official docs support BigQuery and the bigquery extra; not live-tested; upstream docs tests temporarily skipped |
+| Error detail | F06 names the check and threshold but omits date and observed count; schema required an information_schema workaround | Schema, row-count, and freshness failures lack detail without a wrapper; duplicate/range include counts |
+| CI fit | Local DuckDB CLI returned exit 0/1; Linux CI not measured | Local Pandas checks return exit 0/1; Linux CI not measured |
+| dbt overlap | Landing grain/range have downstream dbt defenses | G1 owns the cataloged landing checks; F07 freshness remains with G2 source freshness and the dead-man's switch, so G1 does not duplicate it |
 
+Official sources: Soda PyPI metadata https://pypi.org/project/soda-core/4.31.0/; Soda license https://github.com/sodadata/soda-core/blob/main/LICENSE; Soda BigQuery docs https://docs.soda.io/soda-v4/reference/data-source-reference-for-soda-core/bigquery; GX compatibility https://docs.greatexpectations.io/docs/help/compatibility_reference/; GX BigQuery install extra https://docs.greatexpectations.io/docs/core/set_up_a_gx_environment/install_additional_dependencies/; GX Apache-2.0 license https://github.com/fivetran/great_expectations/blob/develop/LICENSE.
+
+Decision: choose Great Expectations Core 1.25.0 for G1. Apache-2.0 is a better fit for this public MIT repository. GX passed all five clean checks and detected all five isolated mutations; its validation median was 0.2857 seconds with 215.6-MiB peak RSS. The Soda CLI timing includes process startup, so runtime numbers are not directly comparable. The 406.3-MiB package footprint and 263 LOC are accepted costs. The G1 runner must wrap GX failures with check_id, date, severity, threshold, and action because raw schema and row-count messages lack enough triage context.
+
+Soda Core v4.31.0 is not selected because its current PyPI metadata is Proprietary and its upstream license is ELv2 for this public repository. Its built-in schema check returned NOT_EVALUATED for the file-backed DuckDB source, the documented group_by type was rejected, and two metric checks needed distinct qualifiers. Soda Core v3.5.6 is a legacy alternative; it was not installed or measured. The Windows verification also emitted UnicodeEncodeError logging traces under cp1252 despite the expected clean/F06 exit codes; Linux CI behavior was not measured.
+
+BigQuery support for both products is documented but was not live-tested. GX Core's upstream changelog says BigQuery backend tests are temporarily skipped; W9-2 must verify the connector using a read-only, isolated-dataset smoke test. Do not claim live BigQuery support until that passes.
 ## Adjacent decisions
 
 | Decision | Current approved direction | Evidence still required |
@@ -49,6 +61,6 @@ Candidates: Soda Core and Great Expectations Core. Decision is pending both spik
 
 ## Revisit triggers
 
-Revisit D-2 if the selected tool cannot run keylessly against BigQuery, exceeds the workflow timeout or memory budget, gives ambiguous failures, or requires a second owner for an existing check. Revisit D-0 if the CLI fails to lint the pinned ODCS version or becomes incompatible with the repository Python/toolbox lock.
+Revisit D-2 if GX cannot run keylessly against BigQuery, exceeds the workflow timeout or memory budget, or remains ambiguous after the runner wrapper. Revisit D-0 if the CLI fails to lint the pinned ODCS version or becomes incompatible with the repository Python/toolbox lock.
 
-Decision log: pending paired spike results and controller gate G-A. Evidence level: implemented as an ADR draft; no runtime engine selection or live data check is claimed.
+Decision log: D-2 selected GX from the paired temporary local spike; controller gate G-A returned GO. Evidence level: implemented ADR decision plus local spike; no CI/Linux or live-GCP connector result is claimed.
