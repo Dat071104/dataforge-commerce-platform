@@ -1139,6 +1139,31 @@ models:
           pii_type: none
           purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
           retention_days: 365
+        data_tests:
+          - dq_week9_not_null:
+              config:
+                tags: [tier_blocking]
+                severity: error
+                error_if: ">0"
+                warn_if: ">0"
+                schema: dataforge_dq
+                meta:
+                  check_id: G2.MODEL.STG_WEEK5_RUN_EVENTS.EVENT_ID_NOT_NULL
+                  layer: G2
+                  w9_severity: P1
+                  contract_version: "1.0.0"
+          - dq_week9_unique:
+              config:
+                tags: [tier_blocking]
+                severity: error
+                error_if: ">0"
+                warn_if: ">0"
+                schema: dataforge_dq
+                meta:
+                  check_id: G2.MODEL.STG_WEEK5_RUN_EVENTS.EVENT_ID_UNIQUE
+                  layer: G2
+                  w9_severity: P1
+                  contract_version: "1.0.0"
       - name: run_id
         meta:
           classification: internal
@@ -1323,6 +1348,31 @@ models:
           pii_type: none
           purpose: "Operational monitoring, data-quality validation, or order-to-cash analytics."
           retention_days: 365
+        data_tests:
+          - dq_week9_not_null:
+              config:
+                tags: [tier_blocking]
+                severity: error
+                error_if: ">0"
+                warn_if: ">0"
+                schema: dataforge_dq
+                meta:
+                  check_id: G2.MODEL.STG_WEEK5_PIPELINE_CHECKPOINTS.SOURCE_ID_NOT_NULL
+                  layer: G2
+                  w9_severity: P1
+                  contract_version: "1.0.0"
+          - dq_week9_unique:
+              config:
+                tags: [tier_blocking]
+                severity: error
+                error_if: ">0"
+                warn_if: ">0"
+                schema: dataforge_dq
+                meta:
+                  check_id: G2.MODEL.STG_WEEK5_PIPELINE_CHECKPOINTS.SOURCE_ID_UNIQUE
+                  layer: G2
+                  w9_severity: P1
+                  contract_version: "1.0.0"
       - name: committed_seq
         meta:
           classification: internal

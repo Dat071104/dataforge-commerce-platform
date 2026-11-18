@@ -162,3 +162,7 @@ Integrator actions before G-PR1 acceptance:
 5. Run dbt parse/build, then `python scripts/week9_pii_guard.py --manifest dbt/dataforge/target/manifest.json`, HCL validation/plan, and CI on the exact PR head; record run IDs and outcomes. Review the `customer_id` residual and legal mapping before any real-data use.
 
 Worker G stops after G1–G5/G-PR1 preparation and waits for integrator follow-up; G6–G9 are out of this block.
+
+## Integrator schema reconciliation — 2026-11-19
+
+Exact-head dbt parse in G-PR1 first found `stg_week5_run_events` defined in both `models/schema.yml` and Q's `models/week9_tests.yml`. The same Q file also duplicated `stg_week5_pipeline_checkpoints`, which already has G classification metadata. The integrator moved both Q `unique`/`not_null` test blocks into the existing G-owned model entries, preserving the check IDs, severity, and expressions, then removed the duplicate `week9_tests.yml`. Pages run `44374331498` and Week 7 CI run `44374331628` failed on the first duplicate; the reconciled schema has not yet been rerun in CI.
