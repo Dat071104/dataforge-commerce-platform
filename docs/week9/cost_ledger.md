@@ -20,6 +20,13 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 Before every paid W9 action, refresh the latest Week 7 estimate, confirm the current W8 reserve from its owner, check current official provider prices, and recompute the combined projection. Stop if the projection reaches $16, if W9 reaches $2.40, or if lineage reaches $0.80. An estimate is not a hard billing cap.
 
+## O1 Terraform plan preflight (2026-11-18; no apply)
+
+- Refreshed `03_CHECKLIST.md`: Week 7 gross phase estimate ≈USD 12.89274; Week 8 reserve remains up to USD 0.10 because actual use is unconfirmed. With the W9 cap USD 3.00, the combined maximum reserve is USD 15.99274, USD 0.00726 below the shared USD 16 stop. At the W9 stop line USD 2.40, the combined projection is USD 15.39274.
+- Official BigQuery on-demand price: USD 6.25/TiB above the first 1 TiB/month/account; minimum billable scan is 10 MiB per query. Keep `maximum_bytes_billed=1 GiB` on every W9 query (gross list-price upper bound ≈USD 0.00611/run); do not assume free-tier availability. [BigQuery pricing](https://cloud.google.com/bigquery/pricing)
+- Secret Manager management operations, including secret-container creation, are free. For conservative planning, do not assume its monthly free tier: active versions above six are USD 0.000082192 per version-hour, so one active version retained for seven days is ≈USD 0.01381; access operations above 10,000/month are USD 0.03 per 10,000. [Secret Manager pricing](https://cloud.google.com/secret-manager/pricing)
+- O1 plan was read-only and created no resources or secret versions. Its recorded plan was 24 add / 0 change / 0 destroy, but is now marked STALE because retention protections changed afterward. It must not be applied. No W9 resource/API write occurred; invoice unavailable. Current W9 gross estimate remains ≈USD 0.00006 from the single read-only query.
+
 ## Paid action log
 
 | Date/time +07 | Action / resource | Official price source | Estimated gross cost | Observed usage | Billed amount | Evidence / cleanup |
