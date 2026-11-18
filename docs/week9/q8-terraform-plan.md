@@ -4,7 +4,7 @@ Status: HCL is authored for integrator review. Terraform plan, apply, and live a
 
 ## Proposed resources
 
-`cloud/terraform/week9_dataops/metrics.tf` creates five log-based metrics when `enable_dq_alerting=true`: `DQ_GATE_FAILED`, `SCHEMA_DRIFT`, `FRESHNESS_BREACH`, `VOLUME_ANOMALY`, and `DQ_HEARTBEAT`. Filters are scoped to the `dataforge-week9-dq` log and `w9_drill` / numeric `dbt_ci_pr_*` datasets. Each metric extracts only `severity` and `status` labels.
+`cloud/terraform/week9_dataops/metrics.tf` creates five log-based metrics when `enable_dq_alerting=true`: `DQ_GATE_FAILED`, `SCHEMA_DRIFT`, `FRESHNESS_BREACH`, `VOLUME_ANOMALY`, and `DQ_HEARTBEAT`. Filters are scoped to the `dataforge-week9-dq` log and `w9_drill` / `dbt_ci_pr_*` datasets, matching the DQ gate's isolation allowlist. Each metric extracts only `severity` and `status` labels.
 
 `alerts.tf` creates P1 Monitoring email policies for gate failure, schema drift, freshness breach, and volume anomaly. Each requires `severity=P1` and `status=FAIL`, reuses the supplied existing C9 channel name, and links its corresponding runbook. P1 Slack remains in the runner. P2 events route to Slack; P3 events route to the digest collector. No extra notification channel is created, and Week 7 C3 resources are untouched. The freshness policy is additionally gated by `enable_dq_freshness_alert=false` by default so the intentionally stopped pipeline does not create a daily incident.
 

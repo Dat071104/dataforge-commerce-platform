@@ -18,7 +18,7 @@ resource "google_logging_metric" "week9_dq_event" {
     logName="projects/${var.project_id}/logs/dataforge-week9-dq"
     AND resource.type="global"
     AND jsonPayload.event_type="${each.key}"
-    AND (jsonPayload.dataset="w9_drill" OR jsonPayload.dataset=~"^dbt_ci_pr_[0-9]+$")
+    AND (jsonPayload.dataset="w9_drill" OR jsonPayload.dataset=~"^dbt_ci_pr_[A-Za-z0-9_-]+$")
   EOT
 
   metric_descriptor {
