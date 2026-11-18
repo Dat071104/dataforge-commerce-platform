@@ -1,0 +1,107 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: urn:datacontract:dataforge:weather:mart_weather_province_daily:v1
+name: mart_weather_province_daily
+version: 1.0.0
+status: active
+domain: weather
+dataProduct: dataforge-weather-reliability
+description:
+  purpose: Gold daily weather mart for the three approved provinces.
+  usage: Power BI and planned Week 10 feature consumers.
+  limitations: Rolling windows are calendar-based and are not imputed when observations are missing.
+team:
+  name: DataForge Weather Engineering
+customProperties:
+  - property: producer
+    value: dbt/dataforge/models/weather/marts/mart_weather_province_daily.sql
+  - property: consumers
+    value: Power BI; planned Week 10 ML features
+  - property: changePolicy
+    value: SemVer; breaking field, type, key, grain, or window-semantic change requires a major version and consumer acknowledgement.
+schema:
+  - name: mart_weather_province_daily
+    physicalType: table
+    description: One row per province and local observation date for the approved Open-Meteo ERA5 source/model.
+    dataGranularityDescription: One row per (province_id, observation_date).
+    properties:
+      - name: province_id
+        logicalType: string
+        physicalType: STRING
+        primaryKey: true
+        primaryKeyPosition: 1
+        required: true
+        description: Province code; one of HCM, HN, or DN.
+        enum:
+          - value: HCM
+          - value: HN
+          - value: DN
+      - name: observation_date
+        logicalType: date
+        physicalType: DATE
+        primaryKey: true
+        primaryKeyPosition: 2
+        required: true
+        description: Local calendar observation date returned by Open-Meteo.
+      - name: precipitation_mm
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Daily precipitation sum in millimetres; null remains unknown.
+      - name: temp_max_c
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Daily maximum two-metre air temperature in Celsius; null remains unknown.
+      - name: rain_day
+        logicalType: boolean
+        physicalType: BOOL
+        required: false
+        description: True for positive precipitation, false for zero, and null when precipitation is unknown.
+        quality:
+          - id: g2_weather_rain_precip_consistency
+            type: text
+            severity: error
+            description: check_id=G2.WEATHER.RAIN_PRECIP_CONSISTENCY; F10; rain_day cannot be true when precipitation_mm is zero.
+      - name: precipitation_observed_days_7d
+        logicalType: integer
+        physicalType: INT64
+        required: true
+        description: Count of non-null precipitation observations in the current and previous six calendar dates.
+      - name: precipitation_7d_mm
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Seven-calendar-day precipitation sum; null unless all seven dates have known values.
+      - name: temp_max_observed_days_30d
+        logicalType: integer
+        physicalType: INT64
+        required: true
+        description: Count of non-null temperature observations in the current and previous 29 calendar dates.
+      - name: temp_max_30d_mean_c
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Thirty-calendar-day mean maximum temperature; null unless all thirty dates have known values.
+      - name: temp_max_30d_anomaly_c
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Current maximum temperature minus the complete trailing thirty-calendar-day mean; includes current date.
+    quality:
+      - id: g2_weather_grain_unique
+        type: library
+        metric: duplicateValues
+        mustBe: 0
+        arguments:
+          properties: [province_id, observation_date]
+        severity: error
+        description: check_id=G2.WEATHER.GRAIN_UNIQUE; The Gold mart grain must be unique by province and local date.
+      - id: ci_contract_breaking
+        type: text
+        severity: error
+        description: check_id=CI.CONTRACT_BREAKING; F14; removing or changing the type of a contracted Gold column requires a major contract version and consumer acknowledgement.
+slaProperties:
+  - property: timeOfAvailability
+    value: 09:30 Asia/Ho_Chi_Minh
+    driver: operational
