@@ -20,7 +20,7 @@ resource "google_iam_workload_identity_pool_provider" "github_oidc" {
   project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_dataforge.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-oidc"
-  display_name                       = "GitHub OIDC - DataForge commerce platform"
+  display_name                       = "GitHub OIDC - DataForge W9"
   description                        = "Accepts GitHub OIDC only for the pinned numeric repository and owner IDs."
 
   attribute_mapping = {

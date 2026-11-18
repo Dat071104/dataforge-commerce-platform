@@ -1,6 +1,6 @@
 # W9 Worker O (DataOps) — O1–O3 / O-PR1
 
-**Trạng thái:** phần triển khai O1–O3 đã xong ở mức `implemented`; local checks bên dưới đã chạy. Exact-head CI và toolbox image smoke test còn `UNVERIFIED`. Không có Terraform apply, API enable/disable, image push hay deployment.
+**Trạng thái:** O1–O3 implementation and local checks are complete. I-1 is applied: all 24 planned resources are now in Terraform state after one provider-only retry. No API enable, image build/push, or deployment occurred. GitHub-side WIF tests, exact-head CI, and toolbox smoke remain `UNVERIFIED`.
 
 **Worktree:** `D:\DATA_ENGINEER\DataForge_w9_o` · branch `feat/w9-o-1` · base `ab345f7ae502d3e29d2c88b0dd5b8996319ffbf0`.
 
@@ -59,7 +59,13 @@ google_service_account_iam_member.ci_dbt_workload_identity_user
 google_service_account_iam_member.meta_read_workload_identity_user
 ```
 
-**Plan superseded:** trước khi thêm `prevent_destroy` và tách IAM của `w9_drill`, một plan cũ 24/0/0 đã được lưu. Text file cũ được gắn `STALE — DO NOT APPLY`. Binary cũ còn tại `C:\Users\ADMIN\AppData\Local\Temp\dataforge-w9-o-readonly.tfplan`; việc xóa binary bị automatic policy review từ chối, không thử lại. **DO NOT APPLY** binary cũ. Chỉ plan cuối cùng phía trên mới khớp HCL hiện tại.
+**Plans:** the earlier pre-retention plan and the 24/0/0 final plan above are stale and **DO NOT APPLY**. The old binaries remain at `C:\Users\ADMIN\AppData\Local\Temp\dataforge-w9-o-readonly.tfplan` and `C:\Users\ADMIN\AppData\Local\Temp\dataforge-w9-o-final-readonly.tfplan`; automatic review rejected deletion of the older binary and no retry occurred. The provider-only plan `C:\Users\ADMIN\AppData\Local\Temp\dataforge-w9-o-provider-retry-20261118.tfplan` was **APPLIED** (`1 add / 0 change / 0 destroy`) and must not be reapplied. Its readable `terraform show` output is `C:\Users\ADMIN\AppData\Local\Temp\dataforge-w9-o-provider-retry-20261118-plan.txt`.
+
+## I-1 partial apply RCA
+
+The first application created the datasets, service accounts, project/dataset IAM bindings, custom role, pool, and empty secret containers. It failed only on `google_iam_workload_identity_pool_provider.github_oidc`. Cloud Audit Logs recorded `google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider`, status 3 (`INVALID_ARGUMENT`): the provider display name exceeded the 32-character limit. The original value was `GitHub OIDC - DataForge commerce platform` (41 characters). The corrected value is `GitHub OIDC - DataForge W9` (26 characters). Terraform `fmt -check` and `validate` passed after this fix. Full evidence is in [`terraform-i1-wif-provider-rca-20261118.md`](../week9/evidence/terraform-i1-wif-provider-rca-20261118.md).
+
+No BigQuery data or secret version was written and no API was enabled. A read-only provider inventory first confirmed the pool existed and provider did not. After the display-name fix, the reviewed provider-only plan applied successfully; a second provider inventory returned the full provider name, and Terraform state now contains 24/24 resources. The initial apply wrapper omitted the process exit/session metadata; the partial outcome was reconstructed from state and audit logs and recorded as one `TOOLING_SLIPS` increment. No unchanged-code apply was repeated.
 
 ## O2 — Lint foundations
 
@@ -142,12 +148,12 @@ O1–O3 add no fault detector or fault fixture, so there is no new `check_id` �
 - `actions/checkout` v7.0.1 and `actions/setup-python` v7.0.0 SHAs came from local verified refs. Docker Buildx/build-push action SHAs remain pending remote verification.
 - Gitleaks must run before push; no clean secret-scan claim is made from the untriaged detect-secrets candidates.
 - Lint exclusions cover only exact pre-existing paths. Remove them when those files are repaired; do not extend them to Week 9 files.
-- Final Terraform plan is read-only and for review only. Integrator must approve it through the normal integration gate before apply; no API enable or apply was performed.
+- I-1 provider creation is complete. GitHub-side WIF positive/negative tests remain `UNVERIFIED` until the exact-head workflow can run. The next cloud plan is Worker G's AF4 plan; refresh cost preflight and review it separately before apply.
 
 ## Integrator actions
 
-1. Review the final plan artifact and the retained-resource `prevent_destroy` choices. Re-run a fresh plan if the HCL changes.
-2. Run Gitleaks before push; verify Docker action SHAs when GitHub access is available.
-3. Push/open O-PR1, record exact-head CI run IDs, and require both lint and toolbox smoke jobs green before merge order advances.
-4. Apply Terraform only after normal review/approval and required cost preflight; then run the WIF positive/negative tests from I-1.
+1. Run Gitleaks before push; verify Docker action SHAs when GitHub access is available.
+2. Push/open O-PR1, record exact-head CI run IDs, and require both lint and toolbox smoke jobs green before merge order advances.
+3. Run the WIF positive/negative tests from I-1 after the exact-head workflow can obtain the approved GitHub OIDC identity.
+4. Review Worker G's AF4 plan separately after refreshing cost preflight; do not combine it with the already-applied O1 root.
 5. Extend this workflow in O-PR2 with cloud/contract/dbt/diff/fault-matrix jobs; add explicit notices to any fork/cloud jobs that skip.
