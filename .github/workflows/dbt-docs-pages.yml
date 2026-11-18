@@ -78,7 +78,9 @@ jobs:
         run: |
           cp profiles.example.yml profiles.yml
           dbt parse --project-dir . --profiles-dir . --target offline --no-send-anonymous-usage-stats --no-version-check --no-partial-parse
-          dbt docs generate --project-dir . --profiles-dir . --target offline --no-compile --empty-catalog --static --no-send-anonymous-usage-stats --no-version-check
+          dbt docs generate --project-dir . --profiles-dir . --target offline \
+            --no-compile --empty-catalog --static \
+            --no-send-anonymous-usage-stats --no-version-check
       - name: Prepare repository-base static site
         env:
           DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
