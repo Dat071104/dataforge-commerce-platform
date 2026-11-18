@@ -1,6 +1,6 @@
 # Canonical syllabus coverage · Weeks 1–7
 
-This matrix follows the exact 45 IDs in the Week 1–7 gap register. It records bounded evidence, not a claim that every course or live checkpoint is complete. Snapshot refreshed from the integrator checklist at 2026-11-14 21:53 +07:00: Lane B PR #9 merged at 9bca18c; Lane D PR #13 merged normally at f4d340ff151557040d85e1688a9e0f94caa2a8c5. Merge-SHA base CI 43606510616 and Week 7 CI 43606510673 passed on f4d340f. This Lane E branch has not been rebased onto those integration commits.
+This matrix follows the exact 45 IDs in the Week 1–7 gap register and records bounded evidence. Snapshot refreshed from the Week 7 execution checklist at 2026-11-18 14:06 +07:00: main baseline 6b256f2; S10/S11 are complete; S12–S14 are pending. The temporary Airflow VM is gone; the syllabus still distinguishes historical evidence from currently retained services and keeps the mentor checkpoint pending.
 
 ## Status definitions and count
 
@@ -8,13 +8,15 @@ This matrix follows the exact 45 IDs in the Week 1–7 gap register. It records 
 - **PARTIAL** means only part of the requirement is evidenced, an explicit limitation remains, or the evidence exists on a not-yet-integrated branch.
 - **NOT_RUN** means no completion evidence was found.
 - **MENTOR_CONFIRMATION_PENDING** means the requirement depends on a real human checkpoint or review that has not been recorded.
+- **OUT_OF_SCOPE** means F13 excludes the requirement from this release; it is not tracked as completed.
 
 | Status | Rows |
 |---|---:|
-| MET | 13 |
-| PARTIAL | 22 |
-| NOT_RUN | 8 |
+| MET | 16 |
+| PARTIAL | 19 |
+| NOT_RUN | 6 |
 | MENTOR_CONFIRMATION_PENDING | 2 |
+| OUT_OF_SCOPE | 2 |
 | **Total** | **45** |
 
 The count is only a roll-up of this matrix. It does not imply C_CODE_GO, C_CLOUD_DEMO_GO, or W1_TO_W7_FULLY_VERIFIED.
@@ -83,27 +85,27 @@ The count is only a roll-up of this matrix. It does not imply C_CODE_GO, C_CLOUD
 | W6-01 | Driver/executor, lazy evaluation, DAG, partitions, and Spark SQL/DataFrame | [Spark lab](../labs/spark_nyc_taxi/), [runtime report](cloud/week6/runtime_and_environment.md), and [final report](cloud/week6/final_report.md) record the local Docker/PySpark workload, plans, and output reconciliation. | **MET** |
 | W6-02 | Broadcast/shuffle, skew/cache, partition tuning, and Spark UI | [Benchmark](cloud/week6/benchmark.md) records the measured broadcast result: 19.8% slower by median despite lower shuffle bytes. Event/plan evidence is retained; no authentic Spark UI screenshot is claimed, and skew/cache are not fully demonstrated. | **PARTIAL** |
 | W6-03 | NYC Taxi at scale, hour/zone aggregate, and Delta/Iceberg output | The local workload processed 13,069,067 rows, reconciled outputs, and wrote partitioned Parquet plus a local Delta example. Managed execution is tracked separately. [Final report](cloud/week6/final_report.md). | **MET** |
-| W6-04 | Run Spark locally and on a managed service | Local Spark passed. The managed batch is explicitly NOT_RUN and was not authorized; see [Week 6 acceptance](cloud/week6/acceptance_matrix.md). | **PARTIAL** |
-| W6-05 | PySpark video courses | The [course tracker](course_tracker.md) has a supplemental official Spark documentation link; no video completion is asserted. | **NOT_RUN** |
+| W6-04 | Run Spark locally and on a managed service | Local Spark acceptance plus the separately authorized S7-R Dataproc a4 batch: 2,964,624 input / 2,875,519 accepted / 89,105 rejected / 72,604 groups; checksum 1f298ea714cf125aa3f3bea601308baf74ee45222155fd892ff8528f1de50732. Driver/history, receipt and usage estimates are in [S7-R evidence](cloud/week6/evidence/c7-s7-a4-result-20261118.md), [cost log](cloud/week6/evidence/c7-s7-a4-cost-20261118.log), and [driver output](cloud/week6/evidence/c7-s7-a4-driver-history-summary.md). Invoice unavailable. | **MET** |
+| W6-05 | PySpark video courses | Courses/certificates excluded by F13; not tracked. | **OUT_OF_SCOPE** |
 
 ## Week 7 — Airflow, dbt, Mini3, and checkpoint
 
 | ID | Requirement | Evidence and verification | Status |
 |---|---|---|---|
-| W7-01 | Airflow DAG/operator/sensor/XCom/schedule/retry | The historical integration and revised DAG are documented in [Airflow integration](cloud/week7/closure/airflow_integration_receipt.md) and [P7.5 correctness closure](cloud/week7/closure/p75_airflow_correctness.md). PR #11 exact-head CI and merged PR #13 exact-head CI passed their six no-egress scheduler scenarios; PR #13 Airflow job 132422133934 passed. Its first attempt timed out on the fifth synthetic backfill date; an unchanged second attempt passed, with exact failed task state/root cause unknown and no code/assertion change. [Lane D retry record](https://github.com/Dat071104/dataforge-commerce-platform/blob/3d3b4e47c015fe20b8f1e1e987bdca7388c48fc0/docs/process/lanes/d.md). Merge-SHA Week 7 run [43606510673](https://github.com/Dat071104/dataforge-commerce-platform/actions/runs/43606510673) also passed on f4d340f; merge-SHA Airflow job 132482197676 succeeded. The revised DAG removes the old redundant sensor and no unattended/cloud-hosted schedule is claimed. | **PARTIAL** |
-| W7-02 | SLA and alerts | P7.5 documents Airflow 3 Deadline Alert behavior and local-only PIPELINE_FAILED logging; the no-egress harness checks deadline and failure paths. No external notification is active or proven by that harness. | **PARTIAL** |
+| W7-01 | Airflow DAG/operator/sensor/XCom/schedule/retry | Airflow 3.4 no-egress CI harness covers retry, 403, gate-off, failures, deadline and backfill. Natural scheduled DagRun scheduled__2026-11-18T02:00:00+00:00 succeeded 16/16; S6 manual retry try1 made no Cloud Run POST and try2 succeeded with the same invocation ID. Five UI captures are in [S10 evidence](cloud/week7/evidence/s10-airflow-ui-capture-20261118.md). VM is now torn down; this records bounded historical execution. | **MET** |
+| W7-02 | SLA and alerts | C3 policies remain enabled. Monitoring recorded 8 PIPELINE_FAILED and 5 PIPELINE_DEADLINE_MISSED incidents; 2 user receipts are confirmed and 11 are unconfirmed. No deliberate terminal drill was run (0/2). | **PARTIAL** |
 | W7-03 | Dagster comparison | [Week 7 architecture and ADR](cloud/week7/closure/architecture_and_adr.md) compares Dagster, Airflow, and Workflows and records why Dagster was not deployed. | **MET** |
-| W7-04 | dbt models/tests/snapshot/docs/lineage | The [dbt project](../dbt/dataforge/), [model lineage](cloud/week7/model_lineage.md), [SCD2 receipt](cloud/week7/closure/dbt_scd2_history_receipt.json), and [model contract](cloud/week7/dbt_model_contract.md) show models, tests, a synthetic snapshot, and lineage. Lane B's static no-compile docs artifact has an empty catalog; no warehouse catalog or Pages publication is claimed. | **PARTIAL** |
-| W7-05 | Airflow orchestrates dbt | The historic [Airflow integration receipt](cloud/week7/closure/airflow_integration_receipt.md) records a one-off local-Docker Airflow run that invoked the GCP data plane and dbt. The revised harness is code-level/no-egress; do not conflate it with a current live end-to-end run. | **PARTIAL** |
-| W7-06 | Daily Mini3 Airflow wholly on GCP, with real error notification | The [Mini3 receipt](cloud/week7/closure/api_to_gold_e2e_receipt.json) proves one date and three provinces. Historical Cloud Scheduler fired once; Airflow ran locally once; the schedule and temporary alert were removed. No daily hosted Airflow or current external alert is evidenced. | **PARTIAL** |
-| W7-07 | Astronomer Airflow 101 and dbt Fundamentals | Links are in the [course tracker](course_tracker.md). No course completion or certificate is claimed. | **NOT_RUN** |
-| W7-08 | Final mentor/team demo, architecture, and cost review | The [walkthrough](demo/week7_checkpoint/walkthrough.md), [technical defense](demo/week7_checkpoint/technical_defense.md), and [cost table](demo/week7_checkpoint/cost_table.md) are preparation artifacts only. No presentation, attendance, or mentor feedback is recorded. | **MENTOR_CONFIRMATION_PENDING** |
+| W7-04 | dbt models/tests/snapshot/docs/lineage | The dbt project, lineage and SCD2 receipt are retained. Live dbt build/tests passed 49/49; Gold publication and same-run NO_OP evidence are recorded in Week 7 receipts. Warehouse catalog/Pages publication is not claimed. | **PARTIAL** |
+| W7-05 | Airflow orchestrates dbt | The 18/11 natural scheduled run completed the Airflow-to-Cloud Run dbt build and Gold publication; the S6 run and retry are also evidenced. The temporary VM was destroyed after acceptance; no current Airflow host is claimed. | **MET** |
+| W7-06 | Daily Mini3 Airflow wholly on GCP, with real error notification | One natural scheduled run plus the S3/S4 backfill and S6 retry completed on the temporary GCP VM; Monitoring incidents and receipt status are summarized in W7-02. The VM is torn down, so no recurring daily hosted Airflow is claimed. | **PARTIAL** |
+| W7-07 | Astronomer Airflow 101 and dbt Fundamentals | Courses and certificates are excluded by F13 and are not tracked. | **OUT_OF_SCOPE** |
+| W7-08 | Final mentor/team demo, architecture, and cost review | The walkthrough, technical defense and updated [cost table](demo/week7_checkpoint/cost_table.md) are ready with measured usage and a conservative gross estimate. No mentor/team presentation or feedback is recorded. | **MENTOR_CONFIRMATION_PENDING** |
 
 ## Cross-cutting limits
 
 - HR business-domain work is not added. The syllabus gap register says not to create an HR ETL solely for this objective; ask the mentor whether the domain mapping satisfies the checkpoint.
 - CI, receipts, and synthetic records support engineering claims only within their tested scopes. They do not establish production uptime, customer data quality, a real SLO, or recognized accounting revenue.
-- Week 8–12 Kafka, Mini-project 4, AI, and certificate work are outside this Week 7 scope.
+- Courses/certificates are excluded by F13. Week 8–12 Kafka, Mini-project 4, and AI work run in separate sessions.
 - The GCP-for-Azure/Fabric approval is user-reported; there is no signed mentor artifact in the repository. GCP services are not described as exact Azure/Fabric equivalents.
 - The integrator checklist at D:\DATA_ENGINEER\DataForge_D_Week7_Final\03_CHECKLIST.md is local and unversioned; it is the current operational record for release and live-state status.
 

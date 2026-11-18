@@ -1,0 +1,2 @@
+S6 DagRun state after NO_OP replay 2026-11-18 11:33:12 +07:00
+[{"dag_id": "dataforge_week7_weather_cloud", "run_id": "manual__s6_transient_once_20261101_20261118T111125", "state": "success", "run_after": "2026-11-18T04:11:47.001738+00:00", "logical_date": "2026-11-18T04:11:25+00:00", "start_date": "2026-11-18T04:28:27.119411+00:00", "end_date": "2026-11-18T04:31:37.478613+00:00"}]

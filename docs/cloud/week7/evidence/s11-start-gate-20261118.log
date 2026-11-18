@@ -1,0 +1,6 @@
+S11-G start gate — checked 2026-11-18 13:22:10 +07, after S10 closure.
+- PASS1_DONE exists.
+- 16_GCP_VM-Airflow_no-external-IP_IAP_REAL.png exists, 475757 bytes.
+- 16b_GCP_IAP-firewall-rule_REAL.png exists, 448765 bytes.
+- Both qualifying alternatives were met. Read-only check; no writes to D:\DATA_ENGINEER\_tmp\w8_real_screens.
+- S10 closure evidence: evidence/s10-airflow-ui-capture-20261118.md and five S10 PNGs.

@@ -5,8 +5,11 @@
 **Working branch:** `feature/p7-week6-spark-nyc-taxi`
 **Local engineering result:** `LOCAL_MEASURED`
 **Independent controller:** `GO_WEEK6_LOCAL`
-**Managed Spark:** `CLOUD_SPARK_NOT_AUTHORIZED`; no batch submitted
+**Original local-run scope:** no managed batch was authorized during the 2026-11-10 to 2026-11-11 execution. A separately authorized S7-R batch succeeded on 2026-11-18; see the addendum above.
 
+## Subsequent S7-R managed execution (2026-11-18)
+
+A separately authorized Dataproc Serverless batch, dataforge-w6-tlc-2024-01-a4, succeeded using CLI version selector 2.2 (resolved runtime 2.2.90). Oracle: 2,964,624 input / 2,875,519 accepted / 89,105 rejected / 72,604 groups / checksum 1f298ea714cf125aa3f3bea601308baf74ee45222155fd892ff8528f1de50732. Actual UsageMetrics imply USD 0.095 compute plus standard shuffle; GCS/network billing and the settled project invoice are unavailable. This batch is separate from the local Week-6 execution described above. See evidence/c7-s7-a4-result-20261118.md and evidence/c7-s7-a4-cost-20261118.log.
 ## Delivered
 
 - Added a reproducible Linux Docker runtime on Windows: Python 3.11.18, OpenJDK 17, Apache Spark 3.5.9, Delta Lake 3.3.3, PyArrow 23.0.1, and pytest 9.2.0. The 6 GiB / 4 CPU Compose limit was selected for this host.
@@ -44,10 +47,10 @@ One benchmark harness attempt completed all measured runs but stopped before wri
 
 Existing P6.2 GO LOCAL, P7.1 CLOUD_GO_WEEK4, and P7.2 CLOUD_GO_WEEK5 code, metrics, checkpoints, data, and controller decisions remain unchanged. No Week 7 dbt/orchestration code was started.
 
-No GCP batch, GCS/BigQuery write, IAM change, Terraform change, or cloud resource mutation occurred in Week 6. This does not assert zero account spend; earlier project billing settlement remains unknown. See [cost_iam_cleanup.md](cost_iam_cleanup.md).
+No GCP batch, GCS/BigQuery write, IAM change, Terraform change, or cloud resource mutation occurred during the original 2026-11-10 to 2026-11-11 local run. The later S7-R batch is separately documented above and in its retained evidence. This does not assert zero account spend; settlement remains unknown. See cost_iam_cleanup.md.
 
 The Spark UI REST API was reachable inside the container, but Windows-host port 4040 timed out and the computer-use helper could not determine Chrome’s current URL. No screenshot is claimed. Event-log metrics and explicit manual capture steps are supplied. The lab build context also lacks a `.dockerignore`; no raw file is copied into the image, and raw data remains git-ignored, but an explicit ignore file would guard future broad `COPY` instructions. Exact local commands and exit results are in [validation_receipt.md](validation_receipt.md).
 
 ## Release gate
 
-The one independent controller returned `GO_WEEK6_LOCAL`, authorizing the feature-branch commit, push, and PR. Hosted CI must pass on the exact PR head with no blocking findings before merge; afterward, synchronize local `main` and record the release SHAs and run IDs. The optional managed Spark batch remains out of scope without separate explicit spending authorization.
+The one independent controller returned `GO_WEEK6_LOCAL`, authorizing the feature-branch commit, push, and PR. Hosted CI must pass on the exact PR head with no blocking findings before merge; afterward, synchronize local `main` and record the release SHAs and run IDs. The original local run remained in scope; the later S7-R batch used its own one-off authorization and is recorded in the addendum above.

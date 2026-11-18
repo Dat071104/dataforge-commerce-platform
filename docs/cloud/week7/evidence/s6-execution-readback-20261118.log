@@ -1,0 +1,16 @@
+{
+  "execution": "dataforge-week7-weather-ingest-qz95p",
+  "operation_id": "a2f47ba1-9628-485a-98a1-956f455ebf49",
+  "state": "True",
+  "invocation_id": "1c533386ec3b478d558cf64115dfeb1d7af4726e6507beeb11d7461f326f040c",
+  "args": [
+    "ingest",
+    "--observation-date",
+    "2026-11-01",
+    "--provinces",
+    "HCM,HN,DN",
+    "--invocation-id",
+    "1c533386ec3b478d558cf64115dfeb1d7af4726e6507beeb11d7461f326f040c"
+  ],
+  "matches_try1": true
+}
