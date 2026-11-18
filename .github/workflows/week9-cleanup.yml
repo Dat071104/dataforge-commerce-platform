@@ -7,6 +7,16 @@ on:
     - cron: "17 3 * * 0"
   workflow_dispatch:
     inputs:
+      run_cleanup:
+        description: Delete one merged same-repository PR dataset identified by pr_number
+        required: false
+        default: false
+        type: boolean
+      pr_number:
+        description: Merged same-repository PR number whose isolated dataset should be removed
+        required: false
+        default: ""
+        type: string
       run_sweep:
         description: Sweep PR datasets older than 48 hours
         required: false
@@ -97,12 +107,90 @@ jobs:
 
   sweep-not-requested:
     name: Manual sweep not selected
-    if: github.event_name == 'workflow_dispatch' && !inputs.run_sweep
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_sweep && !inputs.run_cleanup
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - run: echo "::notice::No cleanup action requested; select run_sweep=true to sweep stale datasets."
+      - run: echo "::notice::No cleanup action requested; select run_cleanup=true with a merged pr_number, or run_sweep=true."
 
+  manual-pr-cleanup:
+    name: Delete one validated merged PR dataset
+    if: github.event_name == 'workflow_dispatch' && inputs.run_cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    env:
+      PROJECT_ID: dataforge-p7-lab-d0f725
+      PR_NUMBER: ${{ inputs.pr_number }}
+      PR_DATASET: dbt_ci_pr_${{ inputs.pr_number }}
+      BASE_REPO_ID: ${{ github.repository_id }}
+      WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Validate the exact same-repository merged PR number
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ || ! "$PR_DATASET" =~ ^dbt_ci_pr_[0-9]+$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.merged_at // ""), (.head.repo.id | tostring)] | @tsv')"
+          IFS=$'\t' read -r pr_state merged_at pr_head_repo_id <<< "$metadata"
+          if [[ "$pr_state" != "closed" || -z "$merged_at" || "$pr_head_repo_id" != "$BASE_REPO_ID" ]]; then
+            echo "::error::Manual cleanup requires a merged PR from this repository"
+            exit 1
+          fi
+
+      - name: Require configured WIF variables
+        shell: bash
+        run: |
+          if [[ -z "$WIF_PROVIDER" || -z "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo "::error::W9 WIF repository variables are not configured"
+            exit 1
+          fi
+
+      - name: Authenticate with the allowlisted cleanup workflow
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: bq
+
+      - name: Delete only the validated PR dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_project="$(gcloud config get-value project 2>/dev/null)"
+          [[ "$active_project" == "$PROJECT_ID" ]]
+          error_file="$RUNNER_TEMP/dataset-show-error.txt"
+          if bq show --format=json "$PROJECT_ID:$PR_DATASET" >/dev/null 2>"$error_file"; then
+            bq rm --force --recursive --dataset "$PROJECT_ID:$PR_DATASET"
+            echo "CLEANUP=deleted $PR_DATASET"
+          elif grep -Eqi 'not found|404' "$error_file"; then
+            echo "CLEANUP=already absent $PR_DATASET"
+          else
+            echo "::error::Unable to inspect the isolated PR dataset"
+            exit 1
+          fi
+
+  manual-cleanup-not-requested:
+    name: Manual cleanup not selected
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_cleanup && inputs.pr_number != '' && !inputs.run_sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo "::notice::pr_number was supplied without run_cleanup=true; no dataset was deleted."
   stale-dataset-sweep:
     name: Sweep PR datasets older than 48 hours
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_sweep)
@@ -144,8 +232,8 @@ jobs:
         run: |
           set -euo pipefail
           gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100&sort=created&direction=asc" \
-            --jq '.[] | [.number, .created_at] | @tsv' > "$RUNNER_TEMP/pr-list.tsv"
+            "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100&sort=updated&direction=asc" \
+            --jq '.[] | [.number, .updated_at] | @tsv' > "$RUNNER_TEMP/pr-list.tsv"
           python - <<'PY' > "$RUNNER_TEMP/stale-pr-numbers.txt"
           import csv
           from datetime import datetime, timedelta, timezone
@@ -156,9 +244,9 @@ jobs:
           for row in rows:
               if len(row) != 2:
                   continue
-              number, created_at = row
-              created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-              if created <= cutoff and number.isdigit():
+              number, updated_at = row
+              updated = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+              if updated <= cutoff and number.isdigit():
                   print(number)
           PY
 

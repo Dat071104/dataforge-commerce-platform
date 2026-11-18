@@ -7,8 +7,23 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
+      pr_number:
+        description: Exact open same-repository PR number when run_cloud_build is selected
+        required: false
+        default: ""
+        type: string
       run_wif_smoke:
-        description: Run the keyless WIF positive and safe denial probes
+        description: Run keyless WIF positive and safe denial probes
+        required: false
+        default: false
+        type: boolean
+      run_cloud_build:
+        description: Run the isolated dbt PR build for pr_number
+        required: false
+        default: false
+        type: boolean
+      run_fault_matrix:
+        description: Run local fixtures and F07/F10 in the fixed w9_drill dataset
         required: false
         default: false
         type: boolean
@@ -95,93 +110,7 @@ jobs:
             --env PYTHONPATH=/workspace/src \
             --env PYTHONDONTWRITEBYTECODE=1 \
             dataforge-dataops-toolbox:ci \
-            python -m pytest -q -p no:cacheprovider tests/week9
-
-      - name: Parse dbt offline and run the PII manifest guard
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/dbt-profiles" "$RUNNER_TEMP/dbt-target" "$RUNNER_TEMP/dbt-logs"
-          cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/workspace" \
-            --volume "$RUNNER_TEMP/dbt-profiles:/profiles" \
-            --volume "$RUNNER_TEMP/dbt-target:/tmp/dbt-target" \
-            --volume "$RUNNER_TEMP/dbt-logs:/tmp/dbt-logs" \
-            --workdir /workspace \
-            --user "$(id -u):$(id -g)" \
-            --env PYTHONPATH=/workspace/src \
-            --env PYTHONDONTWRITEBYTECODE=1 \
-            --env DBT_TARGET_PATH=/tmp/dbt-target \
-            --env DBT_LOG_PATH=/tmp/dbt-logs \
-            dataforge-dataops-toolbox:ci \
-            dbt parse --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target offline \
-              --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/workspace" \
-            --volume "$RUNNER_TEMP/dbt-target:/tmp/dbt-target" \
-            --workdir /workspace \
-            --user "$(id -u):$(id -g)" \
-            --env PYTHONPATH=/workspace/src \
-            dataforge-dataops-toolbox:ci \
-            python scripts/week9_pii_guard.py --manifest /tmp/dbt-target/manifest.json
-
-      - name: Lint every checked-in data contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          for contract in contracts/*.yaml; do
-            docker run --rm \
-              --volume "$GITHUB_WORKSPACE:/workspace" \
-              --workdir /workspace \
-              --user "$(id -u):$(id -g)" \
-              dataforge-dataops-toolbox:ci \
-              datacontract lint "/workspace/$contract" --no-inline-references
-          done
-
-      - name: Check contract compatibility against main
-        shell: bash
-        run: |
-          set -euo pipefail
-          deleted="$(git diff --name-only --no-renames --diff-filter=D origin/main...HEAD -- contracts/)"
-          if [[ -n "$deleted" ]]; then
-            echo "::error::A published contract was removed: $deleted"
-            exit 1
-          fi
-          changed="$(git diff --name-only --no-renames --diff-filter=AM origin/main...HEAD -- contracts/)"
-          if [[ -z "$changed" ]]; then
-            echo "No contract files changed; breaking compatibility check had no diff to evaluate."
-            exit 0
-          fi
-          mkdir -p "$RUNNER_TEMP/contract-baseline"
-          while IFS= read -r contract; do
-            [[ -n "$contract" ]] || continue
-            if git cat-file -e "origin/main:$contract" 2>/dev/null; then
-              before="$RUNNER_TEMP/contract-baseline/$(basename "$contract")"
-              git show "origin/main:$contract" > "$before"
-              docker run --rm \
-                --volume "$GITHUB_WORKSPACE:/workspace" \
-                --volume "$RUNNER_TEMP/contract-baseline:/contract-baseline" \
-                --workdir /workspace \
-                --user "$(id -u):$(id -g)" \
-                dataforge-dataops-toolbox:ci \
-                datacontract breaking "/contract-baseline/$(basename "$contract")" \
-                  "/workspace/$contract" --no-inline-references --perspective consumer
-            else
-              echo "New contract has no prior main version: $contract"
-            fi
-          done <<< "$changed"
-      - name: Run Week 9 Python unit tests in the pinned toolbox
-        shell: bash
-        run: |
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/workspace" \
-            --workdir /workspace \
-            --user "$(id -u):$(id -g)" \
-            --env PYTHONPATH=/workspace/src \
-            --env PYTHONDONTWRITEBYTECODE=1 \
-            dataforge-dataops-toolbox:ci \
-            python -m pytest -q -p no:cacheprovider tests/week9
+            python -m pytest -q -p no:cacheprovider tests/week9 deploy/dataops_toolbox/tests
 
       - name: Parse dbt offline and run the PII manifest guard
         shell: bash
@@ -261,11 +190,12 @@ jobs:
     name: WIF positive and least-privilege probes
     if: >-
       (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
-      (github.event_name == 'workflow_dispatch' && inputs.run_wif_smoke)
+      (github.event_name == 'workflow_dispatch' && (inputs.run_wif_smoke || inputs.run_cloud_build || inputs.run_fault_matrix))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      pull-requests: read
       id-token: write
     concurrency:
       group: week9-wif-smoke-${{ github.event.pull_request.number || github.ref }}
@@ -300,6 +230,26 @@ jobs:
             exit 1
           fi
 
+      - name: Validate the exact PR ref for a manual cloud build
+        if: github.event_name == 'workflow_dispatch' && inputs.run_cloud_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+          CURRENT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.head.repo.id | tostring), .head.sha] | @tsv')"
+          IFS=$'\t' read -r pr_state pr_head_repo_id pr_head_sha <<< "$metadata"
+          if [[ "$pr_state" != "open" || "$pr_head_repo_id" != "$BASE_REPO_ID" || "$pr_head_sha" != "$CURRENT_SHA" ]]; then
+            echo "::error::Manual cloud build requires the open same-repository PR whose head matches this dispatched ref"
+            exit 1
+          fi
       - name: Authenticate with the allowlisted WIF provider
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
@@ -343,7 +293,7 @@ jobs:
 
   wif-smoke-not-requested:
     name: Manual WIF smoke not selected
-    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_fault_matrix
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -359,26 +309,29 @@ jobs:
 
   cloud-pr:
     name: Isolated BigQuery PR build and G1 gate
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_cloud_build)
     needs: [wif-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
       actions: read
+      pull-requests: read
       id-token: write
     concurrency:
-      group: week9-dataops-cloud-${{ github.event.pull_request.number }}
+      group: week9-dataops-cloud-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
       cancel-in-progress: true
     env:
       PROJECT_ID: dataforge-p7-lab-d0f725
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      PR_DATASET: dbt_ci_pr_${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+      PR_DATASET: dbt_ci_pr_${{ github.event.pull_request.number || inputs.pr_number }}
       WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
       WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
       DBT_DATAFORGE_PROJECT_ID: dataforge-p7-lab-d0f725
-      DBT_DATAFORGE_TARGET_DATASET: dbt_ci_pr_${{ github.event.pull_request.number }}
-      DBT_WEATHER_LANDING_SCHEMA: dbt_ci_pr_${{ github.event.pull_request.number }}
+      DBT_DATAFORGE_TARGET_DATASET: dbt_ci_pr_${{ github.event.pull_request.number || inputs.pr_number }}
+      DBT_WEATHER_LANDING_SCHEMA: dbt_ci_pr_${{ github.event.pull_request.number || inputs.pr_number }}
       DBT_DATAFORGE_LOCATION: us-central1
       DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
       DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
@@ -387,6 +340,7 @@ jobs:
       DQ_ENFORCE: block
     steps:
       - name: Immutable same-repository gate before WIF or checkout
+        if: github.event_name == 'pull_request_target'
         env:
           HEAD_REPO_ID: ${{ github.event.pull_request.head.repo.id }}
           BASE_REPO_ID: ${{ github.repository_id }}
@@ -396,10 +350,31 @@ jobs:
             exit 1
           fi
 
+      - name: Validate the exact PR ref for a manual cloud build
+        if: github.event_name == 'workflow_dispatch' && inputs.run_cloud_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+          CURRENT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.head.repo.id | tostring), .head.sha] | @tsv')"
+          IFS=$'\t' read -r pr_state pr_head_repo_id pr_head_sha <<< "$metadata"
+          if [[ "$pr_state" != "open" || "$pr_head_repo_id" != "$BASE_REPO_ID" || "$pr_head_sha" != "$CURRENT_SHA" ]]; then
+            echo "::error::Manual cloud build requires the open same-repository PR whose head matches this dispatched ref"
+            exit 1
+          fi
+
       - name: Check out the verified same-repository PR head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -694,7 +669,8 @@ jobs:
     name: Local fault fixture ${{ matrix.fault }}
     if: >-
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.id != github.repository_id) ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id)
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -705,7 +681,7 @@ jobs:
       matrix:
         fault: [F01, F02, F03, F04, F05a, F05b, F06, F07, F08, F09, F10, F11, F12, F-T1, F-N0]
     env:
-      PR_DATASET: dbt_ci_pr_${{ github.event.pull_request.number }}
+      FAULT_DATASET: w9_drill
     steps:
       - name: Immutable same-repository gate before target-event checkout
         if: github.event_name == 'pull_request_target'
@@ -731,6 +707,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check out the selected dispatch ref for local fixtures
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Set up Python
         if: matrix.fault != 'F07' && matrix.fault != 'F10'
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -751,7 +733,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/fault-${{ matrix.fault }}"
           python scripts/week9_fault_inject.py \
             --fault "${{ matrix.fault }}" \
-            --dataset "$PR_DATASET" \
+            --dataset "$FAULT_DATASET" \
             --report "$RUNNER_TEMP/fault-${{ matrix.fault }}/fault_matrix_report.md"
 
       - name: Defer F07 and F10 to the isolated BigQuery job
@@ -782,20 +764,26 @@ jobs:
 
   fault-matrix-live:
     name: Isolated BigQuery faults F07 and F10
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id
-    needs: cloud-pr
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix)
+    needs: [wif-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
       contents: read
       id-token: write
+    concurrency:
+      group: week9-w9-drill-${{ github.repository }}
+      cancel-in-progress: false
     env:
       PROJECT_ID: dataforge-p7-lab-d0f725
-      PR_DATASET: dbt_ci_pr_${{ github.event.pull_request.number }}
+      FAULT_DATASET: w9_drill
       WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
       WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
     steps:
       - name: Immutable same-repository gate before WIF or checkout
+        if: github.event_name == 'pull_request_target'
         env:
           HEAD_REPO_ID: ${{ github.event.pull_request.head.repo.id }}
           BASE_REPO_ID: ${{ github.repository_id }}
@@ -805,17 +793,33 @@ jobs:
             exit 1
           fi
 
+      - name: Validate the fixed drill target for manual dispatch
+        if: github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix
+        run: |
+          if [[ "$FAULT_DATASET" != "w9_drill" ]]; then
+            echo "::error::Live fault injection is restricted to w9_drill"
+            exit 1
+          fi
+
       - name: Check out the verified same-repository PR head
+        if: github.event_name == 'pull_request_target'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Check out the selected manual dispatch ref
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      - name: Build the locked toolbox (no push)
+      - name: Build the locked toolbox without pushing
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: deploy/dataops_toolbox
@@ -831,24 +835,14 @@ jobs:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
 
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          install_components: bq
-
-      - name: Prepare the offline profile and isolated fault outputs
+      - name: Prepare the W9 drill profile and fault output paths
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$PR_DATASET" =~ ^dbt_ci_pr_[0-9]+$ ]]; then
-            echo "::error::Refusing unexpected PR dataset name"
-            exit 1
-          fi
           mkdir -p "$RUNNER_TEMP/dbt-profiles" "$RUNNER_TEMP/live-target" "$RUNNER_TEMP/live-report"
           cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
 
-      - name: Inject F07/F10 and verify isolated gates with production hash unchanged
+      - name: Run F07/F10 only in the isolated W9 drill dataset
         shell: bash
         run: |
           set -euo pipefail
@@ -869,12 +863,12 @@ jobs:
             --env ACTIONS_ID_TOKEN_REQUEST_URL \
             --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
             --env DBT_PROFILES_DIR=/profiles \
-            --env PR_DATASET="$PR_DATASET" \
+            --env FAULT_DATASET=w9_drill \
             --env DATAFORGE_DQ_RESULTS_ENABLED=true \
             dataforge-dataops-toolbox:fault-ci \
             python deploy/dataops_toolbox/week9_live_faults.py \
               --project "$PROJECT_ID" \
-              --dataset "$PR_DATASET" \
+              --dataset w9_drill \
               --target-root /tmp/live-target \
               --report /tmp/live-report/fault_matrix_report.md
 
@@ -886,13 +880,13 @@ jobs:
           path: ${{ runner.temp }}/live-report/fault_matrix_report.md
           if-no-files-found: warn
           retention-days: 14
-
   fault-matrix-report:
     name: Assemble fault_matrix_report.md
     if: >-
       always() &&
       ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.id != github.repository_id) ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id))
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix))
     needs: [fault-matrix-local, fault-matrix-live]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -947,8 +941,8 @@ jobs:
               rows_for_fault = candidates[fault]
               if fault in {"F07", "F10"}:
                   live_prefix = {
-                      "F07": "CI (isolated BigQuery source freshness",
-                      "F10": "CI (isolated BigQuery PR mart",
+                      "F07": "CI (isolated BigQuery w9_drill source freshness",
+                      "F10": "CI (isolated BigQuery w9_drill mart",
                   }[fault]
                   live = [row for row in rows_for_fault if row[13].startswith(live_prefix)]
                   if live:
@@ -988,7 +982,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: week9-fault-matrix-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          name: week9-fault-matrix-${{ github.event.pull_request.number || inputs.pr_number || 'w9-drill' }}-${{ github.run_id }}
           path: ${{ runner.temp }}/fault_matrix_report.md
           if-no-files-found: error
           retention-days: 14

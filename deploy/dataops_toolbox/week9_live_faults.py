@@ -27,8 +27,8 @@ def utc_now() -> str:
 def table(project: str, dataset: str, name: str) -> str:
     if project != PROJECT:
         raise ValueError("fault SQL is restricted to the approved project")
-    if not re.fullmatch(r"dbt_ci_pr_[0-9]+", dataset):
-        raise ValueError("fault SQL is restricted to dbt_ci_pr_<n>")
+    if dataset != "w9_drill":
+        raise ValueError("live fault SQL is restricted to the isolated w9_drill dataset")
     if not re.fullmatch(r"[a-z][a-z0-9_]{0,1023}", name):
         raise ValueError("invalid BigQuery table identifier")
     return f"`{project}.{dataset}.{name}`"
@@ -45,23 +45,24 @@ def run_query(client: Any, sql: str, label: str) -> list[Any]:
 
 
 def source_slice(client: Any, dataset: str) -> None:
-    source = f"`{PROJECT}.weather_mini3.weather_landing`"
-    target = table(PROJECT, dataset, "weather_landing")
-    run_query(
-        client,
-        f"""
-        CREATE OR REPLACE TABLE {target} AS
-        SELECT *
-        FROM {source}
-        WHERE observation_date IN (
-          SELECT observation_date
-          FROM (SELECT DISTINCT observation_date FROM {source})
-          ORDER BY observation_date DESC
-          LIMIT 7
-        )
-        """,
-        "f07",
+    from google.cloud import bigquery
+
+    table_id = f"{PROJECT}.{dataset}.weather_landing"
+    fixture = Path(__file__).resolve().parents[2] / "tests" / "week9" / "faults" / "weather_7date_slice.parquet"
+    if not fixture.is_file():
+        raise RuntimeError("captured seven-date fixture is missing")
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.PARQUET,
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
     )
+    with fixture.open("rb") as source_file:
+        job = client.load_table_from_file(
+            source_file,
+            table_id,
+            job_config=job_config,
+            location=LOCATION,
+        )
+    job.result(timeout=300)
 
 
 def as_of_date(client: Any, dataset: str) -> date:
@@ -75,8 +76,8 @@ def as_of_date(client: Any, dataset: str) -> date:
     return rows[0]["as_of_date"]
 
 
-def published_gold_hash(client: Any, as_of: date) -> str:
-    mart = f"`{PROJECT}.dbt_weather_mini3.mart_weather_province_daily`"
+def published_gold_hash(client: Any, dataset: str, as_of: date) -> str:
+    mart = table(PROJECT, dataset, "mart_weather_province_daily")
     rows = run_query(
         client,
         f"""
@@ -100,8 +101,8 @@ def dbt_command(target_path: Path, *args: str) -> subprocess.CompletedProcess[st
     env["DBT_LOG_PATH"] = str(target_path / "logs")
     env["DBT_PROFILES_DIR"] = env.get("DBT_PROFILES_DIR", "/profiles")
     env["DBT_DATAFORGE_PROJECT_ID"] = PROJECT
-    env["DBT_DATAFORGE_TARGET_DATASET"] = env["PR_DATASET"]
-    env["DBT_WEATHER_LANDING_SCHEMA"] = env["PR_DATASET"]
+    env["DBT_DATAFORGE_TARGET_DATASET"] = env["FAULT_DATASET"]
+    env["DBT_WEATHER_LANDING_SCHEMA"] = env["FAULT_DATASET"]
     env["DBT_DATAFORGE_LOCATION"] = LOCATION
     env["DATAFORGE_PROJECT_ID"] = PROJECT
     env["DATAFORGE_DQ_RESULTS_ENABLED"] = "true"
@@ -146,7 +147,7 @@ def make_row(
     return {
         "fault": fault,
         "run_id": f"ci-{os.environ.get('GITHUB_RUN_ID', 'run')}-{fault.lower()}",
-        "manifest_path": f"{os.environ.get('PR_DATASET', 'UNVERIFIED')}.weather_landing",
+        "manifest_path": f"{os.environ.get('FAULT_DATASET', 'UNVERIFIED')}.weather_landing",
         "as_of_date": "isolated seven-date slice",
         "injected_at": injected_at,
         "detector": detector,
@@ -163,8 +164,11 @@ def make_row(
 
 def run_f07(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
     source_slice(client, dataset)
+    build = dbt_command(target_root / "f07-build", "build", "--select", "tag:weather_mini3")
+    if build.returncode != 0:
+        raise RuntimeError("F07 could not build the clean isolated weather mart")
     as_of = as_of_date(client, dataset)
-    before = published_gold_hash(client, as_of)
+    before = published_gold_hash(client, dataset, as_of)
     injected_at = utc_now()
     source = table(PROJECT, dataset, "weather_landing")
     try:
@@ -206,7 +210,7 @@ def run_f07(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
         detected_at = utc_now()
     finally:
         source_slice(client, dataset)
-    after = published_gold_hash(client, as_of)
+    after = published_gold_hash(client, dataset, as_of)
     return make_row(
         "F07",
         injected_at=injected_at,
@@ -215,7 +219,7 @@ def run_f07(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
         gold_before=before,
         gold_after=after,
         result="PASS" if before == after else "FAIL",
-        evidence="CI (isolated BigQuery source freshness; synthetic 73-hour landed_at)",
+        evidence="CI (isolated BigQuery w9_drill source freshness; synthetic 73-hour landed_at)",
     )
 
 
@@ -248,8 +252,12 @@ def check_f10_result(target_path: Path) -> tuple[bool, int]:
 
 
 def run_f10(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
+    source_slice(client, dataset)
     as_of = as_of_date(client, dataset)
-    before = published_gold_hash(client, as_of)
+    build = dbt_command(target_root / "f10-build", "build", "--select", "tag:weather_mini3")
+    if build.returncode != 0:
+        raise RuntimeError("F10 could not build the clean isolated weather mart")
+    before = published_gold_hash(client, dataset, as_of)
     mart = table(PROJECT, dataset, "mart_weather_province_daily")
     rows = run_query(client, f"SELECT COUNT(*) AS row_count FROM {mart}", "f10")
     if not rows or int(rows[0]["row_count"]) == 0:
@@ -292,7 +300,7 @@ def run_f10(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
             )
             if restore.returncode != 0:
                 raise RuntimeError("F10 failed to restore the clean PR mart view")
-    after = published_gold_hash(client, as_of)
+    after = published_gold_hash(client, dataset, as_of)
     return make_row(
         "F10",
         injected_at=injected_at,
@@ -301,7 +309,7 @@ def run_f10(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
         gold_before=before,
         gold_after=after,
         result="PASS" if before == after else "FAIL",
-        evidence="CI (isolated BigQuery PR mart; synthetic rain/precipitation mismatch)",
+        evidence="CI (isolated BigQuery w9_drill mart; synthetic rain/precipitation mismatch)",
     )
 
 
@@ -314,7 +322,7 @@ def write_report(rows: list[dict[str, str]], destination: Path) -> None:
     lines = [
         "# Week 9 isolated BigQuery fault tests",
         "",
-        "F07 and F10 use only the per-PR dataset. Production tables are queried read-only for hash comparison.",
+        "F07 and F10 use only the isolated w9_drill dataset and compare its restored Gold slice hash after each fault.",
         "",
         "| " + " | ".join(columns) + " |",
         "| " + " | ".join(["---"] * len(columns)) + " |",
@@ -336,8 +344,8 @@ def main() -> int:
     parser.add_argument("--target-root", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
-    if args.project != PROJECT or not re.fullmatch(r"dbt_ci_pr_[0-9]+", args.dataset):
-        raise SystemExit("Live fault injection is restricted to the approved project and dbt_ci_pr_<n>.")
+    if args.project != PROJECT or args.dataset != "w9_drill":
+        raise SystemExit("Live fault injection is restricted to the approved project and isolated w9_drill.")
 
     catalog_path = Path("/workspace/tests/week9/faults/manifest.yml")
     catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8"))
@@ -365,7 +373,7 @@ def main() -> int:
                     gold_before="UNVERIFIED",
                     gold_after="UNVERIFIED",
                     result="FAIL",
-                    evidence="CI (isolated BigQuery test ran; detector did not match)",
+                    evidence="CI (isolated BigQuery w9_drill test ran; detector did not match)",
                 )
             )
         except Exception as exc:  # avoid printing response bodies, query text, or tokens
@@ -378,7 +386,7 @@ def main() -> int:
                     gold_before="UNVERIFIED",
                     gold_after="UNVERIFIED",
                     result="UNVERIFIED",
-                    evidence="CI (isolated BigQuery test did not complete)",
+                    evidence="CI (isolated BigQuery w9_drill test did not complete)",
                 )
             )
     write_report(rows, args.report)
