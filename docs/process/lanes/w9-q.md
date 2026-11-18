@@ -4,7 +4,7 @@ Branch: `feat/w9-q-1` from `origin/main` at `ab345f7`. Scope stopped at Q1–Q6 
 
 ## Status
 
-Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. F07 and F10 could not be exercised against dbt/BigQuery because no isolated W9 dataset exists. Q-PR1 CI and exact-head run IDs are **UNVERIFIED**; GitHub access was blocked at `github.com:443`.
+Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 CI and exact-head run IDs are **UNVERIFIED**; GitHub access was blocked at `github.com:443`.
 
 ## Changed files
 
@@ -86,10 +86,10 @@ For the W9 isolated runtime, set `DATAFORGE_DQ_RESULTS_ENABLED=true` only after 
 | F05a | `G0.API.SCHEMA` and `G1.LANDING.SCHEMA` | Captured response unit mutation plus landing required-column removal; P1 block |
 | F05b | `G1.LANDING.SCHEMA_ADDITIVE` | Added nullable field; P2 warn/publish |
 | F06 | `G1.LANDING.ROWS_PER_DATE` | One province removed; P1 quarantine |
-| F07 | `G2.SOURCE.FRESHNESS` | **UNVERIFIED**; needs isolated dbt source-freshness execution |
+| F07 | `G2.SOURCE.FRESHNESS` | **UNVERIFIED**; datasets exist but are empty, with no isolated `weather_landing` table/data or live source-freshness run |
 | F08 | `G1.LANDING.NO_FUTURE_DATE` | All three rows for one date moved into the future; P1 quarantine |
 | F09 | `G1.LANDING.IDEMPOTENCY_REPLAY` | Identical captured candidate hash; severity None, no-op, unchanged Gold hash |
-| F10 | `G2.WEATHER.RAIN_PRECIP_CONSISTENCY` | **UNVERIFIED**; requires G2 test against an isolated dbt dataset |
+| F10 | `G2.WEATHER.RAIN_PRECIP_CONSISTENCY` | **UNVERIFIED**; datasets exist but contain no isolated weather fixture, and no live dbt/BigQuery test ran |
 | F11 | `G0.API.RESPONSE_COMPLETENESS` | Empty arrays / missing requested dates derived from the captured 200 response; block before landing |
 | F12 | `G1.LANDING.TEMP_UNIT_RANGE` | Temperature changed to 90 °C; unit and physical checks both fail; P1 quarantine |
 | F-T1 | `G0.API.TRANSIENT_RETRY` | One synthetic 503 followed by captured response; retry succeeds, no P1 alert |
@@ -119,4 +119,4 @@ The file-based WAP harness snapshots the last-good Parquet, writes a quarantined
 2. The integrator added `dq_write_run_results(results)` in `dbt_project.yml` and the exact `dataforge_dq` schema routing; before cloud execution, verify the result writer against the provisioned isolated dataset.
 3. After G-PR1 merges, add the restricted/safe customer PK tests in Q-PR2, keeping their failure rows limited to authorized synthetic identifiers.
 4. Reconcile the preexisting landing-range/key dbt tests with the G1 owner map and the F02 G2 defense.
-5. After O provisions the authorized datasets and WIF identities, verify the G1 BigQuery source path and result writer, run dbt parse/build, execute F07/F10 on isolated fixtures, and record the exact-head CI run IDs.
+5. With O1 datasets now provisioned but empty, after an authorized weather landing table/clean slice and WIF identity are available, verify the G1 BigQuery source path and result writer, run dbt build, execute F07/F10 on isolated fixtures, and record exact-head CI run IDs.
