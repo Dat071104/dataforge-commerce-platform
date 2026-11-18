@@ -59,11 +59,16 @@ jobs:
         run: |
           docker run --rm dataforge-dataops-toolbox:ci dbt --version
           docker run --rm dataforge-dataops-toolbox:ci datacontract --version
-          docker run --rm dataforge-dataops-toolbox:ci python -c '
+          docker run --rm --interactive dataforge-dataops-toolbox:ci python - <<'PY'
           from importlib.metadata import version
           from great_expectations import __version__ as gx_version
+
           assert version("dbt-bigquery") == "1.11.3"
           assert version("datacontract-cli") == "1.2.8"
           assert gx_version == "1.25.0"
-          print(f"dbt-bigquery={version('dbt-bigquery')}, datacontract-cli={version('datacontract-cli')}, GX Core={gx_version}")
-          '
+          print(
+              f"dbt-bigquery={version('dbt-bigquery')}, "
+              f"datacontract-cli={version('datacontract-cli')}, "
+              f"GX Core={gx_version}"
+          )
+          PY

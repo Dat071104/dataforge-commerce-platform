@@ -134,7 +134,7 @@ labs/spark_nyc_taxi/managed/preflight.py
 labs/spark_nyc_taxi/managed/tests/test_local_oracle.py
 ```
 
-Gitleaks hook is configured but was not run locally: GitHub REST failed on current Wi-Fi and the hook repo was not fetched. A `detect-secrets --all-files -n` scan returned 478 untriaged candidates across 147 files; this is not a clean secret-scan result. Run Gitleaks on the branch before any push.
+Gitleaks hook is configured. The CI run above passed Gitleaks; the post-fix commit still needs the requested pre-push Gitleaks scan. A `detect-secrets --all-files -n` scan returned 478 untriaged candidates across 147 files; this is not a clean secret-scan result.
 
 ## O3 — DataOps toolbox
 
@@ -148,7 +148,7 @@ O1–O3 add no fault detector or fault fixture, so there is no new `check_id` �
 
 ## CI and open risks
 
-- GitHub exact-head workflow run IDs: **UNVERIFIED**; no PR run was started in this lane. GitHub REST lookup failed on current Wi-Fi; integrator requested one switch to 5G for the batched GitHub work.
+- CI run `44358354537` on exact head `dd0a0e62`: `DataOps lint` (including Gitleaks) passed; only toolbox smoke failed. The local quoting fix below has not yet been rerun in CI, so its follow-up run ID remains **UNVERIFIED**.
 - `actions/checkout` v7.0.1 and `actions/setup-python` v7.0.0 SHAs came from local verified refs. Docker Buildx/build-push action SHAs remain pending remote verification.
 - Gitleaks must run before push; no clean secret-scan claim is made from the untriaged detect-secrets candidates.
 - Lint exclusions cover only exact pre-existing paths. Remove them when those files are repaired; do not extend them to Week 9 files.
@@ -156,8 +156,15 @@ O1–O3 add no fault detector or fault fixture, so there is no new `check_id` �
 
 ## Integrator actions
 
-1. Run Gitleaks before push; verify Docker action SHAs when GitHub access is available.
+1. Run Gitleaks on the post-fix commit before the next push; verify Docker action SHAs when GitHub access is available.
 2. Push/open O-PR1, record exact-head CI run IDs, and require both lint and toolbox smoke jobs green before merge order advances.
 3. Run the WIF positive/negative tests from I-1 after the exact-head workflow can obtain the approved GitHub OIDC identity.
 4. Review Worker G's AF4 plan separately after refreshing cost preflight; do not combine it with the already-applied O1 root.
 5. Extend this workflow in O-PR2 with cloud/contract/dbt/diff/fault-matrix jobs; add explicit notices to any fork/cloud jobs that skip.
+
+## O-PR1 CI RCA — run 44358354537 (`dd0a0e62`)
+
+- `DataOps lint` (including Gitleaks) passed; only `DataOps toolbox build and smoke` failed.
+- Root cause: the Python version assertions were passed through a shell single-quoted `python -c '...'` argument, while the f-string expressions also contained single-quoted package names. The shell ended the argument early and Python raised `NameError: name 'dbt' is not defined`.
+- Resolution: pass the unchanged assertions through a single-quoted Bash heredoc (`python - <<'PY' ... PY`) on `docker run --interactive`. The three exact checks remain `dbt-bigquery==1.11.3`, `datacontract-cli==1.2.8`, and GX Core `1.25.0`.
+- Focused validation of the fix: strict yamllint, `bash -n` on the extracted step, and Python AST parse all passed. No local Docker run; post-fix CI result remains `UNVERIFIED`.
