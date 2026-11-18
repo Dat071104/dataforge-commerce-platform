@@ -1,0 +1,11 @@
+[sqlfluff]
+dialect = bigquery
+templater = jinja
+max_line_length = 80
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+load_macros_from_path = dbt/dataforge/macros
+
+[sqlfluff:templater:jinja:macros]
+dbt_env_var = {% macro env_var(name, default='') %}{{ default }}{% endmacro %}
