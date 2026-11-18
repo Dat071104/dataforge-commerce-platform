@@ -28,7 +28,7 @@ Non-goals: sửa vận hành Week 7, tạo real personal data, dựng orchestrat
 
 ## 4. Proposed design
 
-G0 kiểm tra payload Open-Meteo trước khi land: field/type, đơn vị, đủ ngày đã request, và trường hợp HTTP 200 nhưng mảng rỗng. G1 kiểm tra landing: schema, 3 province/ngày, uniqueness, domain, range và freshness. G2 dùng dbt tests/contracts cho model grain và biểu thức weather. Mỗi check có một `check_id`, một owner và một fixture lỗi.
+G0 kiểm tra payload Open-Meteo trước khi land: field/type, đơn vị, đủ ngày đã request, và trường hợp HTTP 200 nhưng mảng rỗng. G1 kiểm tra landing: schema, 3 province/ngày, uniqueness, domain, range và ngày tương lai. G2 dùng dbt tests/contracts cho model grain, biểu thức weather và F07 source freshness; dead-man's switch phát hiện khi landing bị dừng. Mỗi check có một `check_id`, một owner và một fixture lỗi.
 
 Với P1, Write-Audit-Publish chuyển batch vào quarantine kèm reason; publish không đổi và Gold hash phải giữ nguyên. P2 vẫn publish nhưng ghi warning. Mọi gate ghi `dataforge_dq.dq_results`; monitors đọc kết quả này và `INFORMATION_SCHEMA`, không viết lại logic gate. Alert đi qua structured log, log-based metrics, email và Slack webhook; mỗi alert dẫn tới runbook. Chi tiết lỗi nằm trong [failure catalog](failure_modes.md).
 
