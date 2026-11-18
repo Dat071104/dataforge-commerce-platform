@@ -4,6 +4,8 @@
 
 A structured `DQ_GATE_FAILED` event reports a recorded G0/G1/G2 check failure that does not have a more specific monitor event type. Use `check_id` and the fault catalog to identify the owner. P1/FAIL should block publish and preserve the last-good Gold hash. A P1 result with `published=true` is a release-mode or integration exception: stop downstream use and escalate immediately. P2/WARN may publish.
 
+`ALERTING.DQ_GATE_ADAPTER_UNAVAILABLE` is a control-plane sentinel, not a fault-catalog data check. It means `DATAFORGE_DQ_GATE_ENABLED=true` reached the W7 Airflow reference DAG without an isolated W9 adapter. The intended behavior is fail-closed before dbt; keep the flag false in W7 until an authorized adapter is integrated.
+
 P1 notifications route to Slack and the existing C9 Monitoring email channel when the opt-in routes are enabled. P2 routes to Slack. A clean F-N0 control must produce zero P1/P2 alerts.
 
 ## Triage
