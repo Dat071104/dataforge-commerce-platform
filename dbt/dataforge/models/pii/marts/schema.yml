@@ -54,4 +54,3 @@ models:
           pii_type: none
           purpose: "Explicitly distinguish synthetic data from real customer information."
           retention_days: 365
-

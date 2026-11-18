@@ -1,7 +1,9 @@
 # W9 Governance lane — G1–G5 evidence
 
-**Branch:** `feat/w9-g-1` from `origin/main` `ab345f7`  
-**Status:** G1–G5 local implementation complete; G4 live access, Terraform plan/apply, dbt build, CI, and G-PR1 remain **UNVERIFIED**.  
+**Branch:** `feat/w9-g-1` from `origin/main` `ab345f7`
+
+**Status:** G1–G5 local implementation complete; G4 live access, Terraform plan/apply, dbt build, CI, and G-PR1 remain **UNVERIFIED**.
+
 **Data boundary:** synthetic-only; no GCP query, load, IAM mutation, API enablement, secret creation, or production write was performed.
 
 ## Changed files
@@ -43,6 +45,8 @@ Every declared source, model, snapshot, and Gold output column has `meta.classif
 | Snapshots | 2 | 28 | 28 |
 | Gold outputs | 5 | 55 | 55 (100%) |
 | **Total** | — | **351** | **351** |
+
+The 55 Gold columns are included in the 351 total columns.
 
 Legal mapping is based on official text, with application to a real deployment left for privacy counsel:
 
@@ -123,7 +127,7 @@ The retained F13 manifest fixture projects a raw e-mail column with `classificat
 
 | Check ID | Fixture or evidence |
 |---|---|
-| `G1-CLASSIFICATION-001` | `governance/classification.yml` checked against eight source tables, 17 models, two snapshots, and all 55 Gold columns. |
+| `G1-CLASSIFICATION-001` | `governance/classification.yml` checked against eight source tables, 18 models, two snapshots, and all 55 Gold columns. |
 | `G2-PII-001` | In-memory fixed-seed `vi_VN` profiles from `generate_customer_profiles`; no persistent raw fixture. |
 | `G2-PII-PLAN-001` | Local-only receipt for `restricted_pii.customer_profile`; no cloud write. |
 | `G3-PSEUDONYM-001` | Unit-only reserved-prefix CCCD input; output token is HMAC-SHA256 and never printed. |
