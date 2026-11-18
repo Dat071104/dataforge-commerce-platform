@@ -17,6 +17,11 @@ models:
         enforced: true
     columns:
       - name: province_id
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: STRING
         description: Province code; one of HCM, HN, or DN.
         data_tests:
@@ -25,33 +30,78 @@ models:
               arguments:
                 values: ['HCM', 'HN', 'DN']
       - name: observation_date
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: DATE
         description: Local calendar observation date returned by Open-Meteo.
         data_tests: [not_null]
       - name: precipitation_mm
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: FLOAT64
         description: Daily precipitation sum in millimetres; NULL remains unknown.
       - name: temp_max_c
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: FLOAT64
         description: Daily maximum two-metre air temperature in Celsius; NULL remains unknown.
       - name: rain_day
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: BOOL
         description: TRUE for positive precipitation, FALSE for zero, and NULL when unknown.
       - name: precipitation_observed_days_7d
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: INT64
         description: Number of non-NULL precipitation observations in the trailing seven calendar dates.
         data_tests: [not_null]
       - name: precipitation_7d_mm
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: FLOAT64
         description: Complete seven-calendar-day precipitation sum; NULL when any date or value is missing.
       - name: temp_max_observed_days_30d
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: INT64
         description: Number of non-NULL temperature observations in the trailing thirty calendar dates.
         data_tests: [not_null]
       - name: temp_max_30d_mean_c
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: FLOAT64
         description: Complete thirty-calendar-day mean maximum temperature; NULL when any date or value is missing.
       - name: temp_max_30d_anomaly_c
+        meta:
+          classification: public
+          pii_type: none
+          purpose: "Province-level weather reporting and data-quality controls."
+          retention_days: 3650
         data_type: FLOAT64
         description: Current maximum temperature minus its complete trailing thirty-day mean.
 

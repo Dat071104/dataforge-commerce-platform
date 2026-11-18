@@ -1,13 +1,17 @@
 # Resolved dependency snapshot from the verified Windows Python 3.11.9 venv
 # on 2026-11-04. The local DataForge package itself is installed editable by CI.
 # 2026-11-10: retain the locally verified dateutil 2.x pin required by BigQuery.
+# 2026-11-18: pin W9 synthetic generation and classification/manifest validation dependencies.
 # D1 Polars/Pandas parity is tested with Polars 1.36.1 and its Python runtime.
 certifi==2026.10.23
 charset-normalizer==3.5.2
 colorama==0.4.6
 et_xmlfile==2.0.0
+Faker==40.54.0
 idna==3.20
 iniconfig==2.3.1
+Jinja2==3.1.6
+MarkupSafe==3.0.3
 numpy==2.4.6
 openpyxl==3.1.5
 packaging==26.3
@@ -19,6 +23,7 @@ psycopg==3.3.7
 psycopg-binary==3.3.7
 pyarrow==23.0.1
 Pygments==2.21.0
+PyYAML==6.0.3
 pytest==9.2.0
 python-dateutil==2.9.0.post0
 pytz==2026.6
