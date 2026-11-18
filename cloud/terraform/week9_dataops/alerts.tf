@@ -24,7 +24,10 @@ locals {
 }
 
 resource "google_monitoring_alert_policy" "week9_dq_p1" {
-  for_each = var.enable_dq_alerting ? local.week9_dq_p1_alerts : {}
+  for_each = {
+    for policy_id, policy in local.week9_dq_p1_alerts : policy_id => policy
+    if var.enable_dq_alerting && (policy_id != "freshness_breach" || var.enable_dq_freshness_alert)
+  }
 
   project      = var.project_id
   display_name = "DataForge W9 ${each.value.title}"

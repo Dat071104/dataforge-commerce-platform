@@ -47,6 +47,17 @@ variable "enable_dq_deadman" {
   }
 }
 
+variable "enable_dq_freshness_alert" {
+  description = "Create the P1 freshness policy after the data schedule is active. Keep false while the pipeline is intentionally stopped."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_dq_freshness_alert || var.enable_dq_alerting
+    error_message = "The freshness policy requires enable_dq_alerting=true and the reviewed C9 channel."
+  }
+}
+
 variable "c9_email_notification_channel_name" {
   description = "Full resource name of the existing C9 email channel, supplied at plan/apply time; never create a duplicate channel here."
   type        = string
