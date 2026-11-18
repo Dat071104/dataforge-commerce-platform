@@ -165,20 +165,29 @@ def run_landing_gate(
         expectation_failures += 1
         schema_messages.append("table_has_no_columns")
 
-    for column, dtype in expected_columns.items():
+    for column, expected_type in expected_columns.items():
         if column not in columns:
             expectation_passes.append(False)
             expectation_failures += 1
             schema_messages.append(f"missing:{column}")
             continue
-        ok, count, _ = _expect(
-            batch,
-            gxe.ExpectColumnTypeToBe(
+        if expected_type == "str":
+            # Pandas 2 represents parquet strings as object dtype; Pandas 3 uses
+            # its dedicated str dtype. Validate the logical value type across
+            # both representations instead of pinning the check to one dtype.
+            # Nulls remain governed by the contract's separate null checks.
+            expectation = gxe.ExpectColumnValuesToBeOfType(
                 column=column,
-                type_=dtype,
+                type_="str",
                 result_format={"result_format": "SUMMARY"},
-            ),
-        )
+            )
+        else:
+            expectation = gxe.ExpectColumnTypeToBe(
+                column=column,
+                type_=expected_type,
+                result_format={"result_format": "SUMMARY"},
+            )
+        ok, count, _ = _expect(batch, expectation)
         expectation_passes.append(ok)
         expectation_failures += count or (0 if ok else 1)
         if not ok:
@@ -204,7 +213,7 @@ def run_landing_gate(
             severity=schema_cfg["severity"],
             passed=schema_passed,
             observed={"issues": schema_messages, "required_columns": len(expected_columns)},
-            threshold={"required_columns": "present with approved pandas dtypes"},
+            threshold={"required_columns": "present with contracted logical/physical types"},
             failing_rows=expectation_failures,
             contract_version=contract_version,
         )

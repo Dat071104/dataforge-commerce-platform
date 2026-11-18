@@ -24,6 +24,14 @@ EXPECTED_FAILURES = {
     "F08": "G1.LANDING.NO_FUTURE_DATE",
     "F12": "G1.LANDING.TEMP_UNIT_RANGE",
 }
+STRING_COLUMNS = (
+    "province_id",
+    "source",
+    "model",
+    "request_id",
+    "source_sha256",
+    "manifest_uri",
+)
 
 
 @pytest.fixture
@@ -61,6 +69,57 @@ def test_captured_clean_slice_has_no_p1_or_p2_findings(clean_frame):
     assert observed["dataset"] == "w9_drill"
     assert observed["date"] == AS_OF.isoformat()
     assert observed["publish_action"] == "PUBLISH"
+
+
+@pytest.mark.parametrize("string_dtype", ["object", "str", "string"])
+def test_string_contract_accepts_pandas_2_and_3_representations(clean_frame, string_dtype):
+    frame = clean_frame.copy(deep=True)
+    for column in STRING_COLUMNS:
+        frame[column] = frame[column].astype(string_dtype)
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "PASS"
+    assert not report.blocked
+
+
+def test_string_contract_rejects_mixed_object_values(clean_frame):
+    frame = clean_frame.copy(deep=True)
+    frame["source"] = frame["source"].astype(object)
+    frame.loc[frame.index[0], "source"] = 42
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "FAIL"
+    assert schema.failing_rows == 1
+    assert "type_mismatch:source" in json.loads(schema.observed)["issues"]
+    assert report.blocked
+
+
+def test_null_province_remains_owned_by_not_null_check(clean_frame):
+    report, _ = run(mutate_landing_frame("F01", clean_frame))
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    province = next(
+        result
+        for result in report.results
+        if result.check_id == "G1.LANDING.PROVINCE_ID_NOT_NULL"
+    )
+    assert schema.status == "PASS"
+    assert province.status == "FAIL"
+
+
+def test_nullable_weather_metrics_may_remain_null(clean_frame):
+    frame = clean_frame.copy(deep=True)
+    frame.loc[frame.index[0], ["precipitation_mm", "temp_max_c"]] = None
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "PASS"
+    assert not report.blocked
 
 
 @pytest.mark.parametrize("fault_id, expected_check", EXPECTED_FAILURES.items())
