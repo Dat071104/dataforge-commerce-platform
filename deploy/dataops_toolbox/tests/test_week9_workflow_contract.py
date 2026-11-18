@@ -41,6 +41,30 @@ def test_manual_cloud_build_is_bound_to_exact_open_same_repo_pr_head() -> None:
     )
 
 
+def test_manual_cloud_build_comments_with_its_sanitized_run_artifact() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    cloud = workflow["jobs"]["cloud-pr"]
+    upload = next(step for step in cloud["steps"] if step.get("name") == "Upload sanitized PR build summary")
+    assert "inputs.pr_number" in upload["with"]["name"]
+
+    comment = workflow["jobs"]["pr-comment"]
+    assert "github.event_name == 'workflow_dispatch'" in comment["if"]
+    assert "inputs.run_cloud_build" in comment["if"]
+    assert comment["env"]["PR_NUMBER"] == "${{ github.event.pull_request.number || inputs.pr_number }}"
+    steps = comment["steps"]
+    validation = steps[step_index(steps, "Revalidate the manual PR before commenting")]
+    assert "inputs.run_cloud_build" in validation["if"]
+    assert "^[1-9][0-9]*$" in validation["run"]
+    assert ".head.repo.id" in validation["run"] and ".head.sha" in validation["run"]
+    assert step_index(steps, validation["name"]) < step_index(
+        steps, "Download the run summary or prepare an unavailable status"
+    )
+    download_script = steps[step_index(steps, "Download the run summary or prepare an unavailable status")]["run"]
+    assert 'artifact="week9-dataops-summary-${PR_NUMBER}-${GITHUB_RUN_ID}"' in download_script
+    create_comment = steps[step_index(steps, "Create or update the DataOps comment")]["run"]
+    assert '"repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments"' in create_comment
+
+
 def test_live_fault_matrix_is_fixed_to_w9_drill() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     live = workflow["jobs"]["fault-matrix-live"]
@@ -90,6 +114,3 @@ def test_stale_sweep_requires_closed_pr_and_old_dataset_creation_time() -> None:
     assert "timedelta(days=2)" in pr_query
     assert ".creationTime" in delete_script
     assert "now_ms - created_ms >= stale_after_ms" in delete_script
-
-
-\n

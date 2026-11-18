@@ -660,7 +660,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: week9-dataops-summary-${{ github.event.pull_request.number }}-${{ github.run_id }}
+          name: week9-dataops-summary-${{ github.event.pull_request.number || inputs.pr_number }}-${{ github.run_id }}
           path: ${{ runner.temp }}/dataops-ci-summary.json
           if-no-files-found: warn
           retention-days: 14
@@ -990,7 +990,11 @@ jobs:
 
   pr-comment:
     name: Post sanitized DataOps CI summary
-    if: always() && github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id
+    if: >-
+      always() && (
+        (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+        (github.event_name == 'workflow_dispatch' && inputs.run_cloud_build)
+      )
     needs: [wif-smoke, cloud-pr, fault-matrix-report]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1000,11 +1004,30 @@ jobs:
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
       CLOUD_JOB_RESULT: ${{ needs.cloud-pr.result }}
       WIF_JOB_RESULT: ${{ needs.wif-smoke.result }}
       FAULT_MATRIX_JOB_RESULT: ${{ needs.fault-matrix-report.result }}
     steps:
+      - name: Revalidate the manual PR before commenting
+        if: github.event_name == 'workflow_dispatch' && inputs.run_cloud_build
+        env:
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.head.repo.id | tostring), .head.sha] | @tsv')"
+          IFS=$'\t' read -r pr_state pr_head_repo_id pr_head_sha <<< "$metadata"
+          if [[ "$pr_state" != "open" || "$pr_head_repo_id" != "$BASE_REPO_ID" || "$pr_head_sha" != "$CURRENT_SHA" ]]; then
+            echo "::error::Refusing to comment unless this is the open same-repository PR whose head matches the dispatched ref"
+            exit 1
+          fi
+
       - name: Download the run summary or prepare an unavailable status
         shell: bash
         run: |
