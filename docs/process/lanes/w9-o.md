@@ -1,6 +1,6 @@
 # W9 Worker O (DataOps) — O1–O3 / O-PR1
 
-**Trạng thái:** O1–O3 implementation and local checks are complete. I-1 is applied: all 24 planned resources are now in Terraform state after one provider-only retry. No API enable, image build/push, or deployment occurred. GitHub-side WIF tests, exact-head CI, and toolbox smoke remain `UNVERIFIED`.
+**Trạng thái:** O1–O3 implementation and local checks are complete. I-1 is applied: all 24 planned resources are now in Terraform state after one provider-only retry. After G-B, the provider condition was narrowed to the four approved Week-9 workflow files and expected events by an in-place 0/1/0 update. No API enable, image build/push, or deployment occurred. GitHub-side WIF positive/negative tests, exact-head CI, and toolbox smoke remain `UNVERIFIED`.
 
 **Worktree:** `D:\DATA_ENGINEER\DataForge_w9_o` · branch `feat/w9-o-1` · base `ab345f7ae502d3e29d2c88b0dd5b8996319ffbf0`.
 
@@ -17,7 +17,7 @@ Không sửa ADR, board, plan, hay Terraform files thuộc Q/G.
 
 ## O1 — Terraform
 
-- WIF pool/provider dùng claims dạng số `repository_id=1446796465` và `repository_owner_id=242334093` trong provider condition; không dùng tên repo làm điều kiện duy nhất.
+- WIF pool/provider dùng claims dạng số `repository_id=1446796465` và `repository_owner_id=242334093`, cùng `workflow_ref` giới hạn tới `week9-dataops.yml`, `week9-cleanup.yml`, `week9-cd.yml`, `week9-catalog.yml`; event allowlist là `pull_request`, `push`, `workflow_dispatch`, `schedule`.
 - Hai service accounts: `dataforge-w9-ci-dbt` và `dataforge-w9-meta-read`; không tạo key.
 - Custom role chỉ có `bigquery.datasets.create`. CI dbt SA nhận `bigquery.jobUser`, `logging.logWriter`, dataset `dataViewer` chỉ trên `weather_mini3` và `dbt_weather_mini3`, dataset `dataEditor` chỉ trên `w9_drill` và `dataforge_dq`, cùng `secretAccessor` ở hai secret cụ thể. Metadata SA chỉ có BigQuery metadata viewer và Data Catalog viewer.
 - Tạo `w9_drill`, `dataforge_dq`, `restricted_pii`, `pii_safe` tại `us-central1`, label `week=w9`. `w9_drill` và `restricted_pii` có table expiration 7 ngày. `dataforge_dq`, `restricted_pii`, `pii_safe`, WIF, identities, role, secrets và IAM bindings còn lại có deletion protection. `w9_drill` và IAM binding riêng của nó vẫn có thể bị xóa khi close-out.
@@ -66,6 +66,10 @@ google_service_account_iam_member.meta_read_workload_identity_user
 The first application created the datasets, service accounts, project/dataset IAM bindings, custom role, pool, and empty secret containers. It failed only on `google_iam_workload_identity_pool_provider.github_oidc`. Cloud Audit Logs recorded `google.iam.v1.WorkloadIdentityPools.CreateWorkloadIdentityPoolProvider`, status 3 (`INVALID_ARGUMENT`): the provider display name exceeded the 32-character limit. The original value was `GitHub OIDC - DataForge commerce platform` (41 characters). The corrected value is `GitHub OIDC - DataForge W9` (26 characters). Terraform `fmt -check` and `validate` passed after this fix. Full evidence is in [`terraform-i1-wif-provider-rca-20261118.md`](../week9/evidence/terraform-i1-wif-provider-rca-20261118.md).
 
 No BigQuery data or secret version was written and no API was enabled. A read-only provider inventory first confirmed the pool existed and provider did not. After the display-name fix, the reviewed provider-only plan applied successfully; a second provider inventory returned the full provider name, and Terraform state now contains 24/24 resources. The initial apply wrapper omitted the process exit/session metadata; the partial outcome was reconstructed from state and audit logs and recorded as one `TOOLING_SLIPS` increment. No unchanged-code apply was repeated.
+
+## G-B trust-condition follow-up
+
+Controller G-B returned REVISE because the initial provider condition accepted any workflow from the authorized repository. The integrator added `workflow_ref` and `event_name` mappings and restricted the provider to the four AF9 Week-9 workflow files and expected events while retaining numeric repository/owner checks. Fresh plan: **0 add / 1 in-place change / 0 destroy**; apply succeeded. A metadata-only provider description confirmed the condition. GitHub positive/negative WIF tests remain **UNVERIFIED** until network access returns; add a negative test for an unapproved workflow before enabling WIF in O4.
 
 ## O2 — Lint foundations
 

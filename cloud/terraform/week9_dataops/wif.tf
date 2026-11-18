@@ -2,6 +2,8 @@ locals {
   # Verified from GitHub REST for Dat071104/dataforge-commerce-platform.
   github_repository_id       = "1446796465"
   github_repository_owner_id = "242334093"
+  # Limit WIF to the AF9-approved workflow files; unrelated repo workflows cannot impersonate the CI SAs.
+  github_allowed_events = ["pull_request", "push", "workflow_dispatch", "schedule"]
 }
 
 resource "google_iam_workload_identity_pool" "github_dataforge" {
@@ -27,9 +29,11 @@ resource "google_iam_workload_identity_pool_provider" "github_oidc" {
     "google.subject"                = "assertion.sub"
     "attribute.repository_id"       = "assertion.repository_id"
     "attribute.repository_owner_id" = "assertion.repository_owner_id"
+    "attribute.workflow_ref"        = "assertion.workflow_ref"
+    "attribute.event_name"          = "assertion.event_name"
   }
 
-  attribute_condition = "assertion.repository_id == '${local.github_repository_id}' && assertion.repository_owner_id == '${local.github_repository_owner_id}'"
+  attribute_condition = "attribute.repository_id == '${local.github_repository_id}' && attribute.repository_owner_id == '${local.github_repository_owner_id}' && (attribute.workflow_ref.contains('/.github/workflows/week9-dataops.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-cleanup.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-cd.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-catalog.yml@')) && attribute.event_name in ${jsonencode(local.github_allowed_events)}"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
