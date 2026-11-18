@@ -364,8 +364,6 @@ jobs:
       DBT_DATAFORGE_TARGET_DATASET: dbt_ci_pr_${{ github.event.pull_request.number || inputs.pr_number }}
       DBT_WEATHER_LANDING_SCHEMA: dbt_ci_pr_${{ github.event.pull_request.number || inputs.pr_number }}
       DBT_DATAFORGE_LOCATION: us-central1
-      DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
-      DBT_LOG_PATH: ${{ runner.temp }}/dbt-logs
       DATAFORGE_PROJECT_ID: dataforge-p7-lab-d0f725
       DATAFORGE_DQ_RESULTS_ENABLED: "true"
       DQ_ENFORCE: block
@@ -516,9 +514,13 @@ jobs:
             echo "::notice::No successful main manifest artifact found; use the full weather selection."
           fi
 
-      - name: Prepare the non-secret dbt profile
+      - name: Prepare non-secret profile and dbt temp paths
+        shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/dbt-profiles" "$DBT_TARGET_PATH" "$DBT_LOG_PATH"
+          set -euo pipefail
+          echo "DBT_TARGET_PATH=$RUNNER_TEMP/dbt-target" >> "$GITHUB_ENV"
+          echo "DBT_LOG_PATH=$RUNNER_TEMP/dbt-logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/dbt-profiles" "$RUNNER_TEMP/dbt-target" "$RUNNER_TEMP/dbt-logs"
           cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
 
       - name: Build weather models and run dbt unit tests in the PR dataset

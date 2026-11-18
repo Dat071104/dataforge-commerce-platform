@@ -220,10 +220,10 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 ```
 
 - Strict yamllint: passed for the W9 workflows, profile example, and CODEOWNERS; `pre-commit validate-config` passed.
-- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **60** extracted run blocks. The **7** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit read-only offline dispatch, explicit cleanup selection, closed/old-only sweep, fixed `w9_drill` F07/F10 scope, and the provider-switch pause guard.
+- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **61** extracted run blocks. The **8** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit read-only offline dispatch, valid `runner.temp` usage scope, explicit cleanup selection, closed/old-only sweep, fixed `w9_drill` F07/F10 scope, and the provider-switch pause guard.
 - Ruff and `py_compile` passed for `wif_permission_probe.py`, `week9_live_faults.py`, and the new static workflow test.
 - Hashed dependency dry-run in clean Python 3.12: **137 packages, pass**.
-- The focused host test passed (**5 passed**). A broader host run of `tests/week9` plus the static tests was **29 passed / 17 failed** because host Python lacks `great_expectations`; the toolbox lock pins GX Core 1.25.0, so those G1 tests remain for the pinned toolbox CI environment. No source/dependency changes were made in response.
+- The focused host test passed (**8 passed**). A prior broader host run of `tests/week9` plus the then-current static tests was **29 passed / 17 failed** because host Python lacks `great_expectations`; the toolbox lock pins GX Core 1.25.0, so those G1 tests remain for the pinned toolbox CI environment. No source/dependency changes were made in response.
 - No dbt warehouse run, WIF exchange, GCP command, Terraform formatting/validation/plan/apply, local Docker, or OpenMetadata was run. Exact-head CI IDs and WIF/F07/F10 live results remain **UNVERIFIED**. Terraform formatting/validation were simply not run; no plan/apply or cloud-side provider update was attempted because cloud authentication is expired and the integrator prohibited cloud actions.
 - Because `pull_request_target` uses the base-branch workflow, pre-merge proof is manual from the selected OPR2 ref: `run_wif_smoke=true`; `run_cloud_build=true` with the exact positive `pr_number` for `dbt_ci_pr_<n>`; or `run_fault_matrix=true` for fixed `w9_drill`. `week9-wif-deny.yml` is dispatched separately. No dispatch was run by Worker O.
 
@@ -234,3 +234,9 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 3. Dispatch from the exact PR ref with `run_offline_checks=true` for offline exact-head proof. For cloud proof, add `run_cloud_build=true` with the exact open PR number/head; for F07/F10 add `run_fault_matrix=true` to the fixed `w9_drill` path only.
 4. After merge, dispatch cleanup with `run_cleanup=true` and the exact numeric merged PR number, then verify only `dbt_ci_pr_<number>` is deleted. Keep the stale sweep limited to closed/inactive PR datasets.
 5. Cherry-pick Pages integration `c296eb0`; require the `Week 9 main artifacts` workflow and artifact name/path exactly as above. Add ruleset checks only after one green main run.
+
+## O-PR2 workflow validation RCA — pre-dispatch HTTP 422
+
+- Integrator's exact-ref `gh workflow run` request was rejected before dispatch with HTTP 422: `Unrecognized named-value: 'runner'` at the `cloud-pr` job-level `DBT_TARGET_PATH`/`DBT_LOG_PATH` values. The same invalid job-level context existed in `week9-cd.yml`. This was a GitHub workflow-validation error, not a local tooling slip; no workflow job or cloud action ran and no run ID exists.
+- Resolution: remove both job-level `runner.temp` expressions and set the dbt paths in setup steps by writing `$RUNNER_TEMP` values to `$GITHUB_ENV`. The stale-sweep Python block now uses `os.environ['RUNNER_TEMP']`. Artifact `with.path` and step-level `env` expressions remain. The repo-wide W9 workflow scan found no other invalid scope: remaining `runner.temp` references are in artifact inputs or step-level env; the separate Pages workflow uses step-level env. A static regression test rejects `${{ runner.temp }}` in O-owned job env and `run` script scopes.
+- Focused workflow-contract tests, strict yamllint, YAML parsing, and Bash syntax checks pass after the fix. The exact-head GitHub workflow run remains **UNVERIFIED** until the integrator retries.

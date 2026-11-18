@@ -57,6 +57,41 @@ def test_manual_offline_checks_use_the_dispatched_sha_without_cloud_permissions(
         assert checkout["with"]["ref"] == "${{ github.sha }}"
 
 
+def test_runner_temp_context_is_not_used_in_job_env_or_run_scripts() -> None:
+    paths = (
+        ".github/workflows/week9-dataops.yml",
+        ".github/workflows/week9-cleanup.yml",
+        ".github/workflows/week9-cd.yml",
+        ".github/workflows/week9-wif-deny.yml",
+    )
+    for path in paths:
+        workflow = load_workflow(path)
+        for job_name, job in workflow["jobs"].items():
+            assert all("${{ runner.temp }}" not in str(value) for value in job.get("env", {}).values()), path
+            for step in job.get("steps", []):
+                assert "${{ runner.temp }}" not in step.get("run", ""), (
+                    f"{path} job {job_name} step {step.get('name', '<unnamed>')}"
+                )
+
+    dataops = load_workflow(".github/workflows/week9-dataops.yml")
+    cloud_setup = next(
+        step
+        for step in dataops["jobs"]["cloud-pr"]["steps"]
+        if step.get("name") == "Prepare non-secret profile and dbt temp paths"
+    )
+    assert 'DBT_TARGET_PATH=$RUNNER_TEMP/dbt-target" >> "$GITHUB_ENV"' in cloud_setup["run"]
+    assert 'DBT_LOG_PATH=$RUNNER_TEMP/dbt-logs" >> "$GITHUB_ENV"' in cloud_setup["run"]
+
+    cd_workflow = load_workflow(".github/workflows/week9-cd.yml")
+    cd_setup = next(
+        step
+        for step in cd_workflow["jobs"]["publish-main-artifacts"]["steps"]
+        if step.get("name") == "Set dbt temporary paths"
+    )
+    assert 'DBT_TARGET_PATH=$RUNNER_TEMP/dbt-target" >> "$GITHUB_ENV"' in cd_setup["run"]
+    assert 'DBT_LOG_PATH=$RUNNER_TEMP/dbt-logs" >> "$GITHUB_ENV"' in cd_setup["run"]
+
+
 def test_manual_cloud_build_comments_with_its_sanitized_run_artifact() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     cloud = workflow["jobs"]["cloud-pr"]

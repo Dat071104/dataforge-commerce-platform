@@ -254,11 +254,12 @@ jobs:
             --jq '.[] | [.number, .updated_at] | @tsv' > "$RUNNER_TEMP/pr-list.tsv"
           python - <<'PY' > "$RUNNER_TEMP/stale-pr-numbers.txt"
           import csv
+          import os
           from datetime import datetime, timedelta, timezone
           from pathlib import Path
 
           cutoff = datetime.now(timezone.utc) - timedelta(days=2)
-          rows = csv.reader(Path("${{ runner.temp }}/pr-list.tsv").open(encoding="utf-8"), delimiter="\t")
+          rows = csv.reader(Path(os.environ["RUNNER_TEMP"], "pr-list.tsv").open(encoding="utf-8"), delimiter="\t")
           for row in rows:
               if len(row) != 2:
                   continue
