@@ -1,0 +1,61 @@
+contract_version: "1.0.0"
+source_table: weather_landing
+layer: G1
+checks:
+  schema:
+    check_id: G1.LANDING.SCHEMA
+    severity: P1
+    required_columns:
+      province_id: object
+      observation_date: object
+      precipitation_mm: float64
+      temp_max_c: float64
+      source: object
+      model: object
+      request_id: object
+      source_sha256: object
+      manifest_uri: object
+      manifest_generation: int64
+      landed_at: datetime64[ns, UTC]
+  schema_additive:
+    check_id: G1.LANDING.SCHEMA_ADDITIVE
+    severity: P2
+    unknown_nullable_columns: warn
+  province_id_not_null:
+    check_id: G1.LANDING.PROVINCE_ID_NOT_NULL
+    severity: P1
+    column: province_id
+  grain_unique:
+    check_id: G1.LANDING.GRAIN_UNIQUE
+    severity: P1
+    columns: [request_id, province_id, observation_date]
+  physical_range:
+    check_id: G1.LANDING.PHYSICAL_RANGE
+    severity: P1
+    precipitation_mm: {min: 0}
+    temp_max_c: {min: -90, max: 70}
+  province_domain:
+    check_id: G1.LANDING.PROVINCE_DOMAIN
+    severity: P1
+    column: province_id
+    values: [HCM, HN, DN]
+  rows_per_date:
+    check_id: G1.LANDING.ROWS_PER_DATE
+    severity: P1
+    expected: 3
+  no_future_date:
+    check_id: G1.LANDING.NO_FUTURE_DATE
+    severity: P1
+    column: observation_date
+    maximum: current_local_date
+  temp_unit_range:
+    check_id: G1.LANDING.TEMP_UNIT_RANGE
+    severity: P1
+    column: temp_max_c
+    maximum_celsius: 79.999
+
+# F12's 80–100 °C semantic signal overlaps the broad physical maximum of 70 °C.
+# Both stable catalog checks remain visible when a mutated value violates both.
+
+# Freshness remains owned by the existing dbt source-freshness check
+# G2.SOURCE.FRESHNESS. Adding a second G1 freshness check would duplicate F07.

@@ -1,34 +1,323 @@
-# Resolved dependency snapshot from the verified Windows Python 3.11.9 venv
-# on 2026-11-04. The local DataForge package itself is installed editable by CI.
-# 2026-11-10: retain the locally verified dateutil 2.x pin required by BigQuery.
-# 2026-11-18: pin W9 synthetic generation and classification/manifest validation dependencies.
-# D1 Polars/Pandas parity is tested with Polars 1.36.1 and its Python runtime.
+# Resolved constraints for DataForge CI on Windows Python 3.11.
+# Generated with uv 0.11.20 for dev, powerbi, and gcp extras; the previous
+# requirements-py311.lock pins were supplied as constraints and preserved.
+# The local DataForge package itself is installed editable by CI.
+altair==6.3.0
+    # via great-expectations
+annotated-doc==0.0.7
+    # via typer
+annotated-types==0.8.0
+    # via pydantic
+attrs==26.1.0
+    # via
+    #   jsonschema
+    #   referencing
+boto3==1.44.5
+    # via datacontract-cli
+botocore==1.44.5
+    # via
+    #   boto3
+    #   s3transfer
+cachebox==5.2.3
+    # via deepdiff
 certifi==2026.10.23
+    # via
+    #   -c requirements-py311.lock
+    #   requests
+cffi==2.1.1
+    # via cryptography
 charset-normalizer==3.5.2
+    # via
+    #   -c requirements-py311.lock
+    #   requests
+click==8.5.1
+    # via datacontract-cli
 colorama==0.4.6
-et_xmlfile==2.0.0
+    # via
+    #   -c requirements-py311.lock
+    #   pytest
+    #   tqdm
+    #   typer
+cryptography==50.0.2
+    # via
+    #   google-auth
+    #   great-expectations
+datacontract-cli==1.2.8
+    # via dataforge-vn-commerce (pyproject.toml)
+datacontract-specification==1.2.3
+    # via datacontract-cli
+deepdiff==9.1.0
+    # via datacontract-cli
+et-xmlfile==2.0.0
+    # via
+    #   -c requirements-py311.lock
+    #   openpyxl
 Faker==40.54.0
+fastjsonschema==2.22.3
+    # via datacontract-cli
+google-api-core==2.44.0
+    # via
+    #   google-cloud-bigquery
+    #   google-cloud-core
+    #   google-cloud-storage
+google-auth==2.62.2
+    # via
+    #   google-api-core
+    #   google-cloud-bigquery
+    #   google-cloud-core
+    #   google-cloud-storage
+google-cloud-bigquery==3.47.0
+    # via dataforge-vn-commerce (pyproject.toml)
+google-cloud-core==2.8.0
+    # via
+    #   google-cloud-bigquery
+    #   google-cloud-storage
+google-cloud-storage==3.17.1
+    # via dataforge-vn-commerce (pyproject.toml)
+google-crc32c==1.9.0
+    # via
+    #   google-cloud-storage
+    #   google-resumable-media
+google-resumable-media==2.11.0
+    # via
+    #   google-cloud-bigquery
+    #   google-cloud-storage
+googleapis-common-protos==1.76.0
+    # via
+    #   google-api-core
+    #   grpcio-status
+great-expectations==1.25.0
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+grpcio==1.85.3
+    # via
+    #   google-api-core
+    #   grpcio-status
+grpcio-status==1.85.3
+    # via google-api-core
 idna==3.20
+    # via
+    #   -c requirements-py311.lock
+    #   requests
 iniconfig==2.3.1
-Jinja2==3.1.6
-MarkupSafe==3.0.3
+    # via
+    #   -c requirements-py311.lock
+    #   pytest
+jinja-partials==0.4.0
+    # via datacontract-cli
+jinja2==3.1.6
+    # via
+    #   altair
+    #   datacontract-cli
+    #   great-expectations
+    #   jinja-partials
+jmespath==1.1.0
+    # via
+    #   boto3
+    #   botocore
+jsonschema==4.26.0
+    # via
+    #   altair
+    #   datacontract-cli
+    #   great-expectations
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+markdown-it-py==4.3.0
+    # via rich
+markupsafe==3.0.4
+    # via jinja2
+marshmallow==4.4.0
+    # via great-expectations
+mdurl==0.1.2
+    # via markdown-it-py
+mistune==3.4.0
+    # via great-expectations
+narwhals==2.29.0
+    # via altair
 numpy==2.4.6
+    # via
+    #   -c requirements-py311.lock
+    #   great-expectations
+    #   pandas
+    #   scipy
+open-data-contract-standard==3.2.0
+    # via datacontract-cli
 openpyxl==3.1.5
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+opentelemetry-api==1.45.2
+    # via google-api-core
+orderly-set==5.5.0
+    # via deepdiff
 packaging==26.3
+    # via
+    #   -c requirements-py311.lock
+    #   altair
+    #   google-cloud-bigquery
+    #   great-expectations
+    #   pytest
 pandas==2.3.3
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+    #   great-expectations
 pluggy==1.7.0
+    # via
+    #   -c requirements-py311.lock
+    #   pytest
 polars==1.36.1
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
 polars-runtime-32==1.36.1
+    # via
+    #   -c requirements-py311.lock
+    #   polars
+proto-plus==1.29.0
+    # via google-api-core
+protobuf==7.36.2
+    # via
+    #   google-api-core
+    #   googleapis-common-protos
+    #   grpcio-status
+    #   proto-plus
 psycopg==3.3.7
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
 psycopg-binary==3.3.7
+    # via
+    #   -c requirements-py311.lock
+    #   psycopg
 pyarrow==23.0.1
-Pygments==2.21.0
-PyYAML==6.0.3
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+pyasn1==0.6.5
+    # via pyasn1-modules
+pyasn1-modules==0.4.2
+    # via google-auth
+pycparser==3.12
+    # via cffi
+pydantic==2.14.3
+    # via
+    #   datacontract-cli
+    #   datacontract-specification
+    #   great-expectations
+    #   open-data-contract-standard
+    #   pydantic-settings
+pydantic-core==2.50.4
+    # via pydantic
+pydantic-settings==2.16.3
+    # via datacontract-cli
+pygments==2.21.0
+    # via
+    #   -c requirements-py311.lock
+    #   pytest
+    #   rich
+pyparsing==3.3.3
+    # via great-expectations
 pytest==9.2.0
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
 python-dateutil==2.9.0.post0
+    # via
+    #   -c requirements-py311.lock
+    #   botocore
+    #   google-cloud-bigquery
+    #   great-expectations
+    #   pandas
+python-dotenv==1.2.4
+    # via
+    #   datacontract-cli
+    #   pydantic-settings
+python-multipart==0.0.34
+    # via datacontract-cli
 pytz==2026.6
+    # via
+    #   -c requirements-py311.lock
+    #   datacontract-cli
+    #   pandas
+pyyaml==6.0.3
+    # via
+    #   datacontract-cli
+    #   datacontract-specification
+    #   open-data-contract-standard
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 requests==2.34.2
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+    #   datacontract-cli
+    #   google-api-core
+    #   google-cloud-bigquery
+    #   google-cloud-storage
+    #   great-expectations
+rich==15.0.0
+    # via
+    #   datacontract-cli
+    #   typer
+rpds-py==2026.9.1
+    # via
+    #   jsonschema
+    #   referencing
+ruamel-yaml==0.19.1
+    # via
+    #   datacontract-cli
+    #   great-expectations
 ruff==0.17.3
-typing_extensions==4.16.0
+    # via
+    #   -c requirements-py311.lock
+    #   dataforge-vn-commerce (pyproject.toml)
+s3transfer==0.19.3
+    # via boto3
+scipy==1.17.1
+    # via great-expectations
+shellingham==1.5.4
+    # via typer
+six==1.17.0
+    # via python-dateutil
+sqlglot==30.33.0
+    # via datacontract-cli
+tqdm==4.70.1
+    # via great-expectations
+truststore==0.10.5
+    # via datacontract-cli
+typer==0.27.3
+    # via datacontract-cli
+typing-extensions==4.16.0
+    # via
+    #   -c requirements-py311.lock
+    #   altair
+    #   great-expectations
+    #   grpcio
+    #   opentelemetry-api
+    #   psycopg
+    #   pydantic
+    #   pydantic-core
+    #   pydantic-settings
+    #   referencing
+    #   typing-inspection
+typing-inspection==0.4.5
+    # via
+    #   pydantic
+    #   pydantic-settings
 tzdata==2026.6
+    # via
+    #   -c requirements-py311.lock
+    #   pandas
+    #   psycopg
+    #   tzlocal
+tzlocal==5.4.5
+    # via great-expectations
 urllib3==2.8.0
+    # via
+    #   -c requirements-py311.lock
+    #   botocore
+    #   requests

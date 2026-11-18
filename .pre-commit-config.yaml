@@ -1,0 +1,70 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.6
+    hooks:
+      - id: ruff
+        # Existing lint findings in these exact legacy files at ab345f7, including the import-order issue surfaced by Q-PR1 CI.
+        exclude: |
+          (?x)^(?:labs/spark_nyc_taxi/managed/(?:job\.py|local_oracle\.py|preflight\.py|tests/test_local_oracle\.py)|labs/spark_nyc_taxi/tests/test_spark_transforms\.py)$
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.4.2
+    hooks:
+      - id: sqlfluff-lint
+        name: sqlfluff lint (BigQuery, Jinja, keyless)
+        args: [--dialect, bigquery, --templater, jinja]
+        files: ^dbt/dataforge/.*\.sql$
+        # Baseline exceptions from ab345f7 only; new Week 9 SQL remains linted.
+        exclude: |
+          (?x)^dbt/dataforge/(?:macros/weather_mini3_publication\.sql|
+          macros/week7_publication\.sql|
+          models/intermediate/int_week5_payment_control_by_order\.sql|
+          models/intermediate/int_week7_batch_control\.sql|
+          models/marts/fct_week7_build_receipt\.sql|
+          models/marts/fct_week7_order_reconciliation\.sql|
+          models/weather/intermediate/int_weather_daily\.sql|
+          models/weather/marts/fct_mini3_weather_daily\.sql|
+          models/weather/marts/mart_weather_province_daily\.sql|
+          models/weather/staging/stg_weather_mini3_landing\.sql|
+          snapshots/week5_orders_history\.sql|
+          snapshots/week7_scd2_proof_history\.sql|
+          tests/assert_mart_weather_province_daily_calendar_windows\.sql|
+          tests/assert_mart_weather_province_daily_metric_ranges\.sql|
+          tests/assert_mini3_weather_gold_matches_silver\.sql|
+          tests/assert_mini3_weather_grains_unique\.sql|
+          tests/assert_mini3_weather_landing_complete_requests\.sql|
+          tests/assert_mini3_weather_metric_ranges\.sql|
+          tests/assert_week7_active_payments_have_order\.sql|
+          tests/assert_week7_all_silver_orders_are_present\.sql|
+          tests/assert_week7_candidate_matches_week5_gold\.sql|
+          tests/assert_week7_order_reconciliation_math\.sql|
+          tests/assert_week7_published_batches_have_check\.sql|
+          tests/assert_week7_scd2_proof_windows\.sql)$
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: [--strict, -d, "{extends: relaxed, rules: {line-length: {max: 160}}}"]
+        # Existing YAML warnings at ab345f7; keep exceptions to these exact files.
+        exclude: |
+          (?x)^(?:\.github/workflows/(?:ci|dbt-docs-pages|week7-ci|week8-ci)\.yml|
+          cloud/workflows/(?:week7_weather_workflow|week7_workflow)\.yaml|
+          contracts/(?:mart_weather_province_daily\.v1|weather_landing\.v1)\.yaml)$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: datacontract-lint
+        name: datacontract lint
+        entry: >-
+          python -c
+          "import os,subprocess,sys; os.environ['PYTHONUTF8']='1'; [subprocess.run(['datacontract','lint',f],check=True) for f in sys.argv[1:]]"
+        language: system
+        files: ^contracts/.*\.ya?ml$
+        types: [yaml]
+        pass_filenames: true

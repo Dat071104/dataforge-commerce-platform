@@ -12,8 +12,11 @@ RUN python -m pip install --no-cache-dir -r /app/cloud/jobs/week7_weather/requir
     && useradd --system --create-home --uid 10001 dataforge
 
 COPY src/dataforge/__init__.py /app/src/dataforge/__init__.py
+COPY src/dataforge/dq/__init__.py /app/src/dataforge/dq/__init__.py
+COPY src/dataforge/dq/results.py /app/src/dataforge/dq/results.py
 COPY src/dataforge/settings.py /app/src/dataforge/settings.py
 COPY src/dataforge/weather.py /app/src/dataforge/weather.py
+COPY cloud/jobs/week7_weather/validation.py /app/cloud/jobs/week7_weather/validation.py
 COPY cloud/jobs/week7_weather/weather_job.py /app/cloud/jobs/week7_weather/weather_job.py
 
 USER 10001:10001

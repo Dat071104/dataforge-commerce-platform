@@ -23,6 +23,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -36,6 +37,11 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from dataforge.weather import API, CITY_LOCATIONS, DAILY_FIELDS, MODEL, TIMEZONE, fetch, parse_daily
+
+if __package__:
+    from .validation import PayloadValidationError, validate_open_meteo_response
+else:  # The W7 container runs this module as a script.
+    from validation import PayloadValidationError, validate_open_meteo_response
 
 PROJECT_ID = "dataforge-p7-lab-d0f725"
 PROJECT_NUMBER = "955038620072"
@@ -368,7 +374,46 @@ def _rows_to_parquet(rows: list[dict]) -> bytes:
     return sink.getvalue().to_pybytes()
 
 
-def _extract_successful_responses(provenance: dict, scratch: Path, provinces: list[str]) -> dict[str, dict]:
+def _record_g0_result(
+    *,
+    run_id: str,
+    check_id: str,
+    status: str,
+    observed: object,
+    failing_rows: int,
+) -> None:
+    """Persist G0 summaries only when the isolated W9 result sink is enabled."""
+    if os.environ.get("DATAFORGE_DQ_RESULTS_ENABLED", "false").lower() != "true":
+        return
+    from dataforge.dq.results import cloud_sink_from_env, make_result
+
+    result = make_result(
+        run_id=run_id,
+        check_id=check_id,
+        layer="G0",
+        severity="P1",
+        status=status,
+        observed=observed,
+        threshold="response schema and requested date coverage",
+        failing_rows=failing_rows,
+        contract_version="1.0.0",
+    )
+    cloud_sink_from_env().write([result])
+
+
+def _validate_weather_response(payload: object, requested_dates: list[str], province: str) -> None:
+    """Typed callback invoked by ``fetch`` before ``parse_daily`` converts rows."""
+    try:
+        validate_open_meteo_response(payload, requested_dates=requested_dates)
+    except PayloadValidationError as exc:
+        raise PayloadValidationError(exc.check_id, f"{province}: {exc}") from exc
+
+
+def _extract_successful_responses(
+    provenance: dict,
+    scratch: Path,
+    provinces: list[str],
+) -> dict[str, dict]:
     successful: dict[str, dict] = {}
     for response in provenance.get("responses", []):
         if response.get("http_status") == 200 and response.get("raw_response_json"):
@@ -422,7 +467,7 @@ def ingest(
     invocation_id: str | None = None,
     now: datetime | None = None,
     storage_client: Any | None = None,
-    source_fetch: Callable[..., int] = fetch,
+    source_fetch: Callable[..., int] | None = None,
 ) -> dict:
     """Fetch, validate, and immutably publish one bounded source request."""
     _ensure_approved_environment()
@@ -442,12 +487,46 @@ def ingest(
 
     with TemporaryDirectory(prefix="dataforge-weather-mini3-") as temporary:
         scratch = Path(temporary)
-        source_fetch(
-            parsed_date,
-            parsed_date,
-            provinces=requested_provinces,
-            dest=scratch,
-        )
+        fetcher = source_fetch or fetch
+        if fetcher is fetch:
+            try:
+                fetcher(
+                    parsed_date,
+                    parsed_date,
+                    provinces=requested_provinces,
+                    dest=scratch,
+                    response_validator=_validate_weather_response,
+                )
+            except PayloadValidationError as exc:
+                _record_g0_result(
+                    run_id=invocation,
+                    check_id=exc.check_id,
+                    status="FAIL",
+                    observed={"reason": str(exc)},
+                    failing_rows=1,
+                )
+                raise WeatherJobError(f"{exc.check_id}: {exc}") from exc
+            for check_id, observed in (
+                ("G0.API.SCHEMA", {"validated_responses": len(requested_provinces)}),
+                (
+                    "G0.API.RESPONSE_COMPLETENESS",
+                    {"validated_responses": len(requested_provinces), "requested_dates": 1},
+                ),
+            ):
+                _record_g0_result(
+                    run_id=invocation,
+                    check_id=check_id,
+                    status="PASS",
+                    observed=observed,
+                    failing_rows=0,
+                )
+        else:
+            fetcher(
+                parsed_date,
+                parsed_date,
+                provinces=requested_provinces,
+                dest=scratch,
+            )
         source_path = scratch / "weather_daily.csv"
         provenance_path = scratch / ".open_meteo" / "weather_provenance.json"
         if not source_path.is_file() or not provenance_path.is_file():

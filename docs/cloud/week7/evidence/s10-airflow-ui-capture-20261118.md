@@ -5,7 +5,7 @@
 - No password was read or entered during these captures. The password value is absent from the images and this manifest.
 - The separate S10-M2 headless attempt returned LoginError; it was not retried.
 - No trigger, clear, pause, edit, admin, user, or connection page was used.
-- Visual check: no email address or password is visible in the final images.
+- Screenshot chrome review: all five images include the browser tab strip (one unrelated tab title) and Chrome remote-debugging banner; no secret or email address is visible.
 - An initial blank Graph attempt was not used; the final evidence Graph image is rendered.
 
 ## s10-grid-20261118.png
@@ -19,7 +19,7 @@
 
 - URL: http://127.0.0.1:18080/dags/dataforge_week7_weather_cloud/runs/scheduled__2026-11-18T02:00:00+00:00
 - Captured at: 2026-11-18T13:15:19+07:00
-- Verified text markers: DAG dataforge_week7_weather_cloud; scheduled__2026-11-18T02:00:00+00:00; Graph view selected; 16 task IDs visible; run status Success; all task nodes green
+- Verified text markers: DAG dataforge_week7_weather_cloud; scheduled__2026-11-18T02:00:00+00:00; Graph view selected; 16 graph nodes visible; UI reports “16 Task Instances”; run status Success; Deadline Met. Individual node labels are not readable at this zoom; the full task list is proven by `evidence/s9-natural-scheduled-run-20261118.log`.
 - Pixel size: 1600x1200
 
 ## s10-task-log-20261118.png

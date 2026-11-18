@@ -1,0 +1,21 @@
+version: 1
+clean_fixture:
+  path: tests/week9/faults/weather_7date_slice.parquet
+  source: captured read-only weather landing slice
+  sha256: ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798
+faults:
+  F01: {check_id: G1.LANDING.PROVINCE_ID_NOT_NULL, severity: P1, action: BLOCK_QUARANTINE}
+  F02: {check_id: G1.LANDING.GRAIN_UNIQUE, severity: P1, action: BLOCK_QUARANTINE}
+  F03: {check_id: G1.LANDING.PHYSICAL_RANGE, severity: P1, action: BLOCK_QUARANTINE}
+  F04: {check_id: G1.LANDING.PROVINCE_DOMAIN, severity: P1, action: BLOCK_QUARANTINE}
+  F05a: {check_id: G0.API.SCHEMA + G1.LANDING.SCHEMA, severity: P1, action: BLOCK_QUARANTINE}
+  F05b: {check_id: G1.LANDING.SCHEMA_ADDITIVE, severity: P2, action: WARN_PUBLISH}
+  F06: {check_id: G1.LANDING.ROWS_PER_DATE, severity: P1, action: BLOCK_QUARANTINE}
+  F07: {check_id: G2.SOURCE.FRESHNESS, severity: P2/P1, action: WARN_OR_BLOCK}
+  F08: {check_id: G1.LANDING.NO_FUTURE_DATE, severity: P1, action: BLOCK_QUARANTINE}
+  F09: {check_id: G1.LANDING.IDEMPOTENCY_REPLAY, severity: None, action: NO_OP}
+  F10: {check_id: G2.WEATHER.RAIN_PRECIP_CONSISTENCY, severity: P1, action: BLOCK_QUARANTINE}
+  F11: {check_id: G0.API.RESPONSE_COMPLETENESS, severity: P1, action: BLOCK_BEFORE_LANDING}
+  F12: {check_id: G1.LANDING.TEMP_UNIT_RANGE, severity: P1, action: BLOCK_QUARANTINE}
+  F-T1: {check_id: G0.API.TRANSIENT_RETRY, severity: None, action: RETRY_THEN_SUCCEED}
+  F-N0: {check_id: ALERTING.NEGATIVE_CONTROL, severity: None, action: ZERO_ALERTS}
