@@ -178,6 +178,7 @@ O1â€“O3 add no fault detector or fault fixture, so there is no new `check_id` â†
 
 - Static `lint` and `toolbox` checks stay on `pull_request` with read-only permissions. WIF-capable jobs use `pull_request_target` and an immutable first-step repo-ID check (`head.repo.id == repository_id`) before checkout/auth; fork PR cloud jobs emit an explicit skip notice. Same-repo PR head checkout happens only after the gate.
 - The provider HCL event list now requests `pull_request_target` in place of `pull_request` while retaining `push`, `workflow_dispatch`, and `schedule`. This is code-only; no Terraform plan/apply or WIF exchange was run. The integrator must review/apply the provider update before WIF tests.
+- Automatic same-repository `pull_request_target` WIF, PR build, live F07/F10, cleanup, and comment jobs also require repository variable `W9_WIF_PR_TARGET_ENABLED == 'true'`; unset/false pauses them with a visible notice. Manual `workflow_dispatch` smoke/build/fault/cleanup paths remain available through the already allowlisted event. Worker O did not set this repository variable. After reviewing and applying the provider event change, the integrator must set the non-secret AF9 variable to `true` to enable future automatic trusted-PR jobs.
 - Manual `week9-dataops.yml` inputs include `run_wif_smoke`, `run_cloud_build`, `run_fault_matrix`, and `pr_number`. The manual cloud-build path accepts only a positive numeric PR number whose open same-repository PR head SHA exactly matches the dispatched ref; it derives the dataset as `dbt_ci_pr_<number>` and accepts no dataset name.
 - With `run_cloud_build=true`, `pr-comment` now runs after the cloud job, revalidates the exact open same-repository PR head, and downloads that run's sanitized summary artifact using the validated PR number. It therefore produces the same PR summary/bytes comment for manual exact-head proof as for trusted target PR runs.
 - Manual `run_fault_matrix` targets the fixed `w9_drill` dataset; no PR-number or arbitrary dataset value controls its live target. The manual `run_wif_smoke` path checks positive `bq ls w9_drill` and expected `bq ls silver` authorization denial.
@@ -219,7 +220,7 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 ```
 
 - Strict yamllint: passed for the W9 workflows, profile example, and CODEOWNERS; `pre-commit validate-config` passed.
-- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **58** extracted run blocks. The **5** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit cleanup selection, closed/old-only sweep, and fixed `w9_drill` F07/F10 scope.
+- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **60** extracted run blocks. The **6** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit cleanup selection, closed/old-only sweep, fixed `w9_drill` F07/F10 scope, and the provider-switch pause guard.
 - Ruff and `py_compile` passed for `wif_permission_probe.py`, `week9_live_faults.py`, and the new static workflow test.
 - Hashed dependency dry-run in clean Python 3.12: **137 packages, pass**.
 - The focused host test passed (**5 passed**). A broader host run of `tests/week9` plus the static tests was **29 passed / 17 failed** because host Python lacks `great_expectations`; the toolbox lock pins GX Core 1.25.0, so those G1 tests remain for the pinned toolbox CI environment. No source/dependency changes were made in response.
@@ -228,7 +229,7 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 
 ## Integrator actions
 
-1. Review/apply the provider event-list change before any WIF test. Then dispatch the safe WIF smoke and the separate `week9-wif-deny.yml`; inspect the expected STS attribute-condition denial and the non-mutating W7 write probe caveat.
+1. Review/apply the provider event-list change. Then set the non-secret AF9 repository variable `W9_WIF_PR_TARGET_ENABLED=true` to resume automatic trusted-PR jobs; dispatch the safe WIF smoke and separate `week9-wif-deny.yml`, and inspect the expected STS attribute-condition denial and non-mutating W7 write probe caveat.
 2. Run Gitleaks before push, open O-PR2, and record exact-head run IDs. Keep all WIF/fault live evidence UNVERIFIED until CI completes.
 3. Dispatch `run_cloud_build=true` with the exact open PR number/head for pre-merge proof; for F07/F10 dispatch `run_fault_matrix=true` to the fixed `w9_drill` path only.
 4. After merge, dispatch cleanup with `run_cleanup=true` and the exact numeric merged PR number, then verify only `dbt_ci_pr_<number>` is deleted. Keep the stale sweep limited to closed/inactive PR datasets.

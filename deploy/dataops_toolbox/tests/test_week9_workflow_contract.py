@@ -65,6 +65,32 @@ def test_manual_cloud_build_comments_with_its_sanitized_run_artifact() -> None:
     assert '"repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments"' in create_comment
 
 
+def test_automatic_trusted_pr_jobs_are_paused_until_provider_switch_is_enabled() -> None:
+    dataops = load_workflow(".github/workflows/week9-dataops.yml")
+    guarded_jobs = ("wif-smoke", "cloud-pr", "fault-matrix-live", "pr-comment")
+    for name in guarded_jobs:
+        condition = dataops["jobs"][name]["if"]
+        assert "vars.W9_WIF_PR_TARGET_ENABLED == 'true'" in condition
+        assert "github.event_name == 'workflow_dispatch'" in condition
+        dispatch_clause = condition[condition.index("github.event_name == 'workflow_dispatch'"):]
+        assert "vars.W9_WIF_PR_TARGET_ENABLED" not in dispatch_clause
+
+    cloud_pause = dataops["jobs"]["same-repository-cloud-paused"]
+    assert "vars.W9_WIF_PR_TARGET_ENABLED != 'true'" in cloud_pause["if"]
+    assert "head.repo.id == github.repository_id" in cloud_pause["if"]
+    assert "W9_WIF_PR_TARGET_ENABLED=true" in cloud_pause["steps"][0]["run"]
+
+    cleanup = load_workflow(".github/workflows/week9-cleanup.yml")
+    close_job = cleanup["jobs"]["closed-pr-cleanup"]
+    assert "vars.W9_WIF_PR_TARGET_ENABLED == 'true'" in close_job["if"]
+    assert "workflow_dispatch" not in close_job["if"]
+    cleanup_pause = cleanup["jobs"]["same-repository-cleanup-paused"]
+    assert "vars.W9_WIF_PR_TARGET_ENABLED != 'true'" in cleanup_pause["if"]
+    assert "head.repo.id == github.repository_id" in cleanup_pause["if"]
+    assert "W9_WIF_PR_TARGET_ENABLED=true" in cleanup_pause["steps"][0]["run"]
+    assert "vars.W9_WIF_PR_TARGET_ENABLED" not in cleanup["jobs"]["manual-pr-cleanup"]["if"]
+
+
 def test_live_fault_matrix_is_fixed_to_w9_drill() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     live = workflow["jobs"]["fault-matrix-live"]

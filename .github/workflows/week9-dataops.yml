@@ -189,7 +189,9 @@ jobs:
   wif-smoke:
     name: WIF positive and least-privilege probes
     if: >-
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' && (inputs.run_wif_smoke || inputs.run_cloud_build || inputs.run_fault_matrix))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -307,10 +309,27 @@ jobs:
     steps:
       - run: echo "::notice::Keyless WIF and BigQuery jobs are skipped for fork pull requests; offline lint/unit/contract/PII checks still run."
 
+  same-repository-cloud-paused:
+    name: Trusted PR cloud checks paused pending provider update
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: |
+          echo "::notice::Trusted PR WIF/build/F07/F10/comment jobs are paused until the integrator applies the " \
+            "pull_request_target WIF provider condition and sets W9_WIF_PR_TARGET_ENABLED=true. Manual workflow_dispatch proofs remain available."
+
   cloud-pr:
     name: Isolated BigQuery PR build and G1 gate
     if: >-
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.run_cloud_build)
     needs: [wif-smoke]
     runs-on: ubuntu-latest
@@ -765,7 +784,9 @@ jobs:
   fault-matrix-live:
     name: Isolated BigQuery faults F07 and F10
     if: >-
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+      (github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix)
     needs: [wif-smoke]
     runs-on: ubuntu-latest
@@ -992,7 +1013,9 @@ jobs:
     name: Post sanitized DataOps CI summary
     if: >-
       always() && (
-        (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id) ||
+        (github.event_name == 'pull_request_target' &&
+        github.event.pull_request.head.repo.id == github.repository_id &&
+        vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
         (github.event_name == 'workflow_dispatch' && inputs.run_cloud_build)
       )
     needs: [wif-smoke, cloud-pr, fault-matrix-report]

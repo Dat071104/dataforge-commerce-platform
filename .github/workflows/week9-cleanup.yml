@@ -33,7 +33,10 @@ concurrency:
 jobs:
   closed-pr-cleanup:
     name: Delete the closed PR dataset
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.id == github.repository_id
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -104,6 +107,21 @@ jobs:
     timeout-minutes: 5
     steps:
       - run: echo "::notice::Fork PRs receive no WIF token and cannot create dbt_ci_pr datasets; cleanup skipped."
+
+  same-repository-cleanup-paused:
+    name: Trusted PR cleanup paused pending provider update
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.id == github.repository_id &&
+      vars.W9_WIF_PR_TARGET_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - run: |
+          echo "::notice::Automatic trusted PR cleanup is paused until the integrator applies the " \
+            "pull_request_target WIF provider condition and sets W9_WIF_PR_TARGET_ENABLED=true. Manual and scheduled cleanup paths remain available."
 
   sweep-not-requested:
     name: Manual sweep not selected
