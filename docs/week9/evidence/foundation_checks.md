@@ -31,6 +31,6 @@ The dbt offline profile points to the non-existent project `dataforge-offline-pr
 ## Not yet evidenced
 
 - Live GCP isolated-dataset build, WIF, access tests, alert receipt, or lineage: not run. One read-only copy from the prod weather source is recorded below; no W9 GCP write has occurred.
-- No gitleaks executable is installed locally. A high-confidence staged-diff scan for private keys, GitHub/Slack/Google/AWS tokens, and credential URLs passed with zero matches; this is a manual pattern scan, not gitleaks or CI evidence.
+- Gitleaks itself remains **UNVERIFIED** locally and in CI because no exact-head run has been possible. The earlier W9-A staged-diff pattern scan found zero matches. Before W9-2 push, the integrator scanned the changed/untracked files in O/Q/G worktrees (21/33/24 files) for private-key headers, GitHub/Slack/Google/AWS tokens, bearer tokens, and credential URLs: zero matches. These are manual high-confidence pattern scans, not Gitleaks evidence or a substitute for the exact-head CI hook.
 - Full fault matrix and F-N0: not implemented.
 - Mentor review: pending; RFC status is Draft.
