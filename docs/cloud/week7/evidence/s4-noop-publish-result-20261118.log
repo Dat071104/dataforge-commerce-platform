@@ -1,0 +1,9 @@
+S4 NO_OP publish run log 2026-11-18 11:31:07 +07:00
+
+
+Container called exit(0).
+[0m04:30:35  DATAFORGE_WEATHER_MINI3_PUBLISH status=NO_OP workflow_run_id=airflow-1c533386ec3b478d558cf64115dfeb1d7af4726e6507beeb rows=30 sha256=9c04b68b5876c0371ee5378fa2b6510470ccd3497924ede061c0e9e252cf2b4c pointer_version=13
+[0m04:30:24  Found 16 models, 2 snapshots, 98 data tests, 7 sources, 1 exposure, 561 macros, 1 unit test
+[0m04:30:19  Unable to do partial parsing because saved manifest not found. Starting full parse.
+[0m04:30:19  Registered adapter: bigquery=1.11.3
+[0m04:30:09  Running with dbt=1.11.17

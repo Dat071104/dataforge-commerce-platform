@@ -14,6 +14,17 @@ variable "week7_weather_enabled" {
   }
 }
 
+variable "week7_weather_airflow_execution_reader_enabled" {
+  description = "Temporarily create the Airflow-only Cloud Run execution reader role and job bindings. Defaults off; separate from shared workflow roles."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.week7_weather_airflow_execution_reader_enabled || var.week7_weather_enabled
+    error_message = "The Airflow execution reader requires the Week-7 weather stack to be enabled."
+  }
+}
+
 variable "week7_weather_dbt_image" {
   description = "Digest-pinned dbt runner image built with the isolated Mini-project 3 weather models; kept separate from the accepted commerce dbt job image."
   type        = string
