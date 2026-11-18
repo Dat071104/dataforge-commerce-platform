@@ -1,0 +1,16 @@
+{
+  "candidate_sha256": "1e98b4b042c48d23f80dab805bab062ce279812cd30db59f050ffde37cf8ec19",
+  "created_at_utc": "2026-11-18T14:44:50Z",
+  "dataset": "w9_drill",
+  "enforcement": "block",
+  "failed_check_ids": [
+    "G1.LANDING.PROVINCE_ID_NOT_NULL"
+  ],
+  "gate_layer": "G1",
+  "gate_run_id": "85dd814a58ea4997ba185e2ad27c43da",
+  "gold_sha256_after": "ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798",
+  "gold_sha256_before": "ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798",
+  "reason": "G1.LANDING.PROVINCE_ID_NOT_NULL",
+  "run_id": "f01-214450217930",
+  "status": "QUARANTINED"
+}
