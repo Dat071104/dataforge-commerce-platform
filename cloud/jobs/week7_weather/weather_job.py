@@ -381,11 +381,20 @@ def _record_g0_result(
     status: str,
     observed: object,
     failing_rows: int,
+    event_date: date,
+    dataset: str,
 ) -> None:
     """Persist G0 summaries only when the isolated W9 result sink is enabled."""
     if os.environ.get("DATAFORGE_DQ_RESULTS_ENABLED", "false").lower() != "true":
         return
-    from dataforge.dq.results import cloud_sink_from_env, make_result
+    from dataforge.dq.results import cloud_sink_from_env, make_result, require_isolated_dataset
+
+    try:
+        require_isolated_dataset(dataset)
+    except ValueError as exc:
+        raise WeatherJobError("G0 DQ result source dataset is not isolated") from exc
+    observed_summary = dict(observed) if isinstance(observed, dict) else {"summary": observed}
+    observed_summary.update({"dataset": dataset, "date": event_date.isoformat()})
 
     result = make_result(
         run_id=run_id,
@@ -393,7 +402,7 @@ def _record_g0_result(
         layer="G0",
         severity="P1",
         status=status,
-        observed=observed,
+        observed=observed_summary,
         threshold="response schema and requested date coverage",
         failing_rows=failing_rows,
         contract_version="1.0.0",
@@ -479,6 +488,10 @@ def ingest(
     )
     requested_provinces = validate_provinces(provinces)
     invocation = validate_invocation_id(invocation_id or _new_invocation_id())
+    dq_results_enabled = os.environ.get("DATAFORGE_DQ_RESULTS_ENABLED", "false").lower() == "true"
+    dq_source_dataset = os.environ.get("DATAFORGE_DQ_SOURCE_DATASET")
+    if dq_results_enabled and not dq_source_dataset:
+        raise WeatherJobError("DATAFORGE_DQ_SOURCE_DATASET is required when G0 result writing is enabled")
     _, bucket = _gcs_clients(storage_client)
 
     existing = _replay_execution_receipt(bucket, invocation, parsed_date, requested_provinces)
@@ -504,6 +517,8 @@ def ingest(
                     status="FAIL",
                     observed={"reason": str(exc)},
                     failing_rows=1,
+                    event_date=parsed_date,
+                    dataset=dq_source_dataset or "",
                 )
                 raise WeatherJobError(f"{exc.check_id}: {exc}") from exc
             for check_id, observed in (
@@ -519,6 +534,8 @@ def ingest(
                     status="PASS",
                     observed=observed,
                     failing_rows=0,
+                    event_date=parsed_date,
+                    dataset=dq_source_dataset or "",
                 )
         else:
             fetcher(

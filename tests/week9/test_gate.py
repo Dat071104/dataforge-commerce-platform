@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -56,6 +57,10 @@ def test_captured_clean_slice_has_no_p1_or_p2_findings(clean_frame):
     assert not failed_ids(report)
     assert not [result for result in report.results if result.status == "WARN"]
     assert len(sink.results) == len(report.results)
+    observed = json.loads(report.results[0].observed)
+    assert observed["dataset"] == "w9_drill"
+    assert observed["date"] == AS_OF.isoformat()
+    assert observed["publish_action"] == "PUBLISH"
 
 
 @pytest.mark.parametrize("fault_id, expected_check", EXPECTED_FAILURES.items())

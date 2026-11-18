@@ -15,6 +15,7 @@ from typing import Any
 from .results import (
     DQResult,
     ResultSink,
+    add_result_context,
     cloud_sink_from_env,
     make_result,
     new_run_id,
@@ -386,11 +387,23 @@ def run_landing_gate(
             {"maximum_celsius": unit_cfg["maximum_celsius"]},
         )
 
-    sink = result_sink or cloud_sink_from_env()
-    sink.write(results)
-    blocked = enforce == "block" and any(
+    blocking_failure = any(
         item.severity == "P1" and item.status == "FAIL" for item in results
     )
+    blocked = enforce == "block" and blocking_failure
+    has_warning = any(item.status in {"FAIL", "WARN"} for item in results)
+    publish_action = "BLOCK" if blocked else ("PUBLISH_WITH_WARNING" if has_warning else "PUBLISH")
+    results = [
+        add_result_context(
+            result,
+            dataset=dataset,
+            event_date=observation_date.isoformat(),
+            publish_action=publish_action,
+        )
+        for result in results
+    ]
+    sink = result_sink or cloud_sink_from_env()
+    sink.write(results)
     return GateReport(
         run_id=run_id,
         layer="G1",

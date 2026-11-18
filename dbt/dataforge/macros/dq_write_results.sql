@@ -51,12 +51,26 @@
                 {% set dq_status = 'FAIL' %}
             {% endif %}
             {% set failures = result.failures | default(0, true) | int %}
-            {% set observed = 'status=' ~ status ~ '; failures=' ~ failures %}
-            {% set safe_observed = observed | replace("'", "''") %}
+            {% set result_dataset = target.schema %}
+            {% if result.node.resource_type == 'source' %}
+                {% set result_dataset = result.node.schema | default(target.schema, true) %}
+            {% endif %}
+            {% set result_date = var('weather_observation_date', '') | string %}
+            {% if not result_date or result_date == '1970-01-01' %}
+                {% set result_date = run_started_at.strftime('%Y-%m-%d') %}
+            {% endif %}
+            {% set safe_observed_status = status | replace("'", "''") %}
+            {% set safe_dataset = result_dataset | string | replace("'", "''") %}
+            {% set safe_result_date = result_date | replace("'", "''") %}
+            {% set observed_sql =
+                "TO_JSON_STRING(STRUCT('" ~ safe_observed_status ~ "' AS status, "
+                ~ failures ~ " AS failures, '" ~ safe_dataset ~ "' AS dataset, '"
+                ~ safe_result_date ~ "' AS date))"
+            %}
             {% do rows.append(
                 "STRUCT('" ~ run_id ~ "' AS run_id, '" ~ safe_check_id ~ "' AS check_id, '"
                 ~ safe_layer ~ "' AS layer, '" ~ safe_severity ~ "' AS severity, '"
-                ~ dq_status ~ "' AS status, '" ~ safe_observed ~ "' AS observed, '"
+                ~ dq_status ~ "' AS status, " ~ observed_sql ~ " AS observed, '"
                 ~ safe_threshold ~ "' AS threshold, " ~ failures ~ " AS failing_rows, '"
                 ~ contract_version ~ "' AS contract_version, CURRENT_TIMESTAMP() AS ts)"
             ) %}
