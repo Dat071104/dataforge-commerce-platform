@@ -44,14 +44,14 @@ One bounded, read-only request captured a real HCM Open-Meteo ERA5 response for 
 
 `validation.py` validates response shape, `daily_units`, timezone and exact requested-date coverage before `parse_daily` runs. F05a/F11 mutations in the unit tests derive from the captured response; F-T1 uses a simulated 503 followed by that captured successful body. The W7 job records G0 pass/fail summaries only when `DATAFORGE_DQ_RESULTS_ENABLED=true`; it is off by default. This avoids enabling DQ writes for the existing W7 deployment path.
 
-The Python and dbt writers use the `dataforge_dq.dq_results` schema (`run_id, check_id, layer, severity, status, observed, threshold, failing_rows, contract_version, ts`); first write creates a day-partitioned table. G0, F02/F10 `store_failures`, the generic PK test macros, and the dbt `on-run-end` writer all require `DATAFORGE_DQ_RESULTS_ENABLED=true`; the default is false. The hook is in an integrator-owned file and was not added here:
+The Python and dbt writers use the `dataforge_dq.dq_results` schema (`run_id, check_id, layer, severity, status, observed, threshold, failing_rows, contract_version, ts`); first write creates a day-partitioned table. G0, F02/F10 `store_failures`, the generic PK test macros, and the dbt `on-run-end` writer all require `DATAFORGE_DQ_RESULTS_ENABLED=true`; the default is false. The root integrator added the hook to `dbt_project.yml` in the local Q-PR1 integration branch:
 
 ```yaml
 on-run-end:
   - "{{ dq_write_run_results(results) }}"
 ```
 
-dbt's default custom-schema naming may prefix `dataforge_dq` with the target dataset, which would defeat the requested dedicated dataset. Integrator should special-case this schema in `generate_schema_name` while preserving the current default for all other schemas, or choose another reviewed destination. Example special case:
+The integrator also added `generate_schema_name.sql` to route `dataforge_dq`, `pii_safe`, and `restricted_pii` to their exact datasets while preserving dbt's existing `<target>_<custom_schema>` naming for every other schema. An offline `dbt parse` with `DATAFORGE_DQ_RESULTS_ENABLED=false` passed; the parsed manifest resolves baseline PK `store_failures` to boolean `false` and their test schema to `dataforge_dq`. No warehouse connection was made.
 
 ```jinja
 {% macro generate_schema_name(custom_schema_name, node) -%}
@@ -115,8 +115,8 @@ The file-based WAP harness snapshots the last-good Parquet, writes a quarantined
 
 ## Integrator actions
 
-1. Add the Dockerfile copy hunk above and enable `DATAFORGE_DQ_RESULTS_ENABLED` only in the W9 isolated job environment; do not build or deploy the W7 image from this lane.
-2. Wire `dq_write_run_results(results)` in `dbt_project.yml` and ensure `store_failures` lands in the exact `dataforge_dq` dataset.
+1. The integrator added the Dockerfile copies above so a future authorized image can import G0 validation and the DQ results sink. No image was built, pushed, or deployed. Set `DATAFORGE_DQ_RESULTS_ENABLED=true` only in the W9 isolated job environment.
+2. The integrator added `dq_write_run_results(results)` in `dbt_project.yml` and the exact `dataforge_dq` schema routing; before cloud execution, verify the result writer against the provisioned isolated dataset.
 3. After G-PR1 merges, add the restricted/safe customer PK tests in Q-PR2, keeping their failure rows limited to authorized synthetic identifiers.
 4. Reconcile the preexisting landing-range/key dbt tests with the G1 owner map and the F02 G2 defense.
 5. After O provisions the authorized datasets and WIF identities, verify the G1 BigQuery source path and result writer, run dbt parse/build, execute F07/F10 on isolated fixtures, and record the exact-head CI run IDs.
