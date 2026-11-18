@@ -1,0 +1,22 @@
+{
+  "dag_run_id": "manual__s6_transient_once_20261101_20261118T111125",
+  "status": "PUBLISHED",
+  "observation_date": "2026-11-01",
+  "invocation_id": "1c533386ec3b478d558cf64115dfeb1d7af4726e6507beeb11d7461f326f040c",
+  "cloud_executions": {
+    "dbt_build": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-weather-dbt/executions/dataforge-week7-weather-dbt-p8lcw",
+    "ingest": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-weather-ingest/executions/dataforge-week7-weather-ingest-qz95p",
+    "landing": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-weather-ingest/executions/dataforge-week7-weather-ingest-nzd95",
+    "landing_reconciliation": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-weather-ingest/executions/dataforge-week7-weather-ingest-pnw6n",
+    "publish": "projects/dataforge-p7-lab-d0f725/locations/us-central1/jobs/dataforge-week7-weather-dbt/executions/dataforge-week7-weather-dbt-8jmnx"
+  },
+  "gold_verification": {
+    "bytes_billed": 20971520,
+    "invalid_metric_rows": 0,
+    "province_count": 3,
+    "query_job_id": "e416b465-f94e-43f8-9b53-e92283660575",
+    "row_count": 3
+  },
+  "source_row_count": 3,
+  "request_id": "5b5569fb5d84d9aa86dc77e66cb28edd531ea6566f7f4115043a466be35ed656"
+}

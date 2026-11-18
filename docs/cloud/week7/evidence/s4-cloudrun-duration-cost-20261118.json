@@ -1,0 +1,414 @@
+{
+  "window_utc": "2026-11-17T14:18:00Z..2026-11-17T17:10:00Z",
+  "execution_count": 45,
+  "duration_seconds": 3747.03,
+  "list_price_estimate_usd": 0.07494,
+  "rates": "Cloud Run Jobs us-central1: $0.000018/vCPU-second + $0.000002/GiB-second, no free tier assumed",
+  "executions": [
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-tb9xs",
+      "created_utc": "2026-11-17T16:33:56.653664Z",
+      "duration_sec": 63.26,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001265
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-8tzjq",
+      "created_utc": "2026-11-17T16:32:52.141601Z",
+      "duration_sec": 27.64,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000553
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-x5bw8",
+      "created_utc": "2026-11-17T16:29:45.335561Z",
+      "duration_sec": 113.05,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002261
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-pjnv4",
+      "created_utc": "2026-11-17T16:14:10.450475Z",
+      "duration_sec": 48.49,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.00097
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-klz96",
+      "created_utc": "2026-11-17T16:12:05.461031Z",
+      "duration_sec": 75.61,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001512
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-xms8j",
+      "created_utc": "2026-11-17T16:09:58.443747Z",
+      "duration_sec": 102.04,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002041
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-pfmh5",
+      "created_utc": "2026-11-17T15:57:26.001742Z",
+      "duration_sec": 42.78,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000856
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-7zt8w",
+      "created_utc": "2026-11-17T15:55:21.018943Z",
+      "duration_sec": 76.64,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001533
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-746p8",
+      "created_utc": "2026-11-17T15:53:14.334579Z",
+      "duration_sec": 88.19,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001764
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-nzlfr",
+      "created_utc": "2026-11-17T15:30:15.644861Z",
+      "duration_sec": 71.8,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001436
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-jdtzq",
+      "created_utc": "2026-11-17T15:29:11.814239Z",
+      "duration_sec": 41.77,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000835
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-nfgqk",
+      "created_utc": "2026-11-17T15:27:06.273526Z",
+      "duration_sec": 56.03,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001121
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-f7cz2",
+      "created_utc": "2026-11-17T15:17:25.805577Z",
+      "duration_sec": 33.25,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000665
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-zzmnj",
+      "created_utc": "2026-11-17T15:15:21.163626Z",
+      "duration_sec": 67.28,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001346
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-hl95t",
+      "created_utc": "2026-11-17T15:14:16.190785Z",
+      "duration_sec": 25.84,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000517
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-k2b5n",
+      "created_utc": "2026-11-17T15:05:55.947984Z",
+      "duration_sec": 23.71,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000474
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-wmrn8",
+      "created_utc": "2026-11-17T15:03:51.081837Z",
+      "duration_sec": 57.12,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001142
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-4nmv4",
+      "created_utc": "2026-11-17T15:01:43.419099Z",
+      "duration_sec": 85.27,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001705
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-g2xrd",
+      "created_utc": "2026-11-17T14:52:33.974211Z",
+      "duration_sec": 28.21,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000564
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-tkwbn",
+      "created_utc": "2026-11-17T14:50:29.590363Z",
+      "duration_sec": 62.48,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.00125
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-6l4tm",
+      "created_utc": "2026-11-17T14:48:22.545823Z",
+      "duration_sec": 78.15,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001563
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-xzcpg",
+      "created_utc": "2026-11-17T14:38:45.680933Z",
+      "duration_sec": 57.88,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001158
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-998b9",
+      "created_utc": "2026-11-17T14:37:42.065306Z",
+      "duration_sec": 31.83,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000637
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-g658r",
+      "created_utc": "2026-11-17T14:35:35.113092Z",
+      "duration_sec": 49.46,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000989
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-k4gn4",
+      "created_utc": "2026-11-17T14:22:57.092746Z",
+      "duration_sec": 114.06,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002281
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-887fg",
+      "created_utc": "2026-11-17T14:20:52.248874Z",
+      "duration_sec": 32.37,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.000647
+    },
+    {
+      "job": "dataforge-week7-weather-ingest",
+      "execution": "dataforge-week7-weather-ingest-xq79g",
+      "created_utc": "2026-11-17T14:18:44.528723Z",
+      "duration_sec": 60.4,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001208
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-lmjxj",
+      "created_utc": "2026-11-17T17:06:33.329752Z",
+      "duration_sec": 115.18,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002304
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-99w6x",
+      "created_utc": "2026-11-17T17:01:57.185225Z",
+      "duration_sec": 87.05,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001741
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-xsd76",
+      "created_utc": "2026-11-17T16:36:01.045258Z",
+      "duration_sec": 90.99,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.00182
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-mwhwh",
+      "created_utc": "2026-11-17T16:18:19.672998Z",
+      "duration_sec": 136.7,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002734
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-ndkfk",
+      "created_utc": "2026-11-17T16:16:14.531625Z",
+      "duration_sec": 86.95,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001739
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-5gnq2",
+      "created_utc": "2026-11-17T16:01:35.489704Z",
+      "duration_sec": 125.16,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002503
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-65njr",
+      "created_utc": "2026-11-17T15:58:29.491051Z",
+      "duration_sec": 159.26,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.003185
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-gxtt9",
+      "created_utc": "2026-11-17T15:32:20.831914Z",
+      "duration_sec": 110.55,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002211
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-l9l2r",
+      "created_utc": "2026-11-17T15:21:34.412019Z",
+      "duration_sec": 124.19,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002484
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-hbvbv",
+      "created_utc": "2026-11-17T15:18:29.189376Z",
+      "duration_sec": 137.32,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002746
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-jhc5n",
+      "created_utc": "2026-11-17T15:10:07.043980Z",
+      "duration_sec": 110.07,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002201
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-pc6vk",
+      "created_utc": "2026-11-17T15:06:59.646244Z",
+      "duration_sec": 123.97,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002479
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-cm96n",
+      "created_utc": "2026-11-17T14:56:42.433308Z",
+      "duration_sec": 116.54,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002331
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-7x6s5",
+      "created_utc": "2026-11-17T14:53:37.431362Z",
+      "duration_sec": 126.1,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002522
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-v7fc7",
+      "created_utc": "2026-11-17T14:42:56.673304Z",
+      "duration_sec": 145.16,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002903
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-tqbg6",
+      "created_utc": "2026-11-17T14:40:50.852078Z",
+      "duration_sec": 112.16,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002243
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-585jh",
+      "created_utc": "2026-11-17T14:28:06.780324Z",
+      "duration_sec": 143.42,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.002868
+    },
+    {
+      "job": "dataforge-week7-weather-dbt",
+      "execution": "dataforge-week7-weather-dbt-4bcl6",
+      "created_utc": "2026-11-17T14:26:02.544955Z",
+      "duration_sec": 81.65,
+      "cpu": 1.0,
+      "memory_gib": 1.0,
+      "estimate_usd": 0.001633
+    }
+  ]
+}

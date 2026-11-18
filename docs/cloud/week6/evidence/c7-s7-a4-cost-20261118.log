@@ -1,0 +1,7 @@
+C7 a4 actual list-price usage estimate (invoice unavailable)
+UsageMetrics: milliDcuSeconds=5,303,300; shuffleStorageGbSeconds=434,400.
+DCU compute: (5,303,300 / 1,000 / 3,600) DCU-hours × USD0.06 = USD0.088388.
+Standard shuffle: (434,400 / 3,600) GB-hours × USD0.000054795 = USD0.006612 (conservative treating reported GB-hours as GiB-hours).
+Measured compute + shuffle estimate = USD0.095000. GCS/network actual charges unavailable.
+Authorized aggregate three-attempt gross upper bound = USD3.662193 < USD4 stop < USD5 cap.
+Rates: https://cloud.google.com/products/managed-service-for-apache-spark/pricing

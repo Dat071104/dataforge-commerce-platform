@@ -477,7 +477,7 @@ resource "google_project_iam_custom_role" "week7_weather_operation_reader" {
 # Separate from the shared operation_reader role: only the Airflow principal
 # needs to read Cloud Run execution state for its five sensors.
 resource "google_project_iam_custom_role" "week7_weather_execution_reader" {
-  count       = var.week7_weather_enabled ? 1 : 0
+  count       = var.week7_weather_enabled && var.week7_weather_airflow_execution_reader_enabled ? 1 : 0
   project     = var.project_id
   role_id     = "dataforge_week7_weather_execution_reader"
   title       = "DataForge Week-7 weather execution reader"
@@ -855,7 +855,7 @@ resource "google_cloud_run_v2_job_iam_member" "week7_weather_airflow_dbt_runner"
 }
 
 resource "google_cloud_run_v2_job_iam_member" "week7_weather_airflow_ingest_execution_reader" {
-  count    = var.week7_weather_enabled ? 1 : 0
+  count    = var.week7_weather_enabled && var.week7_weather_airflow_execution_reader_enabled ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_job.week7_weather_ingest[0].name
@@ -864,7 +864,7 @@ resource "google_cloud_run_v2_job_iam_member" "week7_weather_airflow_ingest_exec
 }
 
 resource "google_cloud_run_v2_job_iam_member" "week7_weather_airflow_dbt_execution_reader" {
-  count    = var.week7_weather_enabled ? 1 : 0
+  count    = var.week7_weather_enabled && var.week7_weather_airflow_execution_reader_enabled ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_job.week7_weather_dbt[0].name
