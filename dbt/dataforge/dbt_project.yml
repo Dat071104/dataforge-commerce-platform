@@ -19,6 +19,9 @@ vars:
   # weather build. The default intentionally selects no source partitions.
   weather_observation_date: "1970-01-01"
 
+on-run-end:
+  - "{{ dq_write_run_results(results) }}"
+
 models:
   dataforge:
     staging:

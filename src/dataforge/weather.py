@@ -264,7 +264,8 @@ def parse_daily(payload: object, province: str) -> list[tuple]:
 
 
 def fetch(start: date, end: date, provinces: list[str] | None = None,
-          dest: Path = SOURCE, requester: Callable | None = None) -> int:
+          dest: Path = SOURCE, requester: Callable | None = None,
+          response_validator: Callable[[object, list[str], str], None] | None = None) -> int:
     if end < start:
         raise ValueError("end must be on or after start")
     if (end - start).days > 366:
@@ -348,12 +349,14 @@ def fetch(start: date, end: date, provinces: list[str] | None = None,
                         response_evidence.append(
                             _response_evidence(response, p, attempt, payload)
                         )
+                        expected_dates = [
+                            (start + timedelta(days=offset)).isoformat()
+                            for offset in range((end - start).days + 1)
+                        ]
+                        if response_validator is not None:
+                            response_validator(payload, expected_dates, p)
                         try:
                             parsed_rows = parse_daily(payload, p)
-                            expected_dates = [
-                                (start + timedelta(days=offset)).isoformat()
-                                for offset in range((end - start).days + 1)
-                            ]
                             observed_dates = [row[1] for row in parsed_rows]
                             if observed_dates != expected_dates:
                                 raise ValueError(

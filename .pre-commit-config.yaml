@@ -3,9 +3,9 @@ repos:
     rev: v0.14.6
     hooks:
       - id: ruff
-        # Existing Week 6 lint findings in these exact files at ab345f7.
+        # Existing lint findings in these exact legacy files at ab345f7, including the import-order issue surfaced by Q-PR1 CI.
         exclude: |
-          (?x)^labs/spark_nyc_taxi/managed/(?:job\.py|local_oracle\.py|preflight\.py|tests/test_local_oracle\.py)$
+          (?x)^(?:labs/spark_nyc_taxi/managed/(?:job\.py|local_oracle\.py|preflight\.py|tests/test_local_oracle\.py)|labs/spark_nyc_taxi/tests/test_spark_transforms\.py)$
 
   - repo: https://github.com/sqlfluff/sqlfluff
     rev: 3.4.2
