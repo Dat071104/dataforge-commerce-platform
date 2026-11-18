@@ -18,3 +18,4 @@ Goal: complete Mini-projects 1+2 in a single local-first, technically defensible
 - For substantial independent work, use up to three workers with disjoint file ownership and explicit reports.
 - If a phase invokes workers, wait for all worker reports before one independent controller review. The controller does not write code; it returns one evidence-based GO/REVISE/BLOCK verdict.
 - Do not use subagents for trivial sequential work. Record release test commands and outcomes in `docs/releases/v1.0-local.md`.
+- Week 9 skills: dataforge-dataops-ci, dataforge-dq-gates, dataforge-fault-injection, dataforge-governance-pii, dataforge-observability-alerting, dataforge-rfc.

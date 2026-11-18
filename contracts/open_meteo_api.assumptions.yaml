@@ -1,0 +1,91 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: urn:datacontract:dataforge:weather:open_meteo_archive_assumptions:v1
+name: open_meteo_api_assumptions
+version: 1.0.0
+status: active
+domain: weather
+dataProduct: dataforge-weather-reliability
+description:
+  purpose: Defensive assumptions for the external Open-Meteo Historical Weather API response.
+  usage: Validate each response before converting it into typed landing rows.
+  limitations: Open-Meteo is an external producer; this contract records consumer assumptions and does not imply a provider guarantee.
+team:
+  name: DataForge Weather Consumer
+authoritativeDefinitions:
+  - url: https://open-meteo.com/en/docs/historical-weather-api
+    type: implementation
+customProperties:
+  - property: endpoint
+    value: https://archive-api.open-meteo.com/v1/archive
+  - property: requestedDailyFields
+    value: precipitation_sum, temperature_2m_max
+  - property: timezone
+    value: Asia/Ho_Chi_Minh
+  - property: model
+    value: era5
+schema:
+  - name: archive_response
+    logicalType: object
+    description: Minimal response fields consumed from one archive request.
+    properties:
+      - name: latitude
+        logicalType: number
+        required: true
+        description: Resolved latitude returned by the provider.
+      - name: longitude
+        logicalType: number
+        required: true
+        description: Resolved longitude returned by the provider.
+      - name: timezone
+        logicalType: string
+        required: true
+        description: Must resolve to Asia/Ho_Chi_Minh for this pipeline.
+      - name: daily
+        logicalType: object
+        required: true
+        description: Daily arrays for the requested variables.
+        properties:
+          - name: time
+            logicalType: array
+            required: true
+            description: Non-empty ISO 8601 local-date array; must cover every requested date exactly once.
+            items:
+              logicalType: string
+          - name: precipitation_sum
+            logicalType: array
+            required: true
+            description: Daily precipitation sums in millimetres; null values remain unknown.
+            items:
+              logicalType: number
+          - name: temperature_2m_max
+            logicalType: array
+            required: true
+            description: Daily maximum two-metre temperature in degrees Celsius; null values remain unknown.
+            items:
+              logicalType: number
+      - name: daily_units
+        logicalType: object
+        required: true
+        description: Unit metadata returned by Open-Meteo for each requested daily variable.
+        properties:
+          - name: precipitation_sum
+            logicalType: string
+            required: true
+            description: Expected unit is mm.
+          - name: temperature_2m_max
+            logicalType: string
+            required: true
+            description: Expected unit is °C because the client does not request a Fahrenheit override.
+    quality:
+      - id: g0_api_schema
+        type: text
+        severity: error
+        description: check_id=G0.API.SCHEMA; F05a; the JSON object, daily arrays, timezone, and daily_units fields must exist with the expected types and units.
+      - id: g0_api_response_completeness
+        type: text
+        severity: error
+        description: check_id=G0.API.RESPONSE_COMPLETENESS; F11; HTTP 200 with empty arrays, unequal array lengths, or missing requested dates is a failure.
+      - id: g0_api_transient_retry
+        type: text
+        description: check_id=G0.API.TRANSIENT_RETRY; F-T1; a single HTTP 503 is retried and success after retry emits no P1 alert.

@@ -34,7 +34,7 @@ sources:
       Immutable Mini-project 3 Open-Meteo daily observation batches landed in the
       isolated weather domain. No commerce or payment facts are joined here.
     database: "{{ target.database }}"
-    schema: weather_mini3
+    schema: "{{ env_var('DBT_WEATHER_LANDING_SCHEMA', 'weather_mini3') }}"
     tables:
       - name: weather_landing
         description: >-

@@ -1,0 +1,145 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: urn:datacontract:dataforge:weather:weather_landing:v1
+name: weather_landing
+version: 1.0.0
+status: active
+domain: weather
+dataProduct: dataforge-weather-reliability
+description:
+  purpose: Typed Open-Meteo daily observations consumed by the Week 7 dbt weather models.
+  usage: One row per request, province, and local observation date, with immutable request provenance.
+  limitations: Precipitation and temperature may be null when the provider reports an unknown value.
+team:
+  name: DataForge Weather Engineering
+customProperties:
+  - property: producer
+    value: cloud/jobs/week7_weather/weather_job.py
+  - property: consumer
+    value: dbt/dataforge/models/weather/staging/stg_weather_mini3_landing.sql
+  - property: changePolicy
+    value: SemVer; breaking field, type, key, or grain change requires a major version and consumer acknowledgement.
+schema:
+  - name: weather_landing
+    physicalType: table
+    description: Immutable typed landing rows from the Open-Meteo archive request manifest.
+    dataGranularityDescription: One row per request_id, province_id, and observation_date.
+    properties:
+      - name: request_id
+        logicalType: string
+        physicalType: STRING
+        primaryKey: true
+        primaryKeyPosition: 1
+        required: true
+        description: Content-addressed immutable request identity; provider revisions receive a new identity.
+        quality:
+          - id: g1_landing_idempotency_replay
+            type: text
+            description: check_id=G1.LANDING.IDEMPOTENCY_REPLAY; F09 replay of the same request_id must be a NO_OP and must not append duplicate landing rows.
+      - name: province_id
+        logicalType: string
+        physicalType: STRING
+        primaryKey: true
+        primaryKeyPosition: 2
+        required: true
+        description: Approved city-centre code HCM, HN, or DN.
+        quality:
+          - id: g1_landing_province_id_not_null
+            type: library
+            metric: nullValues
+            mustBe: 0
+            severity: error
+            description: check_id=G1.LANDING.PROVINCE_ID_NOT_NULL; F01; province_id must not be null.
+          - id: g1_landing_province_domain
+            type: library
+            metric: invalidValues
+            arguments:
+              validValues: [HCM, HN, DN]
+            mustBe: 0
+            severity: error
+            description: check_id=G1.LANDING.PROVINCE_DOMAIN; F04; only the three approved province codes are valid.
+      - name: observation_date
+        logicalType: date
+        physicalType: DATE
+        primaryKey: true
+        primaryKeyPosition: 3
+        required: true
+        description: Local calendar date returned by the provider for Asia/Ho_Chi_Minh.
+        quality:
+          - id: g1_landing_no_future_date
+            type: text
+            severity: error
+            description: check_id=G1.LANDING.NO_FUTURE_DATE; F08; the observation date must not be in the future.
+      - name: precipitation_mm
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Daily precipitation sum in millimetres; null remains unknown.
+      - name: temp_max_c
+        logicalType: number
+        physicalType: FLOAT64
+        required: false
+        description: Daily maximum two-metre air temperature in Celsius; null remains unknown.
+      - name: source
+        logicalType: string
+        physicalType: STRING
+        required: true
+        description: Current source identifier open_meteo_era5.
+      - name: model
+        logicalType: string
+        physicalType: STRING
+        required: true
+        description: Provider model identifier, currently era5.
+      - name: source_sha256
+        logicalType: string
+        physicalType: STRING
+        required: true
+        description: SHA-256 digest tying the typed row to the immutable source payload.
+      - name: manifest_uri
+        logicalType: string
+        physicalType: STRING
+        required: true
+        description: Immutable GCS COMPLETE manifest URI.
+      - name: manifest_generation
+        logicalType: integer
+        physicalType: INT64
+        required: true
+        description: Exact immutable GCS manifest generation.
+      - name: landed_at
+        logicalType: timestamp
+        physicalType: TIMESTAMP
+        required: true
+        description: UTC timestamp when the typed row was first loaded.
+    quality:
+      - id: g1_landing_grain_unique
+        type: library
+        metric: duplicateValues
+        mustBe: 0
+        arguments:
+          properties: [request_id, province_id, observation_date]
+        severity: error
+        description: check_id=G1.LANDING.GRAIN_UNIQUE; F02; the request/province/date composite grain must be unique.
+      - id: g1_landing_physical_range
+        type: text
+        severity: error
+        description: check_id=G1.LANDING.PHYSICAL_RANGE; F03; precipitation_mm must be at least 0 mm and temp_max_c must be between -90 and 70 degrees Celsius, inclusive. These deliberately broad plausibility bounds must be reviewed against clean fixtures before enforcement.
+      - id: g1_landing_rows_per_date
+        type: text
+        severity: error
+        description: check_id=G1.LANDING.ROWS_PER_DATE; F06; exactly three province rows are required per requested date.
+      - id: g1_landing_schema
+        type: text
+        severity: error
+        description: check_id=G1.LANDING.SCHEMA; F05a; required columns and physical types must match this schema.
+      - id: g1_landing_schema_additive
+        type: text
+        severity: warning
+        description: check_id=G1.LANDING.SCHEMA_ADDITIVE; F05b; a new nullable column may publish with a schema-drift warning.
+      - id: g1_landing_temp_unit_range
+        type: text
+        severity: error
+        description: check_id=G1.LANDING.TEMP_UNIT_RANGE; F12; temperature values that indicate Fahrenheit interpreted as Celsius must be blocked.
+      - id: g2_source_freshness
+        type: text
+        severity: error
+        description: check_id=G2.SOURCE.FRESHNESS; F07; warn after 36 hours and block a new publish after 72 hours without fresh landing.
