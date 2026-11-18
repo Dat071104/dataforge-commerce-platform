@@ -4,7 +4,7 @@ Branch: `feat/w9-q-1` from `origin/main` at `ab345f7`. Scope stopped at Q1–Q6 
 
 ## Status
 
-Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 CI and exact-head run IDs are **UNVERIFIED**; GitHub access was blocked at `github.com:443`.
+Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 #44 exact-head runs failed as recorded below; no post-fix rerun is claimed.
 
 ## Changed files
 
@@ -103,6 +103,12 @@ The file-based WAP harness snapshots the last-good Parquet, writes a quarantined
 
 ## Verification commands and outcomes
 
+### Q-PR1 exact-head CI RCA
+
+Runs `44361556271`, `44361676034`, `44361676432`, and `44361676242` failed. The failing steps were the offline suite and lint; Pages passed. The offline suite could not find `tests/week9/faults/weather_7date_slice.parquet` because `.gitignore:48` ignores `*.parquet`. The existing file's SHA-256 was verified as `ad79df00245dcdd0a909e08093fe70e02c07884e65dce445d2f3dc5f9114e798` (10,160 bytes) and it is now force-tracked without changing its bytes.
+
+SQLFluff 3.4.2 flagged LT05 on the `dq_float_equal` macro signature and unresolved `env_var` / `dq_float_equal` references plus LT02/PRS in the F10 singular test. I wrapped the macro and config expression for layout only; the predicates and thresholds are unchanged. The integrator is adding the shared SQLFluff dbt/Jinja configuration. No CI rerun has been performed after these changes; do not treat this as green.
+
 - `pytest tests/week9 -q` in the existing GX 1.25.0 Python 3.12 venv with the local pytest/PyYAML user-site path appended: **31 passed**. `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` avoids an unrelated global `dash` plugin import; no packages were installed.
 - `ruff check cloud/jobs/week7_weather/validation.py cloud/jobs/week7_weather/weather_job.py src/dataforge/weather.py src/dataforge/dq tests/week9 scripts/week9_fault_inject.py`: **passed**.
 - `python -m compileall -q src/dataforge/dq cloud/jobs/week7_weather/validation.py cloud/jobs/week7_weather/weather_job.py src/dataforge/weather.py tests/week9 scripts/week9_fault_inject.py`: **passed**.
@@ -111,7 +117,7 @@ The file-based WAP harness snapshots the last-good Parquet, writes a quarantined
 - `dbt parse --no-partial-parse --project-dir D:\DATA_ENGINEER\DataForge_w9_q\dbt\dataforge --profiles-dir D:\DATA_ENGINEER\_tmp\w9_q_dbt_profile_20261118 --target offline` with pinned dbt-core 1.11.17 / dbt-bigquery 1.11.3: **passed** with the flag unset and with `DATAFORGE_DQ_RESULTS_ENABLED=true`; manifest `store_failures` values were bool `False` by default and bool `True` when enabled for F02, F10, and the four baseline PK tests. No warehouse connection was made. `dbt build` and live result-hook execution remain **UNVERIFIED**.
 - The temporary profile at `D:\DATA_ENGINEER\_tmp\w9_q_dbt_profile_20261118\profiles.yml` is a copy of `profiles.example.yml` with the offline target (`dataforge-offline-project`) and no credentials. Automatic review rejected my cleanup command; I did not retry, so the temporary profile directory remains.
 - Existing `pytest tests/mini3_api/test_weather_job.py -q` in the pinned W9 Python 3.12.13 environment: **11 passed**. An earlier system-Python attempt had 2 import errors for missing `google.cloud.bigquery`; no packages were installed, and the pinned-environment rerun supersedes that mismatch.
-- CI run IDs and exact-head status: **UNVERIFIED** because GitHub access is blocked at `github.com:443`; integrator will batch remote operations.
+- CI run IDs above identify the failed exact-head runs. Post-fix exact-head status remains **UNVERIFIED**; no rerun has been performed.
 
 ## Integrator actions
 
