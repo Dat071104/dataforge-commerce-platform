@@ -1,4 +1,10 @@
-{{ config(schema='restricted_pii', alias='customer_profile_restricted', materialized='view') }}
+{{
+    config(
+        schema='restricted_pii',
+        alias='customer_profile_restricted',
+        materialized='view',
+    )
+}}
 
 select
     fixture_id,

@@ -141,6 +141,10 @@ The retained F13 manifest fixture projects a raw e-mail column with `classificat
 
 ## CI, risks, and integrator actions
 
+### G-PR1 DataOps lint RCA
+
+DataOps lint run `44374331732` failed only SQLFluff LT05 on the two model-level `config(...)` lines (88 and 95 characters versus the 80-character limit). Both calls were reformatted across lines without changing their configuration values or SQL semantics. No cloud action was involved.
+
 - CI run IDs: **UNVERIFIED**. Worker G did not push/open a PR; root reported `github.com:443` unavailable and will batch remote operations later.
 - HCL plan syntax and provider resource behavior: **UNVERIFIED**; Terraform was not planned or applied. `week9_pii_policy_tags.tf` stays opt-in false and must be reviewed alongside O1’s dataset resource names. O should keep deletion protection on both datasets.
 - `generate_schema_name.sql` is the only cross-cutting dbt change. Review its exact-schema exception before merge and run dbt parse/build after profile/dataset setup.

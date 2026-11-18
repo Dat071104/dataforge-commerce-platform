@@ -1,4 +1,10 @@
-{{ config(schema='pii_safe', alias='dim_customer_profile_safe', materialized='table') }}
+{{
+    config(
+        schema='pii_safe',
+        alias='dim_customer_profile_safe',
+        materialized='table',
+    )
+}}
 
 select
     customer_token,
