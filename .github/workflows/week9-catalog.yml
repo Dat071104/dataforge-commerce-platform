@@ -1,0 +1,136 @@
+name: Week 9 metadata catalog
+
+on:
+  pull_request:
+    paths:
+      - "dbt/dataforge/**"
+      - "governance/**"
+      - "scripts/week9_catalog_fallback.py"
+      - ".github/workflows/week9-catalog.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: week9-catalog-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  catalog:
+    name: W9 dbt and metadata catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DBT_WEATHER_LANDING_SCHEMA: w9_drill
+      PYTHONUTF8: "1"
+      W9_WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      W9_META_READ_SA_EMAIL: ${{ vars.W9_META_READ_SA_EMAIL }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dbt runtime
+        run: python -m pip install --disable-pip-version-check -r cloud/jobs/week7/requirements.lock
+
+      - name: Parse dbt offline manifest
+        run: |
+          cp dbt/dataforge/profiles.example.yml dbt/dataforge/profiles.yml
+          dbt parse --project-dir dbt/dataforge --profiles-dir dbt/dataforge --target offline \
+            --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
+
+      - name: Start ephemeral catalog stack
+        run: docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml up -d --wait
+
+      - name: Register W9 catalog service
+        run: |
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 \
+            http://127.0.0.1:8586/healthcheck >/dev/null
+          curl --fail --silent --show-error --request POST \
+            --header 'Content-Type: application/json' \
+            --data-binary @governance/openmetadata/dataforge_service.json \
+            http://127.0.0.1:8585/api/v1/services/databaseServices >/dev/null
+
+      - name: Ingest CI dbt manifest with OpenMetadata CLI
+        id: dbt_manifest_ingestion
+        run: >-
+          docker run --rm --network dataforge-w9-catalog-net
+          --volume "${{ github.workspace }}:/workspace:ro"
+          --workdir /workspace
+          --entrypoint metadata
+          docker.getcollate.io/openmetadata/ingestion:2.0.7
+          ingest -c /workspace/governance/openmetadata/dbt_ingestion.yaml
+
+      - name: Authenticate metadata reader through WIF
+        id: gcp_auth
+        if: ${{ env.W9_WIF_PROVIDER != '' && env.W9_META_READ_SA_EMAIL != '' }}
+        continue-on-error: true
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: dataforge-p7-lab-d0f725
+          workload_identity_provider: ${{ env.W9_WIF_PROVIDER }}
+          service_account: ${{ env.W9_META_READ_SA_EMAIL }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Attempt W9-filtered BigQuery metadata ingestion
+        id: bigquery_metadata_ingestion
+        if: ${{ steps.gcp_auth.outcome == 'success' }}
+        env:
+          WIF_CREDENTIAL_FILE: ${{ steps.gcp_auth.outputs.credentials_file_path }}
+        run: |
+          set +e
+          credential_name="$(basename "$WIF_CREDENTIAL_FILE")"
+          docker run --rm --network dataforge-w9-catalog-net \
+            --volume "${{ github.workspace }}:/workspace:ro" \
+            --workdir /workspace \
+            --env "GOOGLE_APPLICATION_CREDENTIALS=/workspace/$credential_name" \
+            --entrypoint metadata \
+            docker.getcollate.io/openmetadata/ingestion:2.0.7 \
+            ingest -c /workspace/governance/openmetadata/bigquery_ingestion.yaml \
+            > "$RUNNER_TEMP/openmetadata-bigquery-ingestion.log" 2>&1
+          connector_exit_code=$?
+          echo "exit_code=$connector_exit_code" >> "$GITHUB_OUTPUT"
+
+      - name: Record sanitized catalog result and Dataplex fallback
+        if: always()
+        env:
+          WIF_AUTH_STATUS: ${{ steps.gcp_auth.outcome }}
+          BIGQUERY_CONNECTOR_EXIT_CODE: ${{ steps.bigquery_metadata_ingestion.outputs.exit_code }}
+          BIGQUERY_CONNECTOR_LOG: ${{ runner.temp }}/openmetadata-bigquery-ingestion.log
+          DBT_MANIFEST_STATUS: ${{ steps.dbt_manifest_ingestion.outcome }}
+        run: |
+          fallback_args=(--auth-status "${WIF_AUTH_STATUS:-skipped}" --log-file "$BIGQUERY_CONNECTOR_LOG" --summary-file "$GITHUB_STEP_SUMMARY")
+          if [ -n "$BIGQUERY_CONNECTOR_EXIT_CODE" ]; then
+            fallback_args+=(--exit-code "$BIGQUERY_CONNECTOR_EXIT_CODE")
+          fi
+          python scripts/week9_catalog_fallback.py "${fallback_args[@]}"
+          if [ "$DBT_MANIFEST_STATUS" = "success" ]; then
+            echo "DBT_MANIFEST_CATALOG=PASS (CI manifest ingested into the isolated catalog service)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "DBT_MANIFEST_CATALOG=UNVERIFIED (manifest ingestion did not complete successfully)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "BigQuery connector is restricted to W9 schemas: w9_drill, dataforge_dq, restricted_pii, pii_safe, dbt_ci_pr_*; profiler, sample data, usage, query-log, policy tags, and Dataplex extraction are disabled." >> "$GITHUB_STEP_SUMMARY"
+          echo "Dataplex is the separate live GCP lineage path; G7 remains pending the integrator-run CI build and lineage event." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove ephemeral WIF credentials and connector log
+        if: always()
+        env:
+          WIF_CREDENTIAL_FILE: ${{ steps.gcp_auth.outputs.credentials_file_path }}
+        run: |
+          if [ -n "$WIF_CREDENTIAL_FILE" ]; then
+            rm -f -- "$WIF_CREDENTIAL_FILE"
+          fi
+          rm -f -- "$RUNNER_TEMP/openmetadata-bigquery-ingestion.log"
+
+      - name: Stop ephemeral catalog stack
+        if: always()
+        run: docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml down --volumes --remove-orphans

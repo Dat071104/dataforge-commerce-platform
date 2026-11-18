@@ -1,38 +1,28 @@
-# W9 Governance lane — G1–G5 evidence
+# W9 Governance lane — G1–G9 evidence
 
-**Branch:** `feat/w9-g-1` from `origin/main` `ab345f7`
+**Branch:** `feat/w9-g-2` from `origin/main` `3a20050e813700cd0a050c69aa1dbd652ca9fc08`
 
-**Status:** G1–G5 local implementation complete; G4 live access, Terraform plan/apply, dbt build, CI, and G-PR1 remain **UNVERIFIED**.
+**Status:** G1–G5 merged in PR #45. G6/G8/G9 local artifacts are implemented; G6 Actions workflow, G4 live access, dbt build, G7 lineage evidence, Terraform plan/apply, and CI remain **UNVERIFIED/PENDING**. The Actions workflow is configured to attempt filtered BigQuery metadata ingestion under AF2; no GCP call was made in this worker block.
 
-**Data boundary:** synthetic-only; no GCP query, load, IAM mutation, API enablement, secret creation, or production write was performed.
+**Data boundary:** synthetic-only; no GCP query/load, WIF token request, IAM mutation, API enablement, secret creation, local OpenMetadata/Docker run, or production write was performed. OpenMetadata runs only through the GitHub Actions workflow, which remains unrun in this worker block.
 
 ## Changed files
 
-- `governance/classification.yml`
-- `dbt/dataforge/models/sources.yml`
-- `dbt/dataforge/models/schema.yml`
-- `dbt/dataforge/models/weather/marts/schema.yml`
-- `dbt/dataforge/models/pii/marts/dim_customer_profile_safe.sql`
-- `dbt/dataforge/models/pii/marts/schema.yml`
-- `dbt/dataforge/models/pii/restricted/stg_customer_profile_restricted.sql`
-- `dbt/dataforge/models/pii/restricted/schema.yml`
-- `dbt/dataforge/macros/pii_masks.sql`
-- `dbt/dataforge/macros/generate_schema_name.sql`
+- `governance/classification.yml` — official legal-source status update.
 - `src/dataforge/privacy/__init__.py`
-- `src/dataforge/privacy/synthetic.py`
-- `src/dataforge/privacy/pseudonymize.py`
-- `scripts/week9_pii_generate.py`
-- `scripts/week9_pii_guard.py`
-- `scripts/week9_classification_coverage.py`
-- `scripts/week9_verify_access.py`
+- `src/dataforge/privacy/erasure.py`
+- `scripts/week9_pii_erasure.py`
+- `scripts/week9_catalog_fallback.py`
 - `tests/week9/governance/test_week9_governance.py`
-- `tests/week9/governance/fixtures/f13_public_email_manifest.json`
-- `tests/week9/governance/fixtures/safe_masked_manifest.json`
-- `cloud/terraform/week9_dataops/policy_tags.tf`
-- `pyproject.toml` and `requirements-py311.lock` (pin Faker and add YAML/Jinja validation dependencies)
+- `.github/workflows/week9-catalog.yml`
+- `governance/openmetadata/docker-compose.yml`
+- `governance/openmetadata/dataforge_service.json`
+- `governance/openmetadata/dbt_ingestion.yaml`
+- `governance/openmetadata/bigquery_ingestion.yaml`
+- `governance/openmetadata/README.md`
 - `docs/process/lanes/w9-g.md`
 
-The three existing dbt YAML files remain LF as stored in Git; `git diff --ignore-space-at-eol --numstat` showed only intended inserted metadata lines. The lane does not edit Q’s `dbt/dataforge/models/week9_tests.yml`.
+G1–G5 artifacts are already in PR #45 and are not part of this branch delta. This branch does not edit Q’s `dbt/dataforge/models/week9_tests.yml`.
 
 ## G1 — classification
 
@@ -107,21 +97,49 @@ No query returns raw values in the verifier receipt. The synthetic loader’s ex
 
 The retained F13 manifest fixture projects a raw e-mail column with `classification: public` and `pii_type: email`; it must fail. The separate safe-masked manifest fixture contains only the safe mart fields and passes. The guard also allows a `customer_id` output when it remains `confidential` and typed as `indirect_customer_identifier`; it blocks the same identifier if classified public.
 
+## G6 — OpenMetadata catalog in GitHub Actions
+
+`.github/workflows/week9-catalog.yml` is the only runner for the OpenMetadata profile. It uses a credential-free dbt `offline` parse, then a temporary OpenMetadata 2.0.7 server with Postgres 16 and OpenSearch 2.19, with no Airflow service. The version-matched CLI ingests the CI `manifest.json` and then attempts BigQuery metadata ingestion under service name `dataforge_w9_catalog`. The dbt manifest contains model metadata and dbt lineage; this is distinct from G7 execution lineage.
+
+The BigQuery connector enumerates project dataset IDs, then applies the schema filter before listing tables ([enumeration and filter](https://github.com/open-metadata/OpenMetadata/blob/2.0.7-release/ingestion/src/metadata/ingestion/source/database/bigquery/metadata.py#L654-L681), [dataset-filter path](https://github.com/open-metadata/OpenMetadata/blob/2.0.7-release/ingestion/src/metadata/ingestion/source/database/bigquery/metadata.py#L817-L840)). Dataset-ID listing is metadata-only under AF2's project-scoped `roles/bigquery.metadataViewer`; table metadata is restricted to `w9_drill`, `dataforge_dq`, `restricted_pii`, `pii_safe`, and `dbt_ci_pr_*`. No W7 table metadata is queried or included in evidence. Profiler/sample data, usage/query logs, policy tags, DDL, owners, and stored procedures are disabled; no table rows are requested and no source resource is modified. WIF uses `W9_WIF_PROVIDER` and `W9_META_READ_SA_EMAIL` only in this Actions workflow. No IAM is expanded.
+
+OpenMetadata documents additional metadata permissions including `bigquery.tables.getData`, `bigquery.jobs.create`, and `bigquery.jobs.listAll`, beyond AF2's metadata viewer/Data Catalog viewer grants. The workflow suppresses raw connector logs and reports only a recognized denied permission or a generic failure category; a permission denial becomes the sanitized `DATAPLEX_FALLBACK_REASON`. BigQuery ingestion remains **UNVERIFIED** until the workflow runs. Dataplex is the separate live GCP lineage path; G7 remains pending the integrator CI build and lineage event. [OpenMetadata 2.0 dbt CLI docs](https://docs.open-metadata.org/v2.0.x/connectors/database/dbt/run-dbt-workflow-externally); [BigQuery connector permissions](https://docs.open-metadata.org/v2.0.x/connectors/database/bigquery).
+
+## G7 — Dataplex/BigQuery lineage
+
+**PENDING_INTEGRATOR.** The Dataplex/BigQuery Lineage API is disabled, and this worker did not enable it or query GCP. Wait for the integrator-run CI dbt build and the corresponding lineage event before claiming any G7 evidence. Record the build/run ID, lineage event ID/time, source and target asset names, and AF8 cost-ledger entry; stay below the AF8 $1.00 cap and $0.80 stop line. Disable the Lineage API after evidence capture as directed by the integrator. No lineage event is claimed here.
+
+## G8 — current legal-source check
+
+The legal mapping in `governance/classification.yml` was reviewed on 2026-11-19 against official records. Law 91/2025/QH15 took effect 2026-01-01; Article 20 covers cross-border personal-data transfer and Article 39 contains limited transition treatment. Decree 356/2025/NĐ-CP also took effect 2026-01-01; its Article 42(2) repeals Decree 13/2023/NĐ-CP. Decree 13 is not generally in force after that date; only the stated Article 39 transition applies.
+
+Two later enforcement decrees are included so the register is current. Decree 330/2026/NĐ-CP took effect 2026-08-19; the official Government summary lists personal-data deletion/destruction/de-identification and cross-border transfer among its enforcement topics. Decree 363/2026/NĐ-CP took effect 2026-11-11; the official Government summary says it excludes conduct handled by the separate cybersecurity/personal-data penalty decree. The official metadata and summaries were available, but the signed 330/363 PDFs were too large for this review fetch; exact article/penalty mapping is marked `LEGAL_UNVERIFIED`. This is a source map, not legal advice. [Law 91 record](https://vanban.chinhphu.vn/?docid=214590&pageid=27160); [Decree 356 record](https://vanban.chinhphu.vn/?docid=216387&pageid=27160&typegroupid=4); [Decree 330 record](https://vanban.chinhphu.vn/?classid=1&docid=219266&pageid=27160&typegroupid=4); [Decree 330 Government summary](https://baochinhphu.vn/muc-xu-phat-vi-pham-hanh-chinh-doi-voi-hanh-vi-vi-pham-ve-bao-ve-du-lieu-ca-nhan-102260822154959691.htm); [Decree 363 record](https://vanban.chinhphu.vn/?docid=219598&pageid=27160); [Decree 363 Government summary](https://baochinhphu.vn/chi-dao-dieu-hanh-cua-chinh-phu-thu-tuong-chinh-phu-ngay-23-9-2026-102260923060636776.htm).
+
+## G9 — P2 synthetic erasure drill
+
+`src/dataforge/privacy/erasure.py` and `scripts/week9_pii_erasure.py` model a dry-run across `restricted_pii.customer_profile`, the restricted view, `pii_safe.dim_customer_profile_safe`, and a synthetic SCD2 snapshot relation. Unit fixtures use one synthetic profile and two snapshot versions; the dry-run reports counts only, and the optional local simulation removes those in-memory rows only. It never calls BigQuery, deletes cloud data, or logs the subject token. The current staging relation is a view, so a real erasure should delete from raw and verify the re-evaluated view is empty; any materialized staging copy requires its own purge.
+
+BigQuery time travel keeps changed/deleted data recoverable for seven days by default; the configured window can be 2–7 days, followed by an additional seven-day fail-safe period. Thus a row delete is not immediate physical erasure. The shared HMAC key is pseudonymization, not encryption: deleting it breaks joins for all subjects and does not erase raw or historical data. Per-subject crypto-shredding would need a separately designed per-subject encryption key/DEK and is not implemented. No live erasure or crypto-shred was run. [BigQuery time travel/fail-safe docs](https://docs.cloud.google.com/bigquery/docs/time-travel).
+
 ## Checks and evidence
 
 | Command | Result |
 |---|---|
-| `python -m pytest tests/week9/governance -q` | Exit 0; 11 passed. |
-| `python -m ruff check src/dataforge/privacy scripts/week9_classification_coverage.py scripts/week9_pii_guard.py scripts/week9_pii_generate.py scripts/week9_verify_access.py tests/week9/governance` | Exit 0; all checks passed. |
-| `python -m compileall -q src/dataforge/privacy scripts/week9_classification_coverage.py scripts/week9_pii_guard.py scripts/week9_pii_generate.py scripts/week9_verify_access.py tests/week9/governance` | Exit 0. |
-| `$env:PYTHONPATH='src'; python scripts/week9_classification_coverage.py` | Exit 0; 351/351 columns and 55/55 Gold columns complete. |
+| `python -m pytest tests/week9/governance -q` | Exit 0; 17 passed. |
+| `python -m ruff check src/dataforge/privacy scripts/week9_catalog_fallback.py scripts/week9_classification_coverage.py scripts/week9_pii_guard.py scripts/week9_pii_generate.py scripts/week9_pii_erasure.py scripts/week9_verify_access.py tests/week9/governance` | Exit 0; all checks passed. |
+| `python -m compileall -q src/dataforge/privacy scripts/week9_catalog_fallback.py scripts/week9_classification_coverage.py scripts/week9_pii_guard.py scripts/week9_pii_generate.py scripts/week9_pii_erasure.py scripts/week9_verify_access.py tests/week9/governance` | Exit 0. |
+| `$env:PYTHONPATH='src'; python scripts/week9_classification_coverage.py` | Exit 0; 351 total columns classified (110 source, 213 model, 28 snapshot); 55 Gold columns are a subset of model columns, all complete. |
 | `$env:PYTHONPATH='src'; python scripts/week9_pii_guard.py --manifest tests/week9/governance/fixtures/safe_masked_manifest.json` | Exit 0; 1 model, 1 restricted source, 0 findings. |
 | `$env:PYTHONPATH='src'; python scripts/week9_pii_guard.py --manifest tests/week9/governance/fixtures/f13_public_email_manifest.json` | Exit 1 as expected; one sanitized F13 finding for the public e-mail column. |
 | `$env:PYTHONPATH='src'; python scripts/week9_pii_generate.py` | Exit 0; local synthetic plan, 5 rows, cloud writes false, PII values emitted false. |
 | `$env:PYTHONPATH='src'; python scripts/week9_verify_access.py` | Exit 0; plan status UNVERIFIED, live resources absent, no values logged. |
-| YAML parse of classification + five dbt YAML files | Exit 0; 6 files parsed. |
+| `$env:PYTHONPATH='src'; python scripts/week9_pii_erasure.py` | Exit 0; synthetic dry-run plan across raw, staging-view, mart, and two snapshot versions; no cloud mutation. |
+| `$env:PYTHONPATH='src'; python scripts/week9_pii_erasure.py --simulate-local-delete` | Exit 0; in-memory fixture cleared across all four layers; this is unit simulation only. |
+| Static YAML/JSON checks for catalog workflow, stack, and configs | Exit 0 in unit suite; no Docker/OpenMetadata process was launched locally. |
+| YAML/JSON parse of classification, six dbt YAML files, four OpenMetadata/GHA YAML files, and service JSON | Exit 0; 11 YAML and 1 JSON parsed. |
 | `git diff --check` | Exit 0. |
-| Terraform plan/apply, dbt parse/build, live BigQuery load/query, API checks | Not run; **UNVERIFIED** pending integrator preflight. |
+| G2/G6 GitHub Actions run ID | **UNVERIFIED**; workflow not run in this worker block. |
+| dbt parse/build, GCP connector, G4, G7 lineage event, Terraform plan/apply, live delete, API checks | Not run; **UNVERIFIED/PENDING_INTEGRATOR**. |
 
 ### `check_id` ↔ fixture mapping
 
@@ -138,12 +156,21 @@ The retained F13 manifest fixture projects a raw e-mail column with `classificat
 | `G4-ACCESS-PLAN-001` | Offline access plan for `restricted_pii.customer_profile` and `pii_safe.dim_customer_profile_safe`; no live identity used. |
 | `G5-F13-001` | `tests/week9/governance/fixtures/f13_public_email_manifest.json`; guard detects its raw e-mail output. `safe_masked_manifest.json` is the passing comparison. |
 | `G5-INDIRECT-CUSTOMER-001` | Synthetic manifest mutation proves confidential `customer_id` is allowed while public classification fails. |
+| `G6-OM-CATALOG-001` | Static checks confirm Actions-only dbt and BigQuery recipes, W9 dataset filters, metadata-only flags, WIF SA wiring, and sanitized fallback. GHA run is unverified; dataset-ID enumeration is permitted metadata, then the schema filter limits table metadata to W9 datasets. |
+| `G6-OM-PERMISSION-FALLBACK-001` | Synthetic connector log with a `bigquery.tables.getData` denial yields only that permission name in the Dataplex fallback; table/dataset names are omitted. |
+| `G6-OM-UNKNOWN-FAILURE-001` | Generic synthetic connector failure produces a sanitized UNVERIFIED receipt without raw log contents. |
+| `G7-DATAPLEX-LINEAGE-001` | No fixture/event yet; pending integrator CI dbt build and captured lineage event under AF8. |
+| `G8-LEGAL-SOURCE-001` | Official records and summaries for Law 91, Decree 356, Decree 330, and Decree 363; article-level 330/363 crosswalk is explicitly LEGAL_UNVERIFIED. |
+| `G9-P2-ERASURE-PLAN-001` | In-memory synthetic erasure plan matches raw/staging/mart and two SCD2 versions; dry-run only. |
+| `G9-P2-ERASURE-SIM-001` | Local-only simulation removes all fixture rows for the synthetic HMAC-shaped token; no cloud call. |
 
 ## CI, risks, and integrator actions
 
 ### G-PR1 DataOps lint RCA
 
 DataOps lint run `44374331732` failed only SQLFluff LT05 on the two model-level `config(...)` lines (88 and 95 characters versus the 80-character limit). Both calls were reformatted across lines without changing their configuration values or SQL semantics. No cloud action was involved.
+
+Focused local recheck with SQLFluff 3.4.2 passed for both files using the repository BigQuery/Jinja dialect settings.
 
 - G-PR1 #45 head `e4e4f06` ran DataForge push/PR `44377779560` / `44377789863` and Week 7 `44377789915`; offline regression failed because `test_model_pk_config.py` still referenced the removed `models/week9_tests.yml`. Pages `44377789937` and DataOps lint/Gitleaks/toolbox `44377789868` passed. Week 7 dbt parse and Airflow reference passed on that head. The integrator updated the test path locally; the post-fix head still needs exact-head CI.
 - HCL plan syntax and provider resource behavior: **UNVERIFIED**; Terraform was not planned or applied. `week9_pii_policy_tags.tf` stays opt-in false and must be reviewed alongside O1’s dataset resource names. O should keep deletion protection on both datasets.
@@ -153,15 +180,17 @@ DataOps lint run `44374331732` failed only SQLFluff LT05 on the two model-level 
 - Data Catalog and BigQuery Data Policy API state, applied policy tags, masking behavior, analyst denial, and privileged access were not live-tested. No API was enabled and no cloud resource was created.
 - The configured US region would make real Vietnamese personal-data storage/processing a cross-border-transfer case under Law 91 Article 20. This work uses only synthetic data; privacy counsel must review any real-data proposal and applicable exceptions.
 
-Integrator actions before G-PR1 acceptance:
+G6 local evidence is limited to workflow/config and synthetic sanitizer tests; both the dbt manifest and BigQuery metadata ingestion await Actions. AF2's published connector-permission comparison includes `tables.getData`, `jobs.create`, and `jobs.listAll`; a denial is expected to be reported without changing IAM. The workflow uses repository variables `W9_WIF_PROVIDER` and `W9_META_READ_SA_EMAIL`, removes the generated credential file in an `always()` cleanup step, and prints no raw connector logs. WIF risk: the job requests `id-token: write`, and O1's provider currently allows `pull_request` for this workflow. Before any untrusted PR run, the integrator must confirm fork OIDC claims are denied or narrow the provider trust condition; a workflow `if` check alone is insufficient. [GitHub OIDC permissions](https://docs.github.com/en/actions/reference/security/oidc); [fork workflow behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflows-in-forked-repositories). G7 remains pending; G9 is only a modelled synthetic drill.
 
-1. Integrate `policy_tags.tf` with O1’s protected `restricted_pii` and `pii_safe` datasets, verify exact provider schema/resource names, and review the temporary operator-only TokenCreator bindings. Enable `week9_pii_test_impersonation_enabled` only for G4, then disable it. Keep CI excluded.
-2. Complete API and identity preflight; create `w9-pii-hmac-key` through the approved secret process and supply the policy-tag output names to the loader environment.
-3. Load the fixed-seed synthetic fixture once into `restricted_pii.customer_profile`, build only `dim_customer_profile_safe` into exactly `pii_safe`, and confirm the output contains no raw fields.
-4. Run the G4 impersonated access check, capture only counts/booleans, and record its output with the live resource IDs. If policy-tag masking is unavailable after the approved feasibility check, implement the authorized-view plus dataset-IAM fallback and retest the raw-dataset denial.
-5. Run dbt parse/build, then `python scripts/week9_pii_guard.py --manifest dbt/dataforge/target/manifest.json`, HCL validation/plan, and CI on the exact PR head; record run IDs and outcomes. Review the `customer_id` residual and legal mapping before any real-data use.
+Integrator actions before G2 close-out:
 
-Worker G stops after G1–G5/G-PR1 preparation and waits for integrator follow-up; G6–G9 are out of this block.
+1. Run `week9-catalog.yml` on the exact G2 PR head and capture the Actions run ID, dbt-manifest result, and sanitized BigQuery metadata receipt. If the connector reports a specific denied permission, preserve only that permission name in `DATAPLEX_FALLBACK_REASON`; do not add IAM.
+2. Confirm the connector used the W9 schema allowlist (`w9_drill`, `dataforge_dq`, `restricted_pii`, `pii_safe`, `dbt_ci_pr_*`) and that no W7 table metadata appears in its evidence. If the allowlist does not hold in the pinned connector, stop the connector and use the Dataplex fallback for G7 lineage.
+3. For G7, wait for the integrator-run CI dbt build and lineage event. Capture event and run identifiers, asset pair, timestamp, and cost under AF8; keep the API disabled outside that approved window.
+4. Review Decree 330/363 signed texts with privacy counsel before relying on the summarized enforcement map. The file flags article-level details as LEGAL_UNVERIFIED.
+5. Treat G9 as planning/test evidence only. Any real-data erasure needs an authorized operational runbook, time-travel/fail-safe disposition, full SCD2-version check, and per-subject encryption-key design if crypto-shredding is required.
+
+Worker G stops before push/merge; integrator owns the G2 PR sequence and G7 live lineage action. This branch adds G6–G9 local artifacts; catalog workflow execution and all live evidence remain pending.
 
 ## Integrator schema reconciliation — 2026-11-19
 
