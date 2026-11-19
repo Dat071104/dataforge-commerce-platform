@@ -95,6 +95,7 @@ jobs:
               expected_denial_codes = {
                   "invalid_grant",
                   "failed_precondition",
+                  "unauthorized_client",
                   "permission_denied",
               }
               if (
