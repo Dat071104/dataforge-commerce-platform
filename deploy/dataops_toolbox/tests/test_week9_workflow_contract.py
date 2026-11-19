@@ -150,7 +150,8 @@ def test_manual_lineage_build_is_exact_head_gated_and_fixed_to_w9_drill() -> Non
     assert '"bigquery_queries"' in helper and '"billing_sku": "UNVERIFIED"' in helper
     assert 'capture_output=True' in helper and "output suppressed" in helper
     assert "dbt_weather_mini3" not in helper and "w9_drill_silver" not in helper
-    assert '"--no-introspect"' in helper
+    assert '_run_dbt(["parse", *common]' in helper
+    assert '"--no-introspect"' not in helper
     assert helper.index("packages.yml") < helper.index("client.query(")
     assert not (ROOT / "dbt/dataforge/packages.yml").exists()
     requirements_lock = (ROOT / "deploy/dataops_toolbox/requirements.lock").read_text(encoding="utf-8")

@@ -285,7 +285,7 @@ def run_lineage_build(summary: dict[str, Any]) -> None:
         "--no-send-anonymous-usage-stats",
         "--no-version-check",
     ]
-    parse_code = _run_dbt(["parse", *common, "--no-introspect"], env=env, stage="parse")
+    parse_code = _run_dbt(["parse", *common], env=env, stage="parse")
     if parse_code != 0:
         raise LineageBuildError(f"dbt parse failed (exit {parse_code}); output suppressed")
     try:
