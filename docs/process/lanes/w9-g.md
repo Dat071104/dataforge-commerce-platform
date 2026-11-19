@@ -109,7 +109,7 @@ OpenMetadata documents additional metadata permissions including `bigquery.table
 
 ## G7 — Dataplex/BigQuery lineage
 
-**PARTIAL — live GCP (isolated dataset).** On 2026-11-19, the integrator's WIF lineage dispatch refreshed `w9_drill.weather_landing` and materialized staging, silver, and gold weather relations. Read-only Data Lineage API searches show five distinct links and 18 event resources. Link IDs, process/run IDs, BigQuery job IDs, event IDs/times, and source/target FQNs are recorded in `docs/week9/evidence/g7-lineage-w9-drill.md`. The final GitHub workflow conclusion and sanitized cost artifact are **UNVERIFIED** after a GitHub API connection reset. This proves the weather table graph only; PII policy-tag lineage remains pending G3/G4. The API is enabled for LINEAGE_DAY 1/5; Dataplex SKU remains **UNVERIFIED**. Disable after full G7 evidence is captured or by day 5, whichever comes first.
+**PARTIAL — live GCP weather graph captured.** Run `44460769849` completed successfully on exact head `a49802cdebee0c1a6ffa704d35baa61a1feb7070`; the sanitized artifact confirms `dbt.build_status=PASS`, 50 dbt jobs/50 with billed bytes, four weather models, and 51 copied rows. Five distinct links and 18 event resources are recorded in `docs/week9/evidence/g7-lineage-w9-drill.md`; the sanitized run artifact is `docs/week9/evidence/w9-lineage-summary-46-44460769849.json`. PII policy-tag lineage remains pending G3/G4; actual Dataplex SKU remains UNVERIFIED.
 
 ## G8 — current legal-source check
 
