@@ -109,11 +109,11 @@ resource "google_bigquery_dataset_iam_member" "week9_pii_privileged_raw_reader" 
 }
 
 resource "google_data_catalog_taxonomy" "week9_pii" {
-  count                 = var.week9_pii_enabled ? 1 : 0
-  project               = var.project_id
-  region                = var.region
-  display_name          = "DataForge Week-9 synthetic PII"
-  description           = "Column classification and masking for restricted synthetic customer-profile fields."
+  count                  = var.week9_pii_enabled ? 1 : 0
+  project                = var.project_id
+  region                 = var.region
+  display_name           = "DataForge Week-9 synthetic PII"
+  description            = "Column classification and masking for restricted synthetic customer-profile fields."
   activated_policy_types = ["FINE_GRAINED_ACCESS_CONTROL"]
 }
 
@@ -125,12 +125,12 @@ resource "google_data_catalog_policy_tag" "week9_pii" {
 }
 
 resource "google_bigquery_datapolicy_data_policy" "week9_pii_mask" {
-  for_each             = var.week9_pii_enabled ? local.week9_pii_masks : {}
-  project              = var.project_id
-  location             = var.region
-  data_policy_id       = "w9-pii-${replace(each.key, "_", "-")}-mask"
-  policy_tag           = google_data_catalog_policy_tag.week9_pii[each.key].name
-  data_policy_type     = "DATA_MASKING_POLICY"
+  for_each         = var.week9_pii_enabled ? local.week9_pii_masks : {}
+  project          = var.project_id
+  location         = var.region
+  data_policy_id   = "w9-pii-${replace(each.key, "_", "-")}-mask"
+  policy_tag       = google_data_catalog_policy_tag.week9_pii[each.key].name
+  data_policy_type = "DATA_MASKING_POLICY"
   data_masking_policy {
     predefined_expression = each.value.predefined_expression
   }
