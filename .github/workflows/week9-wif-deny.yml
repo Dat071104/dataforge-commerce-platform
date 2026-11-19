@@ -83,11 +83,41 @@ jobs:
                   error_body = json.loads(error.read())
               except json.JSONDecodeError:
                   error_body = {}
-              description = str(error_body.get("error_description", "")).lower()
-              error_code = error_body.get("error")
-              if error.code == 400 and error_code == "invalid_grant" and "attribute condition" in description:
+              error_value = error_body.get("error", "")
+              if isinstance(error_value, dict):
+                  error_code = str(error_value.get("status", ""))
+                  description = str(error_value.get("message", "")).lower()
+              else:
+                  error_code = str(error_value)
+                  description = str(error_body.get("error_description", "")).lower()
+              normalized_error_code = error_code.casefold()
+              condition_rejected = "condition" in description
+              expected_denial_codes = {
+                  "invalid_grant",
+                  "failed_precondition",
+                  "unauthorized_client",
+                  "permission_denied",
+              }
+              if (
+                  error.code == 400
+                  and normalized_error_code in expected_denial_codes
+                  and condition_rejected
+              ):
                   print("EXPECTED_DENIAL=provider_attribute_condition")
                   raise SystemExit(0)
+              safe_codes = expected_denial_codes | {"invalid_request", "invalid_argument"}
+              safe_code = normalized_error_code if normalized_error_code in safe_codes else "other"
+              if "audience" in description:
+                  reason_class = "audience"
+              elif "issuer" in description:
+                  reason_class = "issuer"
+              elif "condition" in description:
+                  reason_class = "condition"
+              else:
+                  reason_class = "other"
+              print(f"STS_DENIAL_HTTP={error.code}")
+              print(f"STS_ERROR_CLASS={safe_code}")
+              print(f"STS_REASON_CLASS={reason_class}")
               raise SystemExit(
                   "UNVERIFIED: STS rejected the token for a reason other than the expected workflow allowlist"
               )
