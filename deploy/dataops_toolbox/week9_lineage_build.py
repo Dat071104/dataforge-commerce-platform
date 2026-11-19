@@ -100,24 +100,32 @@ def validate_manifest(manifest: dict[str, Any]) -> int:
 
 def summarize_dbt_results(results: Sequence[dict[str, Any]]) -> dict[str, Any]:
     job_ids = set()
-    bytes_billed = 0
-    jobs_with_billing = 0
+    billed_by_job: dict[str, int] = {}
+    unidentified_billed_results = 0
+    unidentified_billed_count = 0
     for item in results:
         adapter = item.get("adapter_response") or {}
         job_id = adapter.get("job_id")
-        if isinstance(job_id, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id):
+        if not isinstance(job_id, str) or re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id) is None:
+            job_id = None
+        if job_id is not None:
             job_ids.add(job_id)
         billed = adapter.get("bytes_billed")
         if billed is not None:
             try:
-                bytes_billed += int(billed)
+                billed_value = int(billed)
             except (TypeError, ValueError):
                 continue
-            jobs_with_billing += 1
+            if job_id is None:
+                unidentified_billed_results += billed_value
+                unidentified_billed_count += 1
+            else:
+                billed_by_job[job_id] = max(billed_by_job.get(job_id, 0), billed_value)
     return {
         "dbt_jobs_seen": len(job_ids),
-        "dbt_jobs_with_billing": jobs_with_billing,
-        "adapter_bytes_billed": bytes_billed,
+        "dbt_jobs_with_billing": len(billed_by_job),
+        "adapter_bytes_billed": sum(billed_by_job.values()) + unidentified_billed_results,
+        "dbt_results_with_billing_without_job_id": unidentified_billed_count,
         "dbt_job_ids": sorted(job_ids),
     }
 
@@ -164,6 +172,9 @@ def _record_query_usage(summary: dict[str, Any], stage: str, job: Any) -> None:
 
 def run_lineage_build(summary: dict[str, Any]) -> None:
     from google.cloud import bigquery
+
+    if (Path("/workspace/dbt/dataforge") / "packages.yml").exists():
+        raise LineageBuildError("dbt package declarations need a committed lock before this lineage path can run")
 
     client = bigquery.Client(project=PROJECT_ID, location=LOCATION)
     try:
@@ -274,9 +285,7 @@ def run_lineage_build(summary: dict[str, Any]) -> None:
         "--no-send-anonymous-usage-stats",
         "--no-version-check",
     ]
-    if (Path("/workspace/dbt/dataforge") / "packages.yml").exists():
-        raise LineageBuildError("dbt package declarations need a committed lock before this lineage path can run")
-    parse_code = _run_dbt(["parse", *common], env=env, stage="parse")
+    parse_code = _run_dbt(["parse", *common, "--no-introspect"], env=env, stage="parse")
     if parse_code != 0:
         raise LineageBuildError(f"dbt parse failed (exit {parse_code}); output suppressed")
     try:

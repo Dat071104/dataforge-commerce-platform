@@ -150,6 +150,8 @@ def test_manual_lineage_build_is_exact_head_gated_and_fixed_to_w9_drill() -> Non
     assert '"bigquery_queries"' in helper and '"billing_sku": "UNVERIFIED"' in helper
     assert 'capture_output=True' in helper and "output suppressed" in helper
     assert "dbt_weather_mini3" not in helper and "w9_drill_silver" not in helper
+    assert '"--no-introspect"' in helper
+    assert helper.index("packages.yml") < helper.index("client.query(")
     assert not (ROOT / "dbt/dataforge/packages.yml").exists()
     requirements_lock = (ROOT / "deploy/dataops_toolbox/requirements.lock").read_text(encoding="utf-8")
     assert "dbt-bigquery==1.11.3" in requirements_lock
@@ -172,6 +174,22 @@ def test_lineage_helper_renders_only_seven_real_partition_date_literals() -> Non
             pass
         else:
             raise AssertionError("Invalid partition metadata should fail closed")
+
+
+def test_dbt_cost_summary_deduplicates_repeated_job_ids() -> None:
+    helper = load_lineage_helper()
+    summary = helper.summarize_dbt_results(
+        [
+            {"adapter_response": {"job_id": "job_a", "bytes_billed": 100}},
+            {"adapter_response": {"job_id": "job_a", "bytes_billed": 100}},
+            {"adapter_response": {"job_id": "job_b", "bytes_billed": "250"}},
+            {"adapter_response": {"job_id": None, "bytes_billed": 50}},
+        ]
+    )
+    assert summary["dbt_jobs_seen"] == 2
+    assert summary["dbt_jobs_with_billing"] == 2
+    assert summary["adapter_bytes_billed"] == 400
+    assert summary["dbt_results_with_billing_without_job_id"] == 1
 
 
 def test_lineage_manifest_guard_rejects_any_weather_relation_outside_w9_drill() -> None:
