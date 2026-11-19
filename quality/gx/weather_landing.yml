@@ -19,6 +19,13 @@ checks:
       manifest_uri: str
       manifest_generation: int64
       landed_at: datetime64[ns, UTC]
+    # `province_id` has its own null check; precipitation and temperature are nullable.
+    required_non_null:
+      - request_id
+      - source
+      - model
+      - source_sha256
+      - manifest_uri
   schema_additive:
     check_id: G1.LANDING.SCHEMA_ADDITIVE
     severity: P2
