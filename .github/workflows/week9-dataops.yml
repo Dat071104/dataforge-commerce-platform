@@ -1247,7 +1247,6 @@ jobs:
           pattern: week9-run-cost-${{ github.run_id }}-*
           path: ${{ runner.temp }}/run-cost
           merge-multiple: true
-          if-no-files-found: ignore
 
       - name: Sum this run's BigQuery billed bytes
         shell: bash
