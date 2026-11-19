@@ -198,7 +198,14 @@ def test_access_plan_names_only_synthetic_privacy_checks(check_id: str) -> None:
 
     assert script.is_file()
     assert "restricted_pii.customer_profile" in script.read_text(encoding="utf-8")
-    assert "pii_safe.dim_customer_profile_safe" in script.read_text(encoding="utf-8")
+
+
+def test_access_queries_have_per_job_bigquery_cap() -> None:
+    script = Path("scripts/week9_verify_access.py").read_text(encoding="utf-8")
+    assert "MAXIMUM_BYTES_BILLED = 1024**3" in script
+    assert "maximum_bytes_billed=MAXIMUM_BYTES_BILLED" in script
+    assert script.count("job_config=_bounded_query_config(") == 3
+    assert "pii_safe.dim_customer_profile_safe" in script
 
 
 def _modelled_erasure_rows() -> tuple[str, dict[str, list[dict[str, object]]]]:

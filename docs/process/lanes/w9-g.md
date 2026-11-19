@@ -59,6 +59,8 @@ The `generate_schema_name.sql` macro sends only `pii_safe`, `restricted_pii`, an
 
 `scripts/week9_verify_access.py` supports an offline plan by default and a separately gated `--execute` mode. It checks that the `pii_safe` table schema has no raw identity fields, the analyst reads masked/generalized rows, the analyst is denied `restricted_pii`, and the privileged test SA reads the synthetic raw fixture. The script emits only result counts and booleans. No impersonation or live query was run; all G4 live results are **UNVERIFIED / INTEGRATOR_ACTION_REQUIRED**.
 
+Each of the three live query probes uses a BigQuery `QueryJobConfig` with `maximum_bytes_billed=1 GiB`; labels identify the W9 G4 action for cost review. No query result values are printed.
+
 After the integrator provisions the two test SAs and approves the IAM plan, the exact script command is:
 
 ```powershell

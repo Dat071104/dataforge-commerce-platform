@@ -27,10 +27,20 @@ TARGET_FILE = ROOT / "docs" / "cloud" / "target.json"
 EMAIL_MASK_RE = re.compile(r"^[A-Za-z0-9]\*{3}@example\.com$")
 TOKEN_RE = re.compile(r"^[0-9a-f]{64}$")
 AGE_BANDS = {"18-24", "25-34", "35-44", "45-54", "55+"}
+MAXIMUM_BYTES_BILLED = 1024**3
 
 
 class AccessCheckError(RuntimeError):
     """Raised when the approved target or PII access boundary is incorrect."""
+
+
+def _bounded_query_config(action: str):
+    from google.cloud import bigquery
+
+    return bigquery.QueryJobConfig(
+        maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
+        labels={"application": "dataforge", "phase": "w9", "action": action},
+    )
 
 
 def _read_target() -> dict[str, Any]:
@@ -116,7 +126,13 @@ def verify_access() -> dict[str, Any]:
         ORDER BY customer_token
         LIMIT 20
     """
-    safe_rows = list(analyst.query(safe_query, job_config=None, job_id_prefix="w9pii-analyst-safe-").result())
+    safe_rows = list(
+        analyst.query(
+            safe_query,
+            job_config=_bounded_query_config("g4-analyst-safe"),
+            job_id_prefix="w9pii-analyst-safe-",
+        ).result()
+    )
     if not safe_rows:
         raise AccessCheckError("The pii_safe mart has no synthetic rows to verify")
     if any(
@@ -136,7 +152,9 @@ def verify_access() -> dict[str, Any]:
     try:
         list(
             analyst.query(
-                denied_query, job_config=None, job_id_prefix="w9pii-analyst-raw-deny-"
+                denied_query,
+                job_config=_bounded_query_config("g4-analyst-raw-deny"),
+                job_id_prefix="w9pii-analyst-raw-deny-",
             ).result()
         )
     except Exception as exc:  # The permission failure class varies by client version/API path.
@@ -155,7 +173,11 @@ def verify_access() -> dict[str, Any]:
         FROM `{EXPECTED_PROJECT}.{RAW_TABLE}`
     """
     raw_result = list(
-        privileged.query(raw_query, job_config=None, job_id_prefix="w9pii-privileged-raw-").result()
+        privileged.query(
+            raw_query,
+            job_config=_bounded_query_config("g4-privileged-raw"),
+            job_id_prefix="w9pii-privileged-raw-",
+        ).result()
     )
     if not raw_result or raw_result[0]["row_count"] < 1:
         raise AccessCheckError("Privileged raw-data query returned no synthetic rows")
