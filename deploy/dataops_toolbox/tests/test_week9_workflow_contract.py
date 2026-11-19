@@ -5,6 +5,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -148,6 +149,8 @@ def test_manual_lineage_build_is_exact_head_gated_and_fixed_to_w9_drill() -> Non
     assert "summarize_dbt_results" in helper
     assert '"dbt_jobs_seen"' in helper and '"adapter_bytes_billed"' in helper
     assert '"bigquery_queries"' in helper and '"billing_sku": "UNVERIFIED"' in helper
+    assert '"max_run_bytes_billed": MAX_RUN_BYTES_BILLED' in helper
+    assert '"usage_records"' in helper and "5 GiB ceiling" in helper
     assert 'capture_output=True' in helper and "output suppressed" in helper
     assert "dbt_weather_mini3" not in helper and "w9_drill_silver" not in helper
     assert '_run_dbt(["parse", *common]' in helper
@@ -191,6 +194,55 @@ def test_dbt_cost_summary_deduplicates_repeated_job_ids() -> None:
     assert summary["dbt_jobs_with_billing"] == 2
     assert summary["adapter_bytes_billed"] == 400
     assert summary["dbt_results_with_billing_without_job_id"] == 1
+
+
+def test_lineage_per_run_cost_guard_sums_helper_and_dbt_jobs() -> None:
+    helper = load_lineage_helper()
+    summary = helper._finalize_run_cost(
+        {
+            "workflow_run_id": "44460769849",
+            "bigquery_queries": [
+                {"job_id": "helper_a", "bytes_billed": 10},
+                {"job_id": "helper_b", "bytes_billed": 20},
+            ],
+            "dbt": {
+                "dbt_jobs_seen": 1,
+                "dbt_jobs_with_billing": 1,
+                "dbt_results_with_billing_without_job_id": 0,
+                "usage_records": [{"job_id": "dbt_a", "bytes_billed": 30}],
+            },
+        }
+    )
+    assert summary["total_bytes_billed"] == 60
+    assert summary["guard_status"] == "PASS"
+
+
+def test_lineage_per_run_cost_guard_fails_above_five_gib() -> None:
+    helper = load_lineage_helper()
+    with pytest.raises(helper.LineageBuildError, match="5 GiB ceiling"):
+        helper._finalize_run_cost(
+            {
+                "workflow_run_id": "44460769849",
+                "bigquery_queries": [
+                    {"job_id": f"helper_{index}", "bytes_billed": 1024**3}
+                    for index in range(6)
+                ],
+                "dbt": {
+                    "dbt_jobs_seen": 0,
+                    "dbt_jobs_with_billing": 0,
+                    "dbt_results_with_billing_without_job_id": 0,
+                    "usage_records": [],
+                },
+            }
+        )
+
+
+def test_run_cost_guard_sums_paid_jobs_across_the_workflow_run() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    guard = workflow["jobs"]["run-cost-guard"]
+    assert guard["needs"] == ["cloud-pr", "lineage-build", "fault-matrix-live"]
+    assert "run_cost_guard.py" in guard["steps"][-1]["run"]
+    assert "5 GiB" in guard["name"]
 
 
 def test_lineage_manifest_guard_rejects_any_weather_relation_outside_w9_drill() -> None:

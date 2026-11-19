@@ -5,6 +5,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
@@ -450,7 +451,24 @@ def _read_bigquery_frame(project: str, dataset: str, observation_date: date):
         labels={"application": "dataforge", "phase": "week9", "action": "dq-gate"},
     )
     job = client.query(query, job_config=job_config, location="us-central1")
-    return job.to_dataframe(create_bqstorage_client=False), fields
+    frame = job.to_dataframe(create_bqstorage_client=False)
+    usage_path = os.environ.get("DATAFORGE_W9_COST_USAGE_FILE")
+    if usage_path:
+        job_id = getattr(job, "job_id", None)
+        bytes_billed = getattr(job, "total_bytes_billed", None)
+        if (
+            not isinstance(job_id, str)
+            or re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id) is None
+            or isinstance(bytes_billed, bool)
+            or not isinstance(bytes_billed, int)
+            or bytes_billed < 0
+        ):
+            raise RuntimeError("G1 BigQuery usage metadata is unavailable for the run-cost guard")
+        usage = {"job_id": job_id, "bytes_billed": bytes_billed}
+        destination = Path(usage_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(usage, sort_keys=True), encoding="utf-8")
+    return frame, fields
 
 
 def main(argv: list[str] | None = None) -> int:

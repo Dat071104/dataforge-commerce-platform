@@ -490,6 +490,8 @@ jobs:
         run: |
           set -euo pipefail
           copy_job="w9_copy_${PR_NUMBER}_${GITHUB_RUN_ID}"
+          partition_job="w9_partition_${PR_NUMBER}_${GITHUB_RUN_ID}"
+          as_of_job="w9_asof_${PR_NUMBER}_${GITHUB_RUN_ID}"
           partition_query="$(cat <<SQL
           SELECT partition_id
           FROM \`${PROJECT_ID}.weather_mini3.INFORMATION_SCHEMA.PARTITIONS\`
@@ -501,8 +503,10 @@ jobs:
           SQL
           )"
           bq query --quiet --use_legacy_sql=false --location=us-central1 \
-            --maximum_bytes_billed=1073741824 --format=csv "$partition_query" \
+            --maximum_bytes_billed=1073741824 --job_id="$partition_job" --format=csv "$partition_query" \
             > "$RUNNER_TEMP/weather-partitions.csv"
+          bq show --format=json -j "$partition_job" > "$RUNNER_TEMP/partition-job.json"
+          partition_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/partition-job.json")"
           partition_filter="$(
             python - "$RUNNER_TEMP/weather-partitions.csv" <<'PY'
           import csv
@@ -543,15 +547,21 @@ jobs:
           bq query --quiet --use_legacy_sql=false --location=us-central1 \
             --maximum_bytes_billed=1073741824 --job_id="$copy_job" --format=none "$copy_sql"
           as_of_date="$(bq query --quiet --use_legacy_sql=false --location=us-central1 \
-            --maximum_bytes_billed=1073741824 --format=csv --max_rows=1 \
+            --maximum_bytes_billed=1073741824 --job_id="$as_of_job" --format=csv --max_rows=1 \
             "SELECT CAST(MAX(observation_date) AS STRING) FROM \`$PROJECT_ID.$PR_DATASET.weather_landing\`" | tail -n 1)"
           if [[ ! "$as_of_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
             echo "::error::The isolated PR weather slice has no valid observation date"
             exit 1
           fi
+          bq show --format=json -j "$as_of_job" > "$RUNNER_TEMP/as-of-job.json"
+          as_of_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/as-of-job.json")"
           bq show --format=json -j "$copy_job" > "$RUNNER_TEMP/source-copy-job.json"
-          copy_bytes="$(jq -r '.statistics.totalBytesBilled // 0' "$RUNNER_TEMP/source-copy-job.json")"
+          copy_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/source-copy-job.json")"
+          echo "W9_PARTITION_JOB_ID=$partition_job" >> "$GITHUB_ENV"
+          echo "W9_PARTITION_BYTES_BILLED=$partition_bytes" >> "$GITHUB_ENV"
           echo "W9_AS_OF_DATE=$as_of_date" >> "$GITHUB_ENV"
+          echo "W9_AS_OF_JOB_ID=$as_of_job" >> "$GITHUB_ENV"
+          echo "W9_AS_OF_BYTES_BILLED=$as_of_bytes" >> "$GITHUB_ENV"
           echo "W9_COPY_BYTES_BILLED=$copy_bytes" >> "$GITHUB_ENV"
           echo "W9_COPY_JOB_ID=$copy_job" >> "$GITHUB_ENV"
 
@@ -643,11 +653,13 @@ jobs:
         run: |
           set -euo pipefail
           container_args=(--rm --volume "$GITHUB_WORKSPACE:/workspace" \
+            --volume "$RUNNER_TEMP:/runner-temp" \
             --volume "$GOOGLE_APPLICATION_CREDENTIALS:/tmp/gha-creds.json:ro" --workdir /workspace \
             --user "$(id -u):$(id -g)" --env PYTHONPATH=/workspace/src \
             --env GOOGLE_APPLICATION_CREDENTIALS=/tmp/gha-creds.json --env ACTIONS_ID_TOKEN_REQUEST_URL \
             --env ACTIONS_ID_TOKEN_REQUEST_TOKEN --env DATAFORGE_PROJECT_ID="$PROJECT_ID" \
-            --env DATAFORGE_DQ_RESULTS_ENABLED=true --env DQ_ENFORCE=block)
+            --env DATAFORGE_DQ_RESULTS_ENABLED=true --env DQ_ENFORCE=block \
+            --env DATAFORGE_W9_COST_USAGE_FILE=/runner-temp/g1-query-usage.json)
           docker run "${container_args[@]}" dataforge-dataops-toolbox:cloud-ci \
             python -m dataforge.dq gate --layer landing --dataset "$PR_DATASET" --date "$W9_AS_OF_DATE"
 
@@ -680,7 +692,7 @@ jobs:
             --maximum_bytes_billed=1073741824 --job_id="$diff_job" --format=csv --max_rows=1 "$diff_sql" | tail -n 1)"
           IFS=, read -r prod_rows ci_rows prod_only ci_only <<< "$diff_result"
           bq show --format=json -j "$diff_job" > "$RUNNER_TEMP/data-diff-job.json"
-          diff_bytes="$(jq -r '.statistics.totalBytesBilled // 0' "$RUNNER_TEMP/data-diff-job.json")"
+          diff_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/data-diff-job.json")"
           echo "W9_PROD_ROWS=$prod_rows" >> "$GITHUB_ENV"
           echo "W9_CI_ROWS=$ci_rows" >> "$GITHUB_ENV"
           echo "W9_PROD_ONLY=$prod_only" >> "$GITHUB_ENV"
@@ -701,16 +713,21 @@ jobs:
           import os
           import re
           import subprocess
+          import sys
           from pathlib import Path
+
+          sys.path.insert(0, str(Path.cwd() / "deploy" / "dataops_toolbox"))
+          from run_cost_guard import RunCostGuardError, build_usage_artifact
 
           result_paths = [
               Path(os.environ["RUNNER_TEMP"]) / "dbt-build-run-results.json",
               Path(os.environ["RUNNER_TEMP"]) / "dbt-unit-run-results.json",
           ]
           tests = {"pass": 0, "fail": 0, "error": 0, "skip": 0}
-          dbt_bytes_billed = 0
-          dbt_jobs_seen = 0
-          dbt_jobs_with_billing = 0
+          dbt_job_ids = set()
+          dbt_billed_by_job = {}
+          dbt_unidentified_billed = 0
+          dbt_missing_billing = 0
           for result_path in result_paths:
               if not result_path.is_file():
                   continue
@@ -720,13 +737,66 @@ jobs:
                       status = item.get("status", "").lower()
                       if status in tests:
                           tests[status] += 1
-                  adapter = item.get("adapter_response", {})
-                  if adapter.get("job_id"):
-                      dbt_jobs_seen += 1
+                  adapter = item.get("adapter_response") or {}
+                  job_id = adapter.get("job_id")
+                  if isinstance(job_id, str) and job_id:
+                      dbt_job_ids.add(job_id)
                   billed = adapter.get("bytes_billed")
                   if billed is not None:
-                      dbt_jobs_with_billing += 1
-                      dbt_bytes_billed += int(billed)
+                      try:
+                          billed = int(billed)
+                      except (TypeError, ValueError):
+                          dbt_missing_billing += 1
+                          continue
+                      if job_id:
+                          dbt_billed_by_job[job_id] = max(dbt_billed_by_job.get(job_id, 0), billed)
+                      else:
+                          dbt_unidentified_billed += billed
+                  elif job_id:
+                      dbt_missing_billing += 1
+
+          usage_records = []
+          direct_usage = (
+              ("W9_PARTITION_JOB_ID", "W9_PARTITION_BYTES_BILLED"),
+              ("W9_COPY_JOB_ID", "W9_COPY_BYTES_BILLED"),
+              ("W9_AS_OF_JOB_ID", "W9_AS_OF_BYTES_BILLED"),
+              ("W9_DIFF_JOB_ID", "W9_DIFF_BYTES_BILLED"),
+          )
+          for job_name, bytes_name in direct_usage:
+              job_id = os.environ.get(job_name, "")
+              raw_bytes = os.environ.get(bytes_name, "")
+              if not job_id or not raw_bytes:
+                  raise SystemExit("UNVERIFIED: a bounded BigQuery helper job has no usage receipt")
+              usage_records.append({"job_id": job_id, "bytes_billed": int(raw_bytes)})
+          usage_records.extend(
+              {"job_id": job_id, "bytes_billed": dbt_billed_by_job[job_id]}
+              for job_id in sorted(dbt_billed_by_job)
+          )
+          g1_path = Path(os.environ["RUNNER_TEMP"]) / "g1-query-usage.json"
+          try:
+              g1_usage = json.loads(g1_path.read_text(encoding="utf-8"))
+          except (OSError, json.JSONDecodeError):
+              raise SystemExit("UNVERIFIED: G1 BigQuery query usage receipt is missing") from None
+          if dbt_missing_billing or dbt_unidentified_billed or len(dbt_billed_by_job) != len(dbt_job_ids):
+              raise SystemExit("UNVERIFIED: dbt job billing metadata is incomplete")
+          g1_query_bytes_billed = int(g1_usage["bytes_billed"])
+          usage_records.append(g1_usage)
+          run_id = os.environ.get("GITHUB_RUN_ID", "")
+          cost_artifact_path = Path(os.environ["RUNNER_TEMP"]) / "run-cost-cloud-pr.json"
+          try:
+              cost_artifact = build_usage_artifact(
+                  run_id=run_id,
+                  job_name="cloud-pr",
+                  records=usage_records,
+              )
+          except RunCostGuardError as error:
+              cost_artifact = {
+                  "workflow_run_id": run_id,
+                  "paid_job": "cloud-pr",
+                  "guard_status": "FAIL",
+                  "failure": str(error),
+                  "usage_records": usage_records,
+              }
           changed = subprocess.run(
               ["git", "diff", "--name-only", "origin/main...HEAD", "--", "dbt/dataforge/models"],
               check=False, capture_output=True, text=True,
@@ -737,11 +807,18 @@ jobs:
               "dataset": os.environ.get("PR_DATASET", ""),
               "models_changed": models,
               "tests": tests,
+              "partition_bytes_billed": int(os.environ.get("W9_PARTITION_BYTES_BILLED", "0")),
               "copy_bytes_billed": int(os.environ.get("W9_COPY_BYTES_BILLED", "0")),
+              "as_of_bytes_billed": int(os.environ.get("W9_AS_OF_BYTES_BILLED", "0")),
+              "g1_query_bytes_billed": g1_query_bytes_billed,
               "diff_bytes_billed": int(os.environ.get("W9_DIFF_BYTES_BILLED", "0")),
-              "dbt_adapter_bytes_billed": dbt_bytes_billed,
-              "dbt_jobs_seen": dbt_jobs_seen,
-              "dbt_jobs_with_billing": dbt_jobs_with_billing,
+              "dbt_adapter_bytes_billed": sum(dbt_billed_by_job.values()) + dbt_unidentified_billed,
+              "dbt_jobs_seen": len(dbt_job_ids),
+              "dbt_jobs_with_billing": len(dbt_billed_by_job),
+              "guard_status": cost_artifact["guard_status"],
+              "total_bytes_billed": cost_artifact.get("total_bytes_billed"),
+              "max_run_bytes_billed": cost_artifact.get("max_run_bytes_billed", 5368709120),
+              "usage_records": cost_artifact["usage_records"],
               "data_diff": {
                   "prod_rows": os.environ.get("W9_PROD_ROWS", "UNVERIFIED"),
                   "ci_rows": os.environ.get("W9_CI_ROWS", "UNVERIFIED"),
@@ -751,6 +828,9 @@ jobs:
           }
           output = Path(os.environ["RUNNER_TEMP"], "dataops-ci-summary.json")
           output.write_text(json.dumps(summary, sort_keys=True), encoding="utf-8")
+          cost_artifact_path.write_text(json.dumps(cost_artifact, sort_keys=True), encoding="utf-8")
+          if cost_artifact["guard_status"] != "PASS":
+              raise SystemExit("Week 9 per-run BigQuery cost guard failed")
           PY
 
       - name: Upload sanitized PR build summary
@@ -759,6 +839,15 @@ jobs:
         with:
           name: week9-dataops-summary-${{ github.event.pull_request.number || inputs.pr_number }}-${{ github.run_id }}
           path: ${{ runner.temp }}/dataops-ci-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload per-run BigQuery cost records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-run-cost-${{ github.run_id }}-cloud-pr
+          path: ${{ runner.temp }}/run-cost-cloud-pr.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -895,6 +984,15 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: week9-lineage-summary-${{ inputs.pr_number }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/lineage-summary/w9-lineage-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload per-run BigQuery cost records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-run-cost-${{ github.run_id }}-lineage-build
           path: ${{ runner.temp }}/lineage-summary/w9-lineage-summary.json
           if-no-files-found: warn
           retention-days: 14
@@ -1106,7 +1204,8 @@ jobs:
               --project "$PROJECT_ID" \
               --dataset w9_drill \
               --target-root /tmp/live-target \
-              --report /tmp/live-report/fault_matrix_report.md
+              --report /tmp/live-report/fault_matrix_report.md \
+              --cost-summary /tmp/live-report/run-cost-fault-matrix.json
 
       - name: Upload isolated BigQuery fault evidence
         if: always()
@@ -1116,6 +1215,58 @@ jobs:
           path: ${{ runner.temp }}/live-report/fault_matrix_report.md
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Upload per-run BigQuery cost records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-run-cost-${{ github.run_id }}-fault-matrix
+          path: ${{ runner.temp }}/live-report/run-cost-fault-matrix.json
+          if-no-files-found: warn
+          retention-days: 14
+  run-cost-guard:
+    name: Enforce 5 GiB cumulative BigQuery ceiling
+    if: always()
+    needs: [cloud-pr, lineage-build, fault-matrix-live]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CLOUD_PR_RESULT: ${{ needs.cloud-pr.result }}
+      LINEAGE_BUILD_RESULT: ${{ needs.lineage-build.result }}
+      FAULT_MATRIX_RESULT: ${{ needs.fault-matrix-live.result }}
+    steps:
+      - name: Check out the selected workflow ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download paid-job usage summaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: week9-run-cost-${{ github.run_id }}-*
+          path: ${{ runner.temp }}/run-cost
+          merge-multiple: true
+          if-no-files-found: ignore
+
+      - name: Sum this run's BigQuery billed bytes
+        shell: bash
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          expected=0
+          for result in "$CLOUD_PR_RESULT" "$LINEAGE_BUILD_RESULT" "$FAULT_MATRIX_RESULT"; do
+            if [[ "$result" != "skipped" ]]; then
+              expected=$((expected + 1))
+            fi
+          done
+          python deploy/dataops_toolbox/run_cost_guard.py \
+            --input-dir "$RUNNER_TEMP/run-cost" \
+            --expected-artifacts "$expected" \
+            --run-id "$GITHUB_RUN_ID" \
+            --output "$RUNNER_TEMP/run-cost-guard-summary.json"
+
   fault-matrix-report:
     name: Assemble fault_matrix_report.md
     if: >-
@@ -1233,7 +1384,7 @@ jobs:
         vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
         (github.event_name == 'workflow_dispatch' && inputs.run_cloud_build)
       )
-    needs: [wif-smoke, cloud-pr, fault-matrix-report]
+    needs: [wif-smoke, cloud-pr, fault-matrix-report, run-cost-guard]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1246,6 +1397,7 @@ jobs:
       CLOUD_JOB_RESULT: ${{ needs.cloud-pr.result }}
       WIF_JOB_RESULT: ${{ needs.wif-smoke.result }}
       FAULT_MATRIX_JOB_RESULT: ${{ needs.fault-matrix-report.result }}
+      RUN_COST_GUARD_RESULT: ${{ needs.run-cost-guard.result }}
     steps:
       - name: Revalidate the manual PR before commenting
         if: github.event_name == 'workflow_dispatch' && inputs.run_cloud_build
@@ -1311,18 +1463,22 @@ jobs:
               "- Offline lint/unit/contract/PII run on the unprivileged pull_request checks.",
               f"- WIF: `{os.environ.get('WIF_JOB_RESULT', 'unknown')}`.",
               f"- Cloud build/G1: `{os.environ.get('CLOUD_JOB_RESULT', 'unknown')}`; fault matrix: `{os.environ.get('FAULT_MATRIX_JOB_RESULT', 'unknown')}`.",
+              f"- Per-run BigQuery cost guard: `{os.environ.get('RUN_COST_GUARD_RESULT', 'unknown')}` (5 GiB maximum).",
               f"- PR dataset: `{dataset}` (24-hour table expiration; cleanup workflow owns dataset deletion)",
               f"- Changed models: {', '.join(f'`{name}`' for name in changed) if changed else 'none reported'}",
               "- dbt test results: " + ", ".join(
                   f"{key}={int(tests.get(key, 0) or 0)}" for key in ("pass", "fail", "error", "skip")
               ),
               (
-                  f"- Billed bytes: source copy={int(summary.get('copy_bytes_billed', 0) or 0)}; "
+                  f"- Billed bytes: total={summary.get('total_bytes_billed', 'UNVERIFIED')}; "
+                  f"partition={summary.get('partition_bytes_billed', 'UNVERIFIED')}; "
+                  f"source copy={int(summary.get('copy_bytes_billed', 0) or 0)}; "
+                  f"as-of={summary.get('as_of_bytes_billed', 'UNVERIFIED')}; "
                   f"dbt adapter={summary.get('dbt_adapter_bytes_billed', 'UNVERIFIED')} "
                   f"from {int(summary.get('dbt_jobs_with_billing', 0) or 0)}/{int(summary.get('dbt_jobs_seen', 0) or 0)} jobs; "
-                  f"data diff={int(summary.get('diff_bytes_billed', 0) or 0)}; per-job dbt cap=1 GiB."
+                  f"G1={summary.get('g1_query_bytes_billed', 'UNVERIFIED')}; "
+                  f"data diff={int(summary.get('diff_bytes_billed', 0) or 0)}; per-query cap=1 GiB; per-run cap=5 GiB."
               ),
-              "- G1 Python gate query bytes are UNVERIFIED; its CLI does not expose job statistics.",
               "- Data diff (same seven observation dates): "
               + ", ".join(f"{key}={diff.get(key, 'UNVERIFIED')}" for key in ("prod_rows", "ci_rows", "prod_only", "ci_only")),
               "- Data Contract breaking compatibility is checked against origin/main; pytest and dbt unit tests have separate job outcomes above.",

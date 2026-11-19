@@ -15,6 +15,7 @@ SOURCE_DATASET = "weather_mini3"
 TARGET_DATASET = "w9_drill"
 TABLE_NAME = "weather_landing"
 MAXIMUM_BYTES_BILLED = 1024**3
+MAX_RUN_BYTES_BILLED = 5 * 1024**3
 
 EXPECTED_SOURCE_SCHEMA = {
     "province_id": ("STRING", "REQUIRED"),
@@ -127,6 +128,54 @@ def summarize_dbt_results(results: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "adapter_bytes_billed": sum(billed_by_job.values()) + unidentified_billed_results,
         "dbt_results_with_billing_without_job_id": unidentified_billed_count,
         "dbt_job_ids": sorted(job_ids),
+        "usage_records": [
+            {"job_id": job_id, "bytes_billed": billed_by_job[job_id]}
+            for job_id in sorted(billed_by_job)
+        ],
+    }
+
+
+def _finalize_run_cost(summary: dict[str, Any]) -> dict[str, Any]:
+    dbt = summary.get("dbt") if isinstance(summary.get("dbt"), dict) else {}
+    jobs_seen = int(dbt.get("dbt_jobs_seen", 0) or 0)
+    jobs_with_billing = int(dbt.get("dbt_jobs_with_billing", 0) or 0)
+    unidentified = int(dbt.get("dbt_results_with_billing_without_job_id", 0) or 0)
+    if jobs_seen != jobs_with_billing or unidentified:
+        raise LineageBuildError("Per-run BigQuery billing metadata is incomplete")
+
+    records = []
+    for query in summary.get("bigquery_queries", []):
+        records.append(
+            {"job_id": query.get("job_id"), "bytes_billed": query.get("bytes_billed")}
+        )
+    records.extend(dbt.get("usage_records", []))
+
+    billed_by_job: dict[str, int] = {}
+    for record in records:
+        job_id = record.get("job_id")
+        bytes_billed = record.get("bytes_billed")
+        if (
+            not isinstance(job_id, str)
+            or re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id) is None
+            or not isinstance(bytes_billed, int)
+            or isinstance(bytes_billed, bool)
+            or bytes_billed < 0
+        ):
+            raise LineageBuildError("Per-run BigQuery usage record is incomplete")
+        billed_by_job[job_id] = max(billed_by_job.get(job_id, 0), bytes_billed)
+
+    total = sum(billed_by_job.values())
+    if total > MAX_RUN_BYTES_BILLED:
+        raise LineageBuildError("Per-run BigQuery billed bytes exceeded the 5 GiB ceiling")
+    return {
+        "paid_job": "lineage-build",
+        "guard_status": "PASS",
+        "total_bytes_billed": total,
+        "max_run_bytes_billed": MAX_RUN_BYTES_BILLED,
+        "usage_records": [
+            {"job_id": job_id, "bytes_billed": billed_by_job[job_id]}
+            for job_id in sorted(billed_by_job)
+        ],
     }
 
 
@@ -355,8 +404,14 @@ def main() -> int:
         summary["failure"] = f"unhandled_{type(error).__name__}"
         print(f"::error::Lineage build failed ({type(error).__name__}); details suppressed", flush=True)
     finally:
+        try:
+            summary.update(_finalize_run_cost(summary))
+        except LineageBuildError as error:
+            summary["guard_status"] = "FAIL"
+            summary["cost_guard_failure"] = str(error)
+            summary["status"] = "FAIL"
         _write_summary(summary)
-    return 0 if summary["status"] == "PASS" else 1
+    return 0 if summary["status"] == "PASS" and summary.get("guard_status") == "PASS" else 1
 
 
 if __name__ == "__main__":

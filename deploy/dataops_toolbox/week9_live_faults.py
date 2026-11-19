@@ -10,10 +10,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from run_cost_guard import RunCostGuardError, build_usage_artifact, guard_usage_records
 
 PROJECT = "dataforge-p7-lab-d0f725"
 LOCATION = "us-central1"
 MAXIMUM_BYTES_BILLED = 1024**3
+RUN_USAGE_RECORDS: list[dict[str, Any]] = []
+RUN_UNKNOWN_QUERY_CAP_COUNT = 0
 
 
 class FaultMissError(RuntimeError):
@@ -41,7 +44,16 @@ def run_query(client: Any, sql: str, label: str) -> list[Any]:
         maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
         labels={"application": "dataforge", "phase": "w9", "fault": label},
     )
-    return list(client.query(sql, job_config=config, location=LOCATION).result())
+    job = client.query(sql, job_config=config, location=LOCATION)
+    try:
+        return list(job.result())
+    finally:
+        RUN_USAGE_RECORDS.append(
+            {
+                "job_id": getattr(job, "job_id", None),
+                "bytes_billed": getattr(job, "total_bytes_billed", None),
+            }
+        )
 
 
 def source_slice(client: Any, dataset: str) -> None:
@@ -106,7 +118,7 @@ def dbt_command(target_path: Path, *args: str) -> subprocess.CompletedProcess[st
     env["DBT_DATAFORGE_LOCATION"] = LOCATION
     env["DATAFORGE_PROJECT_ID"] = PROJECT
     env["DATAFORGE_DQ_RESULTS_ENABLED"] = "true"
-    return subprocess.run(
+    completed = subprocess.run(
         [
             "dbt",
             *args,
@@ -126,6 +138,42 @@ def dbt_command(target_path: Path, *args: str) -> subprocess.CompletedProcess[st
         timeout=900,
         env=env,
     )
+    _record_dbt_usage(target_path, args)
+    return completed
+
+
+def _record_dbt_usage(target_path: Path, args: tuple[str, ...]) -> None:
+    global RUN_UNKNOWN_QUERY_CAP_COUNT
+    if "source" in args and "freshness" in args:
+        # The dbt source-freshness result does not include adapter job statistics.
+        # Reserve its configured per-query maximum in the run-level guard.
+        RUN_UNKNOWN_QUERY_CAP_COUNT += 1
+        return
+    if not any(command in args for command in ("build", "run", "test")):
+        return
+    results_path = target_path / "run_results.json"
+    if not results_path.is_file():
+        RUN_USAGE_RECORDS.append({"job_id": "dbt-run-results-missing", "bytes_billed": None})
+        return
+    try:
+        results = json.loads(results_path.read_text(encoding="utf-8")).get("results", [])
+    except (OSError, json.JSONDecodeError):
+        RUN_USAGE_RECORDS.append({"job_id": "dbt-run-results-invalid", "bytes_billed": None})
+        return
+    for index, item in enumerate(results):
+        adapter = item.get("adapter_response") or {}
+        job_id = adapter.get("job_id")
+        bytes_billed = adapter.get("bytes_billed")
+        if job_id is None and bytes_billed is None:
+            continue
+        if not isinstance(job_id, str) or re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id) is None:
+            job_id = f"dbt-usage-{index}"
+        if bytes_billed is not None:
+            try:
+                bytes_billed = int(bytes_billed)
+            except (TypeError, ValueError):
+                bytes_billed = None
+        RUN_USAGE_RECORDS.append({"job_id": job_id, "bytes_billed": bytes_billed})
 
 
 def make_row(
@@ -313,7 +361,9 @@ def run_f10(client: Any, dataset: str, target_root: Path) -> dict[str, str]:
     )
 
 
-def write_report(rows: list[dict[str, str]], destination: Path) -> None:
+def write_report(
+    rows: list[dict[str, str]], destination: Path, cost_summary: dict[str, Any]
+) -> None:
     columns = [
         "fault", "run_id", "manifest_path", "as_of_date", "injected_at", "detector",
         "detected_at", "channel", "received_at", "action", "gold_hash_before",
@@ -323,6 +373,12 @@ def write_report(rows: list[dict[str, str]], destination: Path) -> None:
         "# Week 9 isolated BigQuery fault tests",
         "",
         "F07 and F10 use only the isolated w9_drill dataset and compare its restored Gold slice hash after each fault.",
+        (
+            "Per-run BigQuery billed-byte guard: "
+            f"{cost_summary.get('guard_status', 'UNVERIFIED')}; observed="
+            f"{cost_summary.get('total_bytes_billed', 'UNVERIFIED')}; upper bound="
+            f"{cost_summary.get('guarded_bytes_upper_bound', 'UNVERIFIED')}; limit=5 GiB."
+        ),
         "",
         "| " + " | ".join(columns) + " |",
         "| " + " | ".join(["---"] * len(columns)) + " |",
@@ -343,6 +399,7 @@ def main() -> int:
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--target-root", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--cost-summary", type=Path)
     args = parser.parse_args()
     if args.project != PROJECT or args.dataset != "w9_drill":
         raise SystemExit("Live fault injection is restricted to the approved project and isolated w9_drill.")
@@ -359,7 +416,11 @@ def main() -> int:
             raise SystemExit(f"Fault catalog mismatch for {fault}")
 
     client = bigquery.Client(project=PROJECT, location=LOCATION)
+    RUN_USAGE_RECORDS.clear()
+    global RUN_UNKNOWN_QUERY_CAP_COUNT
+    RUN_UNKNOWN_QUERY_CAP_COUNT = 0
     rows: list[dict[str, str]] = []
+    cost_guard_failure: str | None = None
     for fault, run in (("F07", run_f07), ("F10", run_f10)):
         try:
             rows.append(run(client, args.dataset, args.target_root))
@@ -389,9 +450,42 @@ def main() -> int:
                     evidence="CI (isolated BigQuery w9_drill test did not complete)",
                 )
             )
-    write_report(rows, args.report)
+        try:
+            guard_usage_records(
+                RUN_USAGE_RECORDS,
+                unknown_query_cap_count=RUN_UNKNOWN_QUERY_CAP_COUNT,
+            )
+        except RunCostGuardError as error:
+            cost_guard_failure = str(error)
+            break
+
+    run_id = os.environ.get("GITHUB_RUN_ID", "0")
+    try:
+        cost_summary = build_usage_artifact(
+            run_id=run_id,
+            job_name="fault-matrix",
+            records=RUN_USAGE_RECORDS,
+            unknown_query_cap_count=RUN_UNKNOWN_QUERY_CAP_COUNT,
+        )
+    except RunCostGuardError as error:
+        cost_guard_failure = cost_guard_failure or str(error)
+        cost_summary = {
+            "workflow_run_id": run_id,
+            "paid_job": "fault-matrix",
+            "guard_status": "FAIL",
+            "failure": cost_guard_failure,
+            "unknown_query_cap_count": RUN_UNKNOWN_QUERY_CAP_COUNT,
+            "usage_records": RUN_USAGE_RECORDS,
+        }
+    if cost_guard_failure:
+        cost_summary["guard_status"] = "FAIL"
+        cost_summary["failure"] = cost_guard_failure
+    if args.cost_summary:
+        args.cost_summary.parent.mkdir(parents=True, exist_ok=True)
+        args.cost_summary.write_text(json.dumps(cost_summary, sort_keys=True), encoding="utf-8")
+    write_report(rows, args.report, cost_summary)
     print("LIVE_FAULT_RESULTS=" + json.dumps({row["fault"]: row["result"] for row in rows}, sort_keys=True))
-    return 0 if all(row["result"] == "PASS" for row in rows) else 1
+    return 0 if all(row["result"] == "PASS" for row in rows) and not cost_guard_failure else 1
 
 
 if __name__ == "__main__":
