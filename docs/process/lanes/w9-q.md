@@ -1,8 +1,8 @@
 # Worker Q — W9-2 Quality + Observability lane
 
-Branch: `feat/w9-q-1` from `origin/main` at `ab345f7`. Scope stopped at Q1–Q6 / Q-PR1; Q7–Q11 remain a later lane. No Terraform/API enablement, GCP dataset/table write, image build, deployment, or production write was performed. One bounded public Open-Meteo GET was captured as a test fixture and documented.
+Branch: `feat/w9-q-2` from `origin/main` at `3a20050e813700cd0a050c69aa1dbd652ca9fc08`. This report covers Q1–Q6 (Q-PR1) and Q7–Q11 (Q-PR2). Q10 proceeded only after the parent confirmed W7 PR #40 S12 merged at `4b0cdd9`; the Airflow gate remains disabled by default, and Airflow behavior is **UNVERIFIED** pending exact-head CI. Q8 Monitoring HCL is authored for review but unplanned and unapplied. No Terraform plan/apply, GCP dataset/table write, image build, deployment, or production write was performed. One bounded public Open-Meteo GET was captured as a test fixture and documented.
 
-## Status
+## Q-PR1 status (Q1–Q6)
 
 Q1–Q6 have local implementations and fixture/configuration evidence. Q2 adds the cataloged F10 test, annotates the existing F02 defense, and adds blocking unique/not-null tests for the two baseline keys. Tests for G's two new privacy models are deferred to Q-PR2 after G-PR1 merges, preserving the required PR order. O1 has provisioned `w9_drill` and `dataforge_dq`, but they are empty; F07/F10 remain unverified because no isolated weather landing table/data or live dbt/BigQuery run exists. Q-PR1 #44 merged normally at `659ba8a` after the exact-head runs listed below passed.
 
