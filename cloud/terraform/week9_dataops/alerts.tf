@@ -38,7 +38,7 @@ resource "google_monitoring_alert_policy" "week9_dq_p1" {
   notification_channels = [var.c9_email_notification_channel_name]
 
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
       A Week 9 P1 data-quality event was recorded for an isolated dataset.
       Event type: ${each.value.event_type}
       Route: Slack from the DQ runner and this existing C9 Monitoring email channel.
@@ -97,7 +97,7 @@ resource "google_monitoring_alert_policy" "week9_dq_deadman" {
   notification_channels = [var.c9_email_notification_channel_name]
 
   documentation {
-    content = <<-EOT
+    content   = <<-EOT
       No successful Week 9 DQ heartbeat has been logged for 23.5 hours.
       This policy is disabled unless enable_dq_deadman=true. Keep it disabled while the pipeline is intentionally stopped;
       use the documented maintenance window before enabling it after a schedule is established.
