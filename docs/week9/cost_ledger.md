@@ -6,7 +6,7 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 | Scope | Cap | Stop line | Current state |
 |---|---:|---:|---|
-| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross estimate ≈USD 0.01584 (query + 7-day secret version + 330 MiB BigQuery billed); lineage processing estimate ≈USD 0.01794; Q8 reserve USD 0.11; remaining paid-run reserves USD 0.22; current W9 forecast ≈USD 0.36378; actual invoice/C10 storage unverified |
+| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01584 plus planned HMAC key version reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; remaining paid-run reserves USD 0.22; forecast ≈USD 0.37759; actual invoice/C10 storage unverified |
 | AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled 2026-11-19 (LINEAGE_DAY 1/5); weather lineage captured and policy-tag lineage pending G3/G4; observed 36 refs imply ≈USD 0.01794 estimate; reserve USD 0.02 for the G4 run while enabled; disable early after policy-tag evidence; actual SKU unverified |
 
 ## Cumulative preflight
@@ -94,7 +94,7 @@ The 13:56 estimate of ≈USD 2.2555 used the retired 100-job × 1-GiB envelope. 
 
 ## Actuals-based cost rebaseline and per-run reserves (2026-11-19 15:50 +07)
 
-The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so far is ≈USD 0.01584: initial 10 MiB slice + seven-day secret version baseline, plus 330 MiB BigQuery billed across the two lineage attempts (≈USD 0.00197 of that total). Observed Dataplex lineage usage is estimated at ≈USD 0.01794 from 36 entity references; actual SKU billing remains unavailable. Keep `maximum_bytes_billed=1 GiB` per query. The 5-GiB run guard is implemented in O-PR2 with cumulative usage artifacts and fail-closed missing-metadata handling; focused local tests pass, with exact-head CI/Gitleaks pending.
+The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so far is ≈USD 0.01584: initial 10 MiB slice + seven-day Slack secret version baseline, plus 330 MiB BigQuery billed across the two lineage attempts (≈USD 0.00197 of that total). Reserve ≈USD 0.01381 for the required synthetic HMAC key version at 168 active hours without assuming free-tier use. Observed Dataplex lineage usage is estimated at ≈USD 0.01794 from 36 entity references; actual SKU billing remains unavailable. Keep `maximum_bytes_billed=1 GiB` per query. The 5-GiB run guard is implemented in O-PR2 with cumulative usage artifacts and fail-closed missing-metadata handling; focused local tests pass, with exact-head CI/Gitleaks pending.
 
 | Remaining paid run | Count | BigQuery reserve | Lineage reserve | Notes |
 |---|---:|---:|---:|---|
@@ -107,4 +107,4 @@ The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so fa
 | W9-4 game-day Injector / Responder | 2 | $0.04 | $0.00 | Separate isolated runs. |
 | **Remaining run reserve** | **10** | **$0.20** | **$0.02** | **$0.22 total** |
 
-Current W9 forecast = known gross USD 0.01584 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 + remaining paid-run reserves USD 0.22 = **≈USD 0.36378**. W7 USD 12.89274 + W8 reserve USD 0.10 + W9 forecast USD 0.36378 = **≈USD 13.35652**, below the USD 16 cumulative stop. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**. Retire the unused envelope reserve; recompute before each paid run and stop at W9 USD 2.40 or lineage USD 0.80. Disable `datalineage.googleapis.com` through AF12 immediately after G3/G4 policy-tag lineage evidence is captured, before the later runs listed above.
+Current W9 forecast = known gross USD 0.01584 + planned HMAC version reserve USD 0.01381 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 + remaining paid-run reserves USD 0.22 = **≈USD 0.37759**. W7 USD 12.89274 + W8 reserve USD 0.10 + W9 forecast USD 0.37759 = **≈USD 13.37033**, below the USD 16 cumulative stop. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**. Retire the unused envelope reserve; recompute before each paid run and stop at W9 USD 2.40 or lineage USD 0.80. Disable `datalineage.googleapis.com` through AF12 immediately after G3/G4 policy-tag lineage evidence is captured, before the later runs listed above.
