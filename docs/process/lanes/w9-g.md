@@ -2,7 +2,7 @@
 
 **Branch:** `feat/w9-g-2` from `origin/main` `3a20050e813700cd0a050c69aa1dbd652ca9fc08`
 
-**Status:** G1–G5 merged in PR #45. G6/G8/G9 local artifacts are implemented; G6 Actions workflow, G4 live access, dbt build, G7 lineage evidence, Terraform plan/apply, and CI remain **UNVERIFIED/PENDING**. The Actions workflow is configured to attempt filtered BigQuery metadata ingestion under AF2; no GCP call was made in this worker block.
+**Status:** G1–G5 merged in PR #45. G6/G8/G9 local artifacts are implemented. G6 Actions workflow, G4 live access, G3 Terraform plan/apply, and G CI remain **UNVERIFIED/PENDING**. The integrator's WIF dbt dispatch produced the isolated W9 weather lineage graph; its terminal GitHub conclusion and the PII policy-tag lineage are still pending.
 
 **Data boundary:** synthetic-only; no GCP query/load, WIF token request, IAM mutation, API enablement, secret creation, local OpenMetadata/Docker run, or production write was performed. OpenMetadata runs only through the GitHub Actions workflow, which remains unrun in this worker block.
 
@@ -105,11 +105,11 @@ The retained F13 manifest fixture projects a raw e-mail column with `classificat
 
 The BigQuery connector enumerates project dataset IDs, then applies the schema filter before listing tables ([enumeration and filter](https://github.com/open-metadata/OpenMetadata/blob/2.0.7-release/ingestion/src/metadata/ingestion/source/database/bigquery/metadata.py#L654-L681), [dataset-filter path](https://github.com/open-metadata/OpenMetadata/blob/2.0.7-release/ingestion/src/metadata/ingestion/source/database/bigquery/metadata.py#L817-L840)). Dataset-ID listing is metadata-only under AF2's project-scoped `roles/bigquery.metadataViewer`; table metadata is restricted to `w9_drill`, `dataforge_dq`, `restricted_pii`, `pii_safe`, and `dbt_ci_pr_*`. No W7 table metadata is queried or included in evidence. Profiler/sample data, usage/query logs, policy tags, DDL, owners, and stored procedures are disabled; no table rows are requested and no source resource is modified. WIF uses `W9_WIF_PROVIDER` and `W9_META_READ_SA_EMAIL` only in this Actions workflow. No IAM is expanded.
 
-OpenMetadata documents additional metadata permissions including `bigquery.tables.getData`, `bigquery.jobs.create`, and `bigquery.jobs.listAll`, beyond AF2's metadata viewer/Data Catalog viewer grants. The workflow suppresses raw connector logs and reports only a recognized denied permission or a generic failure category; a permission denial becomes the sanitized `DATAPLEX_FALLBACK_REASON`. BigQuery ingestion remains **UNVERIFIED** until the workflow runs. Dataplex is the separate live GCP lineage path; G7 remains pending the integrator CI build and lineage event. [OpenMetadata 2.0 dbt CLI docs](https://docs.open-metadata.org/v2.0.x/connectors/database/dbt/run-dbt-workflow-externally); [BigQuery connector permissions](https://docs.open-metadata.org/v2.0.x/connectors/database/bigquery).
+OpenMetadata documents additional metadata permissions including `bigquery.tables.getData`, `bigquery.jobs.create`, and `bigquery.jobs.listAll`, beyond AF2's metadata viewer/Data Catalog viewer grants. The workflow suppresses raw connector logs and reports only a recognized denied permission or a generic failure category; a permission denial becomes the sanitized `DATAPLEX_FALLBACK_REASON`. BigQuery metadata ingestion remains **UNVERIFIED** until the G6 workflow runs. Dataplex execution lineage is separate; the integrator has now captured table-level weather links in `w9_drill`, while G7 policy-tag lineage remains pending. [OpenMetadata 2.0 dbt CLI docs](https://docs.open-metadata.org/v2.0.x/connectors/database/dbt/run-dbt-workflow-externally); [BigQuery connector permissions](https://docs.open-metadata.org/v2.0.x/connectors/database/bigquery).
 
 ## G7 — Dataplex/BigQuery lineage
 
-**PENDING_INTEGRATOR.** The Dataplex/BigQuery Lineage API is disabled, and this worker did not enable it or query GCP. Wait for the integrator-run CI dbt build and the corresponding lineage event before claiming any G7 evidence. Record the build/run ID, lineage event ID/time, source and target asset names, and AF8 cost-ledger entry; stay below the AF8 $1.00 cap and $0.80 stop line. Disable the Lineage API after evidence capture as directed by the integrator. No lineage event is claimed here.
+**PARTIAL — live GCP (isolated dataset).** On 2026-11-19, the integrator's WIF lineage dispatch refreshed `w9_drill.weather_landing` and materialized staging, silver, and gold weather relations. Read-only Data Lineage API searches show five distinct links and 18 event resources. Link IDs, process/run IDs, BigQuery job IDs, event IDs/times, and source/target FQNs are recorded in `docs/week9/evidence/g7-lineage-w9-drill.md`. The final GitHub workflow conclusion and sanitized cost artifact are **UNVERIFIED** after a GitHub API connection reset. This proves the weather table graph only; PII policy-tag lineage remains pending G3/G4. The API is enabled for LINEAGE_DAY 1/5; Dataplex SKU remains **UNVERIFIED**. Disable after full G7 evidence is captured or by day 5, whichever comes first.
 
 ## G8 — current legal-source check
 
@@ -141,7 +141,8 @@ BigQuery time travel keeps changed/deleted data recoverable for seven days by de
 | YAML/JSON parse of classification, six dbt YAML files, four OpenMetadata/GHA YAML files, and service JSON | Exit 0; 11 YAML and 1 JSON parsed. |
 | `git diff --check` | Exit 0. |
 | G2/G6 GitHub Actions run ID | **UNVERIFIED**; workflow not run in this worker block. |
-| dbt parse/build, GCP connector, G4, G7 lineage event, Terraform plan/apply, live delete, API checks | Not run; **UNVERIFIED/PENDING_INTEGRATOR**. |
+| dbt build / G7 weather links | Integrator's WIF dispatch `44460769849` materialized W9 weather tables and exposed 5 links / 18 events; terminal CI status and billed-job summary **UNVERIFIED** pending GitHub reconnection. |
+| G3/G4, G6, PII-tag lineage, Q8 plan/apply, live delete, API hierarchy check | Not run or **UNVERIFIED/PENDING_INTEGRATOR**. |
 
 ### `check_id` ↔ fixture mapping
 
@@ -161,7 +162,7 @@ BigQuery time travel keeps changed/deleted data recoverable for seven days by de
 | `G6-OM-CATALOG-001` | Static checks confirm Actions-only dbt and BigQuery recipes, W9 dataset filters, metadata-only flags, WIF SA wiring, and sanitized fallback. GHA run is unverified; dataset-ID enumeration is permitted metadata, then the schema filter limits table metadata to W9 datasets. |
 | `G6-OM-PERMISSION-FALLBACK-001` | Synthetic connector log with a `bigquery.tables.getData` denial yields only that permission name in the Dataplex fallback; table/dataset names are omitted. |
 | `G6-OM-UNKNOWN-FAILURE-001` | Generic synthetic connector failure produces a sanitized UNVERIFIED receipt without raw log contents. |
-| `G7-DATAPLEX-LINEAGE-001` | No fixture/event yet; pending integrator CI dbt build and captured lineage event under AF8. |
+| `G7-DATAPLEX-LINEAGE-001` | Live GCP weather chain in `w9_drill`: five links / 18 event resources; evidence file has event/process/run IDs, timestamps, and source/target FQNs. PII policy-tag lineage and Dataplex SKU remain UNVERIFIED. |
 | `G8-LEGAL-SOURCE-001` | Official records and summaries for Law 91, Decree 356, Decree 330, and Decree 363; article-level 330/363 crosswalk is explicitly LEGAL_UNVERIFIED. |
 | `G9-P2-ERASURE-PLAN-001` | In-memory synthetic erasure plan matches raw/staging/mart and two SCD2 versions; dry-run only. |
 | `G9-P2-ERASURE-SIM-001` | Local-only simulation removes all fixture rows for the synthetic HMAC-shaped token; no cloud call. |
@@ -182,17 +183,17 @@ Focused local recheck with SQLFluff 3.4.2 passed for both files using the reposi
 - Data Catalog and BigQuery Data Policy API state, applied policy tags, masking behavior, analyst denial, and privileged access were not live-tested. No API was enabled and no cloud resource was created.
 - The configured US region would make real Vietnamese personal-data storage/processing a cross-border-transfer case under Law 91 Article 20. This work uses only synthetic data; privacy counsel must review any real-data proposal and applicable exceptions.
 
-G6 local evidence is limited to workflow/config and synthetic sanitizer tests; both the dbt manifest and BigQuery metadata ingestion await Actions. AF2's published connector-permission comparison includes `tables.getData`, `jobs.create`, and `jobs.listAll`; a denial is expected to be reported without changing IAM. The workflow uses repository variables `W9_WIF_PROVIDER` and `W9_META_READ_SA_EMAIL`, removes the generated credential file in an `always()` cleanup step, and prints no raw connector logs. WIF risk: the job requests `id-token: write`, and O1's provider currently allows `pull_request` for this workflow. Before any untrusted PR run, the integrator must confirm fork OIDC claims are denied or narrow the provider trust condition; a workflow `if` check alone is insufficient. [GitHub OIDC permissions](https://docs.github.com/en/actions/reference/security/oidc); [fork workflow behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflows-in-forked-repositories). G7 remains pending; G9 is only a modelled synthetic drill.
+G6 local evidence is limited to workflow/config and synthetic sanitizer tests; both the dbt manifest and BigQuery metadata ingestion await Actions. AF2's published connector-permission comparison includes `tables.getData`, `jobs.create`, and `jobs.listAll`; a denial is expected to be reported without changing IAM. The workflow uses repository variables `W9_WIF_PROVIDER` and `W9_META_READ_SA_EMAIL`, removes the generated credential file in an `always()` cleanup step, and prints no raw connector logs. WIF risk: the job requests `id-token: write`, and the currently applied provider allows `pull_request` for this workflow. Keep G6 on `workflow_dispatch`/main only until the provider event update is reviewed and applied; a workflow `if` check alone is insufficient. [GitHub OIDC permissions](https://docs.github.com/en/actions/reference/security/oidc); [fork workflow behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflows-in-forked-repositories). G9 is only a modelled synthetic drill.
 
 Integrator actions before G2 close-out:
 
 1. Run `week9-catalog.yml` on the exact G2 PR head and capture the Actions run ID, dbt-manifest result, and sanitized BigQuery metadata receipt. If the connector reports a specific denied permission, preserve only that permission name in `DATAPLEX_FALLBACK_REASON`; do not add IAM.
 2. Confirm the connector used the W9 schema allowlist (`w9_drill`, `dataforge_dq`, `restricted_pii`, `pii_safe`, `dbt_ci_pr_*`) and that no W7 table metadata appears in its evidence. If the allowlist does not hold in the pinned connector, stop the connector and use the Dataplex fallback for G7 lineage.
-3. For G7, wait for the integrator-run CI dbt build and lineage event. Capture event and run identifiers, asset pair, timestamp, and cost under AF8; keep the API disabled outside that approved window.
+3. For G7, the weather lineage links are captured. After G3/G4, capture the PII policy-tag lineage and reconcile the final CI artifact/cost. Keep the API within the AF8 timebox and disable it after full evidence or by day 5.
 4. Review Decree 330/363 signed texts with privacy counsel before relying on the summarized enforcement map. The file flags article-level details as LEGAL_UNVERIFIED.
 5. Treat G9 as planning/test evidence only. Any real-data erasure needs an authorized operational runbook, time-travel/fail-safe disposition, full SCD2-version check, and per-subject encryption-key design if crypto-shredding is required.
 
-Worker G stops before push/merge; integrator owns the G2 PR sequence and G7 live lineage action. This branch adds G6–G9 local artifacts; catalog workflow execution and all live evidence remain pending.
+Worker G stops before push/merge; integrator owns the G2 PR sequence and live G7 action. This branch adds G6–G9 artifacts. The weather lineage graph is now live GCP evidence; G6 catalog ingestion, G4 access tests, G3/Q8 plan/apply, and PII-tag lineage remain pending.
 
 ## Integrator schema reconciliation — 2026-11-19
 
