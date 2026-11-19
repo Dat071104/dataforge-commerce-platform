@@ -28,6 +28,7 @@ EMAIL_MASK_RE = re.compile(r"^[A-Za-z0-9]\*{3}@example\.com$")
 TOKEN_RE = re.compile(r"^[0-9a-f]{64}$")
 AGE_BANDS = {"18-24", "25-34", "35-44", "45-54", "55+"}
 MAXIMUM_BYTES_BILLED = 1024**3
+MAXIMUM_BYTES_BILLED_PER_RUN = 5 * 1024**3
 
 
 class AccessCheckError(RuntimeError):
@@ -41,6 +42,38 @@ def _bounded_query_config(action: str):
         maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
         labels={"application": "dataforge", "phase": "w9", "action": action},
     )
+
+
+def _query_usage_record(job: Any) -> dict[str, Any]:
+    job_id = getattr(job, "job_id", None)
+    bytes_billed = getattr(job, "total_bytes_billed", None)
+    if (
+        not isinstance(job_id, str)
+        or not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id)
+        or isinstance(bytes_billed, bool)
+        or not isinstance(bytes_billed, int)
+        or bytes_billed < 0
+    ):
+        raise AccessCheckError("G4 BigQuery billed-byte metadata is unavailable")
+    return {"job_id": job_id, "bytes_billed": bytes_billed}
+
+
+def _guard_access_run(usage_records: list[dict[str, Any]]) -> dict[str, Any]:
+    billed_by_job: dict[str, int] = {}
+    for record in usage_records:
+        job_id = record["job_id"]
+        billed_by_job[job_id] = max(billed_by_job.get(job_id, 0), record["bytes_billed"])
+    total = sum(billed_by_job.values())
+    if total > MAXIMUM_BYTES_BILLED_PER_RUN:
+        raise AccessCheckError("G4 billed bytes exceeded the 5 GiB per-run ceiling")
+    return {
+        "total_bytes_billed": total,
+        "max_run_bytes_billed": MAXIMUM_BYTES_BILLED_PER_RUN,
+        "usage_records": [
+            {"job_id": job_id, "bytes_billed": billed_by_job[job_id]}
+            for job_id in sorted(billed_by_job)
+        ],
+    }
 
 
 def _read_target() -> dict[str, Any]:
@@ -113,6 +146,7 @@ def verify_access() -> dict[str, Any]:
     privileged_email = f"{PRIVILEGED_SA}@{EXPECTED_PROJECT}.iam.gserviceaccount.com"
     analyst = _impersonated_client(analyst_email)
     privileged = _impersonated_client(privileged_email)
+    usage_records: list[dict[str, Any]] = []
 
     safe_table = analyst.get_table(f"{EXPECTED_PROJECT}.{SAFE_TABLE}")
     safe_column_names = {field.name.lower() for field in safe_table.schema}
@@ -126,13 +160,14 @@ def verify_access() -> dict[str, Any]:
         ORDER BY customer_token
         LIMIT 20
     """
-    safe_rows = list(
-        analyst.query(
-            safe_query,
-            job_config=_bounded_query_config("g4-analyst-safe"),
-            job_id_prefix="w9pii-analyst-safe-",
-        ).result()
+    safe_job = analyst.query(
+        safe_query,
+        job_config=_bounded_query_config("g4-analyst-safe"),
+        job_id_prefix="w9pii-analyst-safe-",
     )
+    safe_rows = list(safe_job.result())
+    usage_records.append(_query_usage_record(safe_job))
+    _guard_access_run(usage_records)
     if not safe_rows:
         raise AccessCheckError("The pii_safe mart has no synthetic rows to verify")
     if any(
@@ -149,14 +184,14 @@ def verify_access() -> dict[str, Any]:
         FROM `{EXPECTED_PROJECT}.{RAW_TABLE}`
         LIMIT 1
     """
+    denied_query_bytes_billed = 0
     try:
-        list(
-            analyst.query(
-                denied_query,
-                job_config=_bounded_query_config("g4-analyst-raw-deny"),
-                job_id_prefix="w9pii-analyst-raw-deny-",
-            ).result()
+        denied_job = analyst.query(
+            denied_query,
+            job_config=_bounded_query_config("g4-analyst-raw-deny"),
+            job_id_prefix="w9pii-analyst-raw-deny-",
         )
+        list(denied_job.result())
     except Exception as exc:  # The permission failure class varies by client version/API path.
         if exc.__class__.__name__ not in {"Forbidden", "PermissionDenied"}:
             raise AccessCheckError("Analyst raw-dataset probe failed for a non-permission reason") from exc
@@ -172,13 +207,14 @@ def verify_access() -> dict[str, Any]:
           COUNTIF(STARTS_WITH(phone, '+84-000-')) AS synthetic_phone_count
         FROM `{EXPECTED_PROJECT}.{RAW_TABLE}`
     """
-    raw_result = list(
-        privileged.query(
-            raw_query,
-            job_config=_bounded_query_config("g4-privileged-raw"),
-            job_id_prefix="w9pii-privileged-raw-",
-        ).result()
+    raw_job = privileged.query(
+        raw_query,
+        job_config=_bounded_query_config("g4-privileged-raw"),
+        job_id_prefix="w9pii-privileged-raw-",
     )
+    raw_result = list(raw_job.result())
+    usage_records.append(_query_usage_record(raw_job))
+    run_usage = _guard_access_run(usage_records)
     if not raw_result or raw_result[0]["row_count"] < 1:
         raise AccessCheckError("Privileged raw-data query returned no synthetic rows")
     summary = raw_result[0]
@@ -198,6 +234,8 @@ def verify_access() -> dict[str, Any]:
         "privileged_raw_access": "PASS",
         "synthetic_raw_rows_checked": int(summary["row_count"]),
         "raw_values_emitted": False,
+        "analyst_denied_probe_bytes_billed": denied_query_bytes_billed,
+        **run_usage,
     }
 
 

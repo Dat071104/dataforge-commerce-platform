@@ -203,8 +203,11 @@ def test_access_plan_names_only_synthetic_privacy_checks(check_id: str) -> None:
 def test_access_queries_have_per_job_bigquery_cap() -> None:
     script = Path("scripts/week9_verify_access.py").read_text(encoding="utf-8")
     assert "MAXIMUM_BYTES_BILLED = 1024**3" in script
+    assert "MAXIMUM_BYTES_BILLED_PER_RUN = 5 * 1024**3" in script
     assert "maximum_bytes_billed=MAXIMUM_BYTES_BILLED" in script
     assert script.count("job_config=_bounded_query_config(") == 3
+    assert "_guard_access_run(usage_records)" in script
+    assert '"total_bytes_billed": total' in script
 
 
 def test_access_service_account_ids_match_addendum_f() -> None:
