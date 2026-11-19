@@ -205,6 +205,17 @@ def test_access_queries_have_per_job_bigquery_cap() -> None:
     assert "MAXIMUM_BYTES_BILLED = 1024**3" in script
     assert "maximum_bytes_billed=MAXIMUM_BYTES_BILLED" in script
     assert script.count("job_config=_bounded_query_config(") == 3
+
+
+def test_access_service_account_ids_match_addendum_f() -> None:
+    script = Path("scripts/week9_verify_access.py").read_text(encoding="utf-8")
+    policy_tags = Path("cloud/terraform/week9_dataops/policy_tags.tf").read_text(encoding="utf-8")
+    assert 'ANALYST_SA = "dataforge-w9-analyst-test"' in script
+    assert 'PRIVILEGED_SA = "dataforge-w9-privileged-test"' in script
+    assert 'account_id   = "dataforge-w9-analyst-test"' in policy_tags
+    assert 'account_id   = "dataforge-w9-privileged-test"' in policy_tags
+    assert "dataforge-w9-pii-analyst-test" not in script + policy_tags
+    assert "dataforge-w9-pii-privileged-test" not in script + policy_tags
     assert "pii_safe.dim_customer_profile_safe" in script
 
 

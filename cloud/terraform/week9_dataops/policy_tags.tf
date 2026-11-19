@@ -47,7 +47,7 @@ locals {
 resource "google_service_account" "week9_pii_analyst_test" {
   count        = var.week9_pii_enabled ? 1 : 0
   project      = var.project_id
-  account_id   = "dataforge-w9-pii-analyst-test"
+  account_id   = "dataforge-w9-analyst-test"
   display_name = "DataForge Week-9 PII analyst test identity"
   description  = "Can query only the minimized pii_safe dataset; no restricted_pii dataset grant."
 }
@@ -55,7 +55,7 @@ resource "google_service_account" "week9_pii_analyst_test" {
 resource "google_service_account" "week9_pii_privileged_test" {
   count        = var.week9_pii_enabled ? 1 : 0
   project      = var.project_id
-  account_id   = "dataforge-w9-pii-privileged-test"
+  account_id   = "dataforge-w9-privileged-test"
   display_name = "DataForge Week-9 privileged PII test identity"
   description  = "Can read the restricted synthetic fixture for the positive access check."
 }

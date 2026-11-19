@@ -69,7 +69,7 @@ $env:DATAFORGE_W9_PII_ACCESS_TEST_ENABLED = 'true'
 python scripts/week9_verify_access.py --execute
 ```
 
-The script impersonates `dataforge-w9-pii-analyst-test` and `dataforge-w9-pii-privileged-test`. Its queries are:
+The script impersonates the AF4-authorized identities `dataforge-w9-analyst-test` and `dataforge-w9-privileged-test`. Its queries are:
 
 ```sql
 -- Analyst: safe, masked/generalized mart only
