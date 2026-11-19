@@ -13,7 +13,7 @@ on:
         default: false
         type: boolean
       pr_number:
-        description: Exact open same-repository PR number when run_cloud_build is selected
+        description: Exact open same-repository PR number when a manual cloud build is selected
         required: false
         default: ""
         type: string
@@ -24,6 +24,11 @@ on:
         type: boolean
       run_cloud_build:
         description: Run the isolated dbt PR build for pr_number
+        required: false
+        default: false
+        type: boolean
+      run_lineage_build:
+        description: Run the fixed w9_drill dbt lineage build for pr_number
         required: false
         default: false
         type: boolean
@@ -38,7 +43,7 @@ permissions:
 
 concurrency:
   group: week9-dataops-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   lint:
@@ -198,8 +203,28 @@ jobs:
               echo "New contract has no prior main version: $contract"
             fi
           done <<< "$changed"
+  drill-dispatch-guard:
+    name: Guard fixed w9_drill dispatch inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Reject concurrent lineage and F07/F10 dispatches
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_LINEAGE_BUILD: ${{ inputs.run_lineage_build }}
+          RUN_FAULT_MATRIX: ${{ inputs.run_fault_matrix }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$RUN_LINEAGE_BUILD" == "true" && "$RUN_FAULT_MATRIX" == "true" ]]; then
+            echo "::error::run_lineage_build and run_fault_matrix both target w9_drill; select one per dispatch"
+            exit 1
+          fi
+
   wif-smoke:
     name: WIF positive and least-privilege probes
+    needs: [drill-dispatch-guard]
     if: >-
       (github.event_name == 'pull_request_target' &&
       github.event.pull_request.head.repo.id == github.repository_id &&
@@ -311,7 +336,7 @@ jobs:
 
   wif-smoke-not-requested:
     name: Manual WIF smoke not selected
-    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_fault_matrix
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_lineage_build && !inputs.run_fault_matrix
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -465,19 +490,54 @@ jobs:
         run: |
           set -euo pipefail
           copy_job="w9_copy_${PR_NUMBER}_${GITHUB_RUN_ID}"
+          partition_query="$(cat <<SQL
+          SELECT partition_id
+          FROM \`${PROJECT_ID}.weather_mini3.INFORMATION_SCHEMA.PARTITIONS\`
+          WHERE table_name = 'weather_landing'
+            AND partition_id IS NOT NULL
+            AND REGEXP_CONTAINS(partition_id, r'^[0-9]{8}$')
+          ORDER BY partition_id DESC
+          LIMIT 7
+          SQL
+          )"
+          bq query --quiet --use_legacy_sql=false --location=us-central1 \
+            --maximum_bytes_billed=1073741824 --format=csv "$partition_query" \
+            > "$RUNNER_TEMP/weather-partitions.csv"
+          partition_filter="$(
+            python - "$RUNNER_TEMP/weather-partitions.csv" <<'PY'
+          import csv
+          import re
+          import sys
+          from datetime import datetime
+
+          with open(sys.argv[1], encoding="utf-8", newline="") as source:
+              rows = list(csv.reader(source))
+          if not rows or rows[0] != ["partition_id"]:
+              raise SystemExit("Partition metadata query returned an unexpected shape")
+          partition_rows = rows[1:]
+          if len(partition_rows) != 7 or any(len(row) != 1 for row in partition_rows):
+              raise SystemExit("Expected exactly seven distinct date partitions")
+          partition_ids = [row[0] for row in partition_rows]
+          if len(set(partition_ids)) != 7:
+              raise SystemExit("Expected exactly seven distinct date partitions")
+          if any(re.fullmatch(r"[0-9]{8}", value) is None for value in partition_ids):
+              raise SystemExit("Partition metadata contains an invalid date partition")
+          try:
+              dates = [datetime.strptime(value, "%Y%m%d").date().isoformat() for value in partition_ids]
+          except ValueError as error:
+              raise SystemExit("Partition metadata contains an invalid calendar date") from error
+          print(", ".join(f"DATE '{value}'" for value in dates))
+          PY
+          )"
+          if [[ -z "$partition_filter" ]]; then
+            echo "::error::No valid partition filter was generated (UNVERIFIED)"
+            exit 1
+          fi
           copy_sql="$(cat <<SQL
           CREATE OR REPLACE TABLE \`${PROJECT_ID}.${PR_DATASET}.weather_landing\` AS
           SELECT *
           FROM \`${PROJECT_ID}.weather_mini3.weather_landing\`
-          WHERE observation_date IN (
-            SELECT observation_date
-            FROM (
-              SELECT DISTINCT observation_date
-              FROM \`${PROJECT_ID}.weather_mini3.weather_landing\`
-            )
-            ORDER BY observation_date DESC
-            LIMIT 7
-          )
+          WHERE observation_date IN ($partition_filter)
           SQL
           )"
           bq query --quiet --use_legacy_sql=false --location=us-central1 \
@@ -702,6 +762,143 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  lineage-build:
+    name: Fixed w9_drill dbt lineage build
+    if: github.event_name == 'workflow_dispatch' && inputs.run_lineage_build
+    needs: [drill-dispatch-guard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    concurrency:
+      group: week9-w9-drill-${{ github.repository }}
+      cancel-in-progress: false
+    env:
+      PROJECT_ID: dataforge-p7-lab-d0f725
+      PR_NUMBER: ${{ inputs.pr_number }}
+      DATASET: w9_drill
+      WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+    steps:
+      - name: Validate the exact open same-repository PR head before WIF
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+          CURRENT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.head.repo.id | tostring), .head.sha] | @tsv')"
+          IFS=$'\t' read -r pr_state pr_head_repo_id pr_head_sha <<< "$metadata"
+          if [[ "$pr_state" != "open" || "$pr_head_repo_id" != "$BASE_REPO_ID" || "$pr_head_sha" != "$CURRENT_SHA" ]]; then
+            echo "::error::Lineage build requires the open same-repository PR whose head matches this dispatched ref"
+            exit 1
+          fi
+
+      - name: Check out the validated dispatched PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build the locked toolbox without pushing
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: deploy/dataops_toolbox
+          file: deploy/dataops_toolbox/Dockerfile
+          tags: dataforge-dataops-toolbox:lineage-ci
+          push: false
+          outputs: type=docker,name=dataforge-dataops-toolbox:lineage-ci,compression=gzip,compression-level=6,force-compression=true
+
+      - name: Validate fixed w9_drill routing and WIF variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$WIF_PROVIDER" || -z "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo "::error::W9 WIF repository variables are required for the lineage build"
+            exit 1
+          fi
+          [[ "$PROJECT_ID" == "dataforge-p7-lab-d0f725" && "$DATASET" == "w9_drill" ]]
+
+      - name: Authenticate the CI service account with WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ vars.W9_WIF_PROVIDER }}
+          service_account: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: bq
+
+      - name: Confirm WIF access to the fixed W9 drill dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          active_project="$(gcloud config get-value project 2>/dev/null)"
+          [[ "$active_project" == "$PROJECT_ID" ]]
+          bq ls "$PROJECT_ID:$DATASET" >/dev/null 2>&1
+          echo "WIF can list the fixed w9_drill dataset."
+
+      - name: Prepare the isolated dbt profile and target paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dbt-profiles" "$RUNNER_TEMP/dbt-target" "$RUNNER_TEMP/dbt-logs" "$RUNNER_TEMP/lineage-summary"
+          cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
+
+      - name: Run bounded copy, destination guard, and dbt build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]]; then
+            echo "::error::WIF did not provide an external-account credentials file"
+            exit 1
+          fi
+          container_args=(
+            --rm
+            --volume "$GITHUB_WORKSPACE:/workspace"
+            --volume "$RUNNER_TEMP/dbt-profiles:/profiles"
+            --volume "$RUNNER_TEMP/dbt-target:/tmp/dbt-target"
+            --volume "$RUNNER_TEMP/dbt-logs:/tmp/dbt-logs"
+            --volume "$RUNNER_TEMP/lineage-summary:/summary"
+            --volume "$GOOGLE_APPLICATION_CREDENTIALS:/tmp/gha-creds.json:ro"
+            --workdir /workspace
+            --user "$(id -u):$(id -g)"
+            --env GOOGLE_APPLICATION_CREDENTIALS=/tmp/gha-creds.json
+            --env ACTIONS_ID_TOKEN_REQUEST_URL
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN
+            --env DBT_PROFILES_DIR=/profiles
+            --env DBT_TARGET_PATH=/tmp/dbt-target
+            --env DBT_LOG_PATH=/tmp/dbt-logs
+            --env PR_NUMBER
+            --env GITHUB_RUN_ID
+            --env GITHUB_RUN_ATTEMPT
+          )
+          docker run "${container_args[@]}" dataforge-dataops-toolbox:lineage-ci \
+            python /workspace/deploy/dataops_toolbox/week9_lineage_build.py
+
+      - name: Upload sanitized lineage and query-usage summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-lineage-summary-${{ inputs.pr_number }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/lineage-summary/w9-lineage-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
   fault-matrix-local:
     name: Local fault fixture ${{ matrix.fault }}
     if: >-
@@ -806,7 +1003,7 @@ jobs:
       github.event.pull_request.head.repo.id == github.repository_id &&
       vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.run_fault_matrix)
-    needs: [wif-smoke]
+    needs: [wif-smoke, drill-dispatch-guard]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:

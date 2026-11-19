@@ -1,6 +1,8 @@
 """Static safety checks for the Week 9 DataOps dispatch and cleanup workflows."""
 from __future__ import annotations
 
+import importlib.util
+import sys
 from pathlib import Path
 
 import yaml
@@ -13,6 +15,16 @@ def load_workflow(path: str) -> dict:
         (ROOT / path).read_text(encoding="utf-8"),
         Loader=yaml.BaseLoader,
     )
+
+
+def load_lineage_helper():
+    helper_path = ROOT / "deploy/dataops_toolbox/week9_lineage_build.py"
+    spec = importlib.util.spec_from_file_location("week9_lineage_build", helper_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def step_index(steps: list[dict], name: str) -> int:
@@ -39,6 +51,157 @@ def test_manual_cloud_build_is_bound_to_exact_open_same_repo_pr_head() -> None:
     assert step_index(smoke_steps, validation["name"]) < step_index(
         smoke_steps, "Authenticate with the allowlisted WIF provider"
     )
+
+
+def test_cloud_copy_uses_validated_partition_literals_and_pr_only_destination() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    cloud_steps = workflow["jobs"]["cloud-pr"]["steps"]
+    copy_step = next(
+        step for step in cloud_steps if step.get("name") == "Copy the latest seven weather dates into the PR dataset"
+    )
+    script = copy_step["run"]
+    assert "INFORMATION_SCHEMA.PARTITIONS" in script
+    assert "table_name = 'weather_landing'" in script
+    assert "ORDER BY partition_id DESC" in script and "LIMIT 7" in script
+    assert "len(partition_rows) != 7" in script
+    assert 're.fullmatch(r"[0-9]{8}", value)' in script
+    assert 'datetime.strptime(value, "%Y%m%d")' in script
+    assert 'print(", ".join(f"DATE \'{value}\'" for value in dates))' in script
+    assert "WHERE observation_date IN ($partition_filter)" in script
+    assert "SELECT DISTINCT observation_date" not in script
+    assert "FROM \\`${PROJECT_ID}.weather_mini3.weather_landing\\`" in script
+    assert "CREATE OR REPLACE TABLE \\`${PROJECT_ID}.${PR_DATASET}.weather_landing\\`" in script
+    assert script.count("--maximum_bytes_billed=1073741824") >= 2
+    assert '> "$RUNNER_TEMP/weather-partitions.csv"' in script
+    assert 'echo "$partition_filter"' not in script and 'echo "$partition_ids"' not in script
+
+
+def test_manual_lineage_build_is_exact_head_gated_and_fixed_to_w9_drill() -> None:
+    workflow_path = ROOT / ".github/workflows/week9-dataops.yml"
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    inputs = workflow["on"]["workflow_dispatch"]["inputs"]
+    assert inputs["run_lineage_build"]["type"] == "boolean"
+    assert inputs["run_lineage_build"]["default"] == "false"
+    parsed_inputs = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))[True]["workflow_dispatch"]["inputs"]
+    assert parsed_inputs["run_lineage_build"]["default"] is False
+    assert workflow["concurrency"]["cancel-in-progress"] == "false"
+
+    guard = workflow["jobs"]["drill-dispatch-guard"]
+    guard_step = guard["steps"][0]
+    assert guard_step["env"]["RUN_LINEAGE_BUILD"] == "${{ inputs.run_lineage_build }}"
+    assert guard_step["env"]["RUN_FAULT_MATRIX"] == "${{ inputs.run_fault_matrix }}"
+    assert "select one per dispatch" in guard_step["run"]
+
+    job = workflow["jobs"]["lineage-build"]
+    assert job["if"] == "github.event_name == 'workflow_dispatch' && inputs.run_lineage_build"
+    assert job["needs"] == ["drill-dispatch-guard"]
+    assert job["env"]["DATASET"] == "w9_drill"
+    assert job["concurrency"]["group"] == "week9-w9-drill-${{ github.repository }}"
+    assert job["concurrency"]["cancel-in-progress"] == "false"
+    assert "inputs.run_lineage_build" not in workflow["jobs"]["wif-smoke"]["if"]
+
+    fault_job = workflow["jobs"]["fault-matrix-live"]
+    assert "drill-dispatch-guard" in fault_job["needs"]
+    assert fault_job["concurrency"] == job["concurrency"]
+
+    steps = job["steps"]
+    validation = next(
+        step for step in steps if step.get("name") == "Validate the exact open same-repository PR head before WIF"
+    )
+    validation_script = validation["run"]
+    assert "^[1-9][0-9]*$" in validation_script
+    assert ".head.repo.id" in validation_script and ".head.sha" in validation_script
+    assert '"$pr_state" != "open"' in validation_script
+    assert '!= "$CURRENT_SHA"' in validation_script
+    assert step_index(steps, validation["name"]) < step_index(steps, "Check out the validated dispatched PR head")
+    assert step_index(steps, validation["name"]) < step_index(steps, "Authenticate the CI service account with WIF")
+
+    access_check = next(
+        step for step in steps if step.get("name") == "Confirm WIF access to the fixed W9 drill dataset"
+    )
+    assert 'bq ls "$PROJECT_ID:$DATASET" >/dev/null 2>&1' in access_check["run"]
+
+    helper_step = next(step for step in steps if step.get("name") == "Run bounded copy, destination guard, and dbt build")
+    assert "week9_lineage_build.py" in helper_step["run"]
+    assert '"$GOOGLE_APPLICATION_CREDENTIALS:/tmp/gha-creds.json:ro"' in helper_step["run"]
+    assert "--env ACTIONS_ID_TOKEN_REQUEST_URL" in helper_step["run"]
+    upload = next(step for step in steps if step.get("name") == "Upload sanitized lineage and query-usage summary")
+    assert upload["if"] == "always()"
+    assert "w9-lineage-summary.json" in upload["with"]["path"]
+
+    helper = (ROOT / "deploy/dataops_toolbox/week9_lineage_build.py").read_text(encoding="utf-8")
+    assert 'PROJECT_ID = "dataforge-p7-lab-d0f725"' in helper
+    assert 'SOURCE_DATASET = "weather_mini3"' in helper
+    assert 'TARGET_DATASET = "w9_drill"' in helper
+    assert "MAXIMUM_BYTES_BILLED = 1024**3" in helper
+    assert "INFORMATION_SCHEMA.PARTITIONS" in helper
+    assert "REGEXP_CONTAINS(partition_id" in helper
+    assert "DATE '{value.isoformat()}'" in helper
+    assert "CREATE OR REPLACE TABLE" in helper
+    assert '"landed_at": ("TIMESTAMP", "REQUIRED")' in helper
+    assert "schema_signature(copied_table.schema, include_mode=False) != EXPECTED_OUTPUT_TYPES" in helper
+    assert "validate_manifest(manifest)" in helper
+    assert "node.get(\"schema\") != TARGET_DATASET" in helper
+    assert "source.get(\"schema\") != TARGET_DATASET" in helper
+    assert '"DATAFORGE_DQ_RESULTS_ENABLED": "false"' in helper
+    assert "packages.yml" in helper
+    assert "summarize_dbt_results" in helper
+    assert '"dbt_jobs_seen"' in helper and '"adapter_bytes_billed"' in helper
+    assert '"bigquery_queries"' in helper and '"billing_sku": "UNVERIFIED"' in helper
+    assert 'capture_output=True' in helper and "output suppressed" in helper
+    assert "dbt_weather_mini3" not in helper and "w9_drill_silver" not in helper
+    assert not (ROOT / "dbt/dataforge/packages.yml").exists()
+    requirements_lock = (ROOT / "deploy/dataops_toolbox/requirements.lock").read_text(encoding="utf-8")
+    assert "dbt-bigquery==1.11.3" in requirements_lock
+
+    profile = load_workflow("dbt/dataforge/profiles.example.yml")
+    assert profile["dataforge"]["outputs"]["w9_ci"]["maximum_bytes_billed"] == "1073741824"
+
+
+def test_lineage_helper_renders_only_seven_real_partition_date_literals() -> None:
+    helper = load_lineage_helper()
+    partition_ids = [f"202611{day:02d}" for day in range(19, 12, -1)]
+    filter_sql, as_of_date = helper.partition_literals(partition_ids)
+    assert filter_sql == ", ".join(f"DATE '2026-11-{day:02d}'" for day in range(19, 12, -1))
+    assert as_of_date.isoformat() == "2026-11-19"
+
+    for invalid in (partition_ids[:-1], [*partition_ids[:-1], partition_ids[0]], ["20261340", *partition_ids[1:]]):
+        try:
+            helper.partition_literals(invalid)
+        except helper.LineageBuildError:
+            pass
+        else:
+            raise AssertionError("Invalid partition metadata should fail closed")
+
+
+def test_lineage_manifest_guard_rejects_any_weather_relation_outside_w9_drill() -> None:
+    helper = load_lineage_helper()
+    manifest = {
+        "nodes": {
+            "model.dataforge.int_weather_daily": {
+                "resource_type": "model",
+                "tags": ["weather_mini3", "silver"],
+                "database": "dataforge-p7-lab-d0f725",
+                "schema": "w9_drill",
+            }
+        },
+        "sources": {
+            "source.dataforge.weather_mini3.weather_landing": {
+                "source_name": "weather_mini3",
+                "name": "weather_landing",
+                "database": "dataforge-p7-lab-d0f725",
+                "schema": "w9_drill",
+            }
+        },
+    }
+    assert helper.validate_manifest(manifest) == 1
+    manifest["nodes"]["model.dataforge.int_weather_daily"]["schema"] = "w9_drill_silver"
+    try:
+        helper.validate_manifest(manifest)
+    except helper.LineageBuildError:
+        pass
+    else:
+        raise AssertionError("A non-w9_drill model destination should fail closed")
 
 
 def test_silver_denial_probe_captures_both_streams_and_rejects_404() -> None:
