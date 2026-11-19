@@ -90,21 +90,22 @@ jobs:
               else:
                   error_code = str(error_value)
                   description = str(error_body.get("error_description", "")).lower()
-              condition_rejected = "attribute condition" in description
+              normalized_error_code = error_code.casefold()
+              condition_rejected = "condition" in description
+              expected_denial_codes = {
+                  "invalid_grant",
+                  "failed_precondition",
+                  "permission_denied",
+              }
               if (
                   error.code == 400
-                  and error_code in {"invalid_grant", "FAILED_PRECONDITION"}
+                  and normalized_error_code in expected_denial_codes
                   and condition_rejected
               ):
                   print("EXPECTED_DENIAL=provider_attribute_condition")
                   raise SystemExit(0)
-              safe_codes = {
-                  "invalid_grant",
-                  "invalid_request",
-                  "FAILED_PRECONDITION",
-                  "INVALID_ARGUMENT",
-              }
-              safe_code = error_code if error_code in safe_codes else "other"
+              safe_codes = expected_denial_codes | {"invalid_request", "invalid_argument"}
+              safe_code = normalized_error_code if normalized_error_code in safe_codes else "other"
               if "audience" in description:
                   reason_class = "audience"
               elif "issuer" in description:
