@@ -50,6 +50,12 @@ def run(frame: pd.DataFrame, *, enforce: str = "block"):
     return report, sink
 
 
+def _result_observed(result) -> dict[str, object]:
+    import json
+
+    return json.loads(result.observed)
+
+
 def failed_ids(report) -> set[str]:
     return {
         result.check_id
@@ -89,7 +95,23 @@ def test_string_contract_rejects_mixed_object_values(clean_frame):
     schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
     assert schema.status == "FAIL"
     assert schema.failing_rows == 1
-    assert "type_mismatch:source" in json.loads(schema.observed)["issues"]
+    assert "type_mismatch:source" in _result_observed(schema)["issues"]
+    assert report.blocked
+
+
+@pytest.mark.parametrize(
+    "column", ["request_id", "source", "model", "source_sha256", "manifest_uri"]
+)
+def test_required_string_columns_reject_null_values(clean_frame, column):
+    frame = clean_frame.copy(deep=True)
+    frame.loc[frame.index[0], column] = None
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "FAIL"
+    assert schema.failing_rows == 1
+    assert f"missing_values:{column}" in _result_observed(schema)["issues"]
     assert report.blocked
 
 

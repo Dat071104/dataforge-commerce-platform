@@ -192,6 +192,21 @@ def run_landing_gate(
         if not ok:
             schema_messages.append(f"type_mismatch:{column}")
 
+    for column in schema_cfg.get("required_non_null", []):
+        if column not in columns:
+            continue
+        ok, count, _ = _expect(
+            batch,
+            gxe.ExpectColumnValuesToNotBeNull(
+                column=column,
+                result_format={"result_format": "SUMMARY"},
+            ),
+        )
+        expectation_passes.append(ok)
+        expectation_failures += count or (0 if ok else 1)
+        if not ok:
+            schema_messages.append(f"missing_values:{column}")
+
     extras = sorted(columns - set(expected_columns))
     non_nullable_extras: list[str] = []
     nullable_extras: list[str] = []
@@ -212,7 +227,9 @@ def run_landing_gate(
             severity=schema_cfg["severity"],
             passed=schema_passed,
             observed={"issues": schema_messages, "required_columns": len(expected_columns)},
-            threshold={"required_columns": "present with contracted logical/physical types"},
+            threshold={
+                "required_columns": "present with contracted logical/physical types and required non-null values"
+            },
             failing_rows=expectation_failures,
             contract_version=contract_version,
         )
