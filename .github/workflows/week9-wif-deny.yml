@@ -1,0 +1,98 @@
+name: Week 9 WIF denied-workflow test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: week9-wif-deny-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  expected-denial:
+    name: Reject non-allowlisted workflow identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require the approved provider variable
+        env:
+          WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+        run: |
+          if [[ -z "$WIF_PROVIDER" ]]; then
+            echo "::error::W9_WIF_PROVIDER repository variable is not configured"
+            exit 1
+          fi
+
+      - name: Assert Security Token Service rejects this workflow file
+        env:
+          WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          provider = os.environ["WIF_PROVIDER"]
+          audience = f"//iam.googleapis.com/{provider}"
+          request_url = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL", "")
+          request_token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "")
+          if not request_url or not request_token:
+              raise SystemExit("UNVERIFIED: GitHub OIDC request context is unavailable")
+
+          separator = "&" if "?" in request_url else "?"
+          oidc_url = request_url + separator + urllib.parse.urlencode({"audience": audience})
+          oidc_request = urllib.request.Request(
+              oidc_url,
+              headers={"Authorization": f"Bearer {request_token}"},
+          )
+          with urllib.request.urlopen(oidc_request, timeout=30) as response:
+              subject_token = json.loads(response.read()).get("value", "")
+          if not subject_token:
+              raise SystemExit("UNVERIFIED: GitHub returned no OIDC subject token")
+
+          body = urllib.parse.urlencode(
+              {
+                  "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+                  "audience": audience,
+                  "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+                  "scope": "https://www.googleapis.com/auth/cloud-platform",
+                  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+                  "subject_token": subject_token,
+              }
+          ).encode("utf-8")
+          sts_request = urllib.request.Request(
+              "https://sts.googleapis.com/v1/token",
+              data=body,
+              headers={"Content-Type": "application/x-www-form-urlencoded"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(sts_request, timeout=30):
+                  raise SystemExit(
+                      "FAIL: a non-allowlisted week9-wif-deny.yml workflow obtained a WIF token"
+                  )
+          except urllib.error.HTTPError as error:
+              try:
+                  error_body = json.loads(error.read())
+              except json.JSONDecodeError:
+                  error_body = {}
+              description = str(error_body.get("error_description", "")).lower()
+              error_code = error_body.get("error")
+              if error.code == 400 and error_code == "invalid_grant" and "attribute condition" in description:
+                  print("EXPECTED_DENIAL=provider_attribute_condition")
+                  raise SystemExit(0)
+              raise SystemExit(
+                  "UNVERIFIED: STS rejected the token for a reason other than the expected workflow allowlist"
+              )
+          finally:
+              subject_token = ""
+              request_token = ""
+              body = b""
+          PY
