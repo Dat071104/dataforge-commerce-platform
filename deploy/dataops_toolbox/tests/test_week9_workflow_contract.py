@@ -41,6 +41,19 @@ def test_manual_cloud_build_is_bound_to_exact_open_same_repo_pr_head() -> None:
     )
 
 
+def test_silver_denial_probe_captures_both_streams_and_rejects_404() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    smoke_steps = workflow["jobs"]["wif-smoke"]["steps"]
+    probe = next(step for step in smoke_steps if step.get("name") == "Verify silver dataset read is denied")
+    script = probe["run"]
+    assert 'bq ls silver >"$probe_file" 2>&1' in script
+    assert "(^|[^0-9])404([^0-9]|$)|not found|notfound" in script
+    assert "(^|[^0-9])403([^0-9]|$)|access denied|permission[[:space:]_-]+denied" in script
+    assert "UNVERIFIED" in script
+    assert "bigquery.datasets.get" not in script
+    assert 'cat "$probe_file"' not in script
+
+
 def test_manual_offline_checks_use_the_dispatched_sha_without_cloud_permissions() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     input_spec = workflow["on"]["workflow_dispatch"]["inputs"]["run_offline_checks"]

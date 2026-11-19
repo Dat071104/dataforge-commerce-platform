@@ -220,11 +220,11 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 ```
 
 - Strict yamllint: passed for the W9 workflows, profile example, and CODEOWNERS; `pre-commit validate-config` passed.
-- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **61** extracted run blocks. The **8** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit read-only offline dispatch, valid `runner.temp` usage scope, explicit cleanup selection, closed/old-only sweep, fixed `w9_drill` F07/F10 scope, and the provider-switch pause guard.
+- Final YAML parse passed for **4** Week 9 workflows; Bash syntax passed for **61** extracted run blocks. The **9** O-owned workflow contract tests passed; they cover exact manual PR binding/comment artifact, explicit silver-denial classification, read-only offline dispatch, valid `runner.temp` usage scope, explicit cleanup selection, closed/old-only sweep, fixed `w9_drill` F07/F10 scope, and the provider-switch pause guard.
 - Ruff and `py_compile` passed for `wif_permission_probe.py`, `week9_live_faults.py`, and the new static workflow test.
-- Hashed dependency dry-run in clean Python 3.12: **137 packages, pass**.
-- The focused host test passed (**8 passed**). A prior broader host run of `tests/week9` plus the then-current static tests was **29 passed / 17 failed** because host Python lacks `great_expectations`; the toolbox lock pins GX Core 1.25.0, so those G1 tests remain for the pinned toolbox CI environment. No source/dependency changes were made in response.
-- No dbt warehouse run, WIF exchange, GCP command, Terraform formatting/validation/plan/apply, local Docker, or OpenMetadata was run. Exact-head CI IDs and WIF/F07/F10 live results remain **UNVERIFIED**. Terraform formatting/validation were simply not run; no plan/apply or cloud-side provider update was attempted because cloud authentication is expired and the integrator prohibited cloud actions.
+- Hashed dependency dry-run in clean Python 3.12: **138 packages, pass**.
+- The focused host test passed (**9 passed**). A prior broader host run of `tests/week9` plus the then-current static tests was **29 passed / 17 failed** because host Python lacks `great_expectations`; the toolbox lock pins GX Core 1.25.0, so those G1 tests remain for the pinned toolbox CI environment. No source/dependency changes were made in response.
+- Worker O ran no dbt warehouse run, WIF exchange, GCP command, Terraform formatting/validation/plan/apply, local Docker, or OpenMetadata. Exact-head CI IDs and WIF/F07/F10 live results remain **UNVERIFIED** unless recorded in the specific RCA below. Terraform formatting/validation were simply not run; no plan/apply or cloud-side provider update was attempted because cloud authentication is expired and the integrator prohibited cloud actions.
 - Because `pull_request_target` uses the base-branch workflow, pre-merge proof is manual from the selected OPR2 ref: `run_wif_smoke=true`; `run_cloud_build=true` with the exact positive `pr_number` for `dbt_ci_pr_<n>`; or `run_fault_matrix=true` for fixed `w9_drill`. `week9-wif-deny.yml` is dispatched separately. No dispatch was run by Worker O.
 
 ## Integrator actions
@@ -246,3 +246,9 @@ YAML parse and bash -n on each extracted run block in the four Week 9 workflows;
 - Exact-head DataOps run `44418056188` failed during collection of `tests/week9/governance/test_week9_governance.py`: `ModuleNotFoundError: No module named 'faker'` from `dataforge.privacy.synthetic`. The tests were not removed, skipped, or weakened.
 - `Faker==40.54.0` was already pinned in the repository `pyproject.toml` and `requirements-py311.lock`; the toolbox's `requirements.in` omitted it. The toolbox now pins that same version and the regenerated hash lock contains both wheel hashes. Offline resolution yields **138 packages**.
 - Focused local evidence: governance tests **11 passed**; `uv pip install --dry-run --offline --require-hashes` in a clean CPython 3.12.13 virtual environment resolved all **138** locked packages. The post-fix exact-head CI result remains **UNVERIFIED** pending integrator review/dispatch.
+
+## O-PR2 WIF probe RCA — silver denial output stream
+
+- Manual run `44426426923` passed WIF authentication and positive `bq ls w9_drill`, then failed to classify the expected silver denial. The probe discarded stdout and captured stderr only, so it missed the denial diagnostic when `bq` emitted it on stdout.
+- Resolution: capture both streams into a temporary file without printing it. Only explicit HTTP 403, `Access Denied`, or permission-denied text passes. 404/not-found and every unexpected response remain **UNVERIFIED** and fail the probe. The static contract test checks both-stream capture, the allowed denial patterns, and the 404/unexpected failure path.
+- No cloud retry was run by Worker O; the post-fix WIF result remains **UNVERIFIED** until the integrator reruns the already-authorized `workflow_dispatch` path.

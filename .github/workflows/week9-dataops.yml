@@ -286,13 +286,17 @@ jobs:
       - name: Verify silver dataset read is denied
         shell: bash
         run: |
-          error_file="$RUNNER_TEMP/silver-read-denied.txt"
-          if bq ls silver >/dev/null 2>"$error_file"; then
+          probe_file="$RUNNER_TEMP/silver-read-probe.txt"
+          if bq ls silver >"$probe_file" 2>&1; then
             echo "::error::CI identity unexpectedly listed the silver dataset"
             exit 1
           fi
-          if ! grep -Eqi '403|access denied|permission.*denied|bigquery.datasets.get' "$error_file"; then
-            echo "::error::silver access failed for a reason other than an authorization denial"
+          if grep -Eqi '(^|[^0-9])404([^0-9]|$)|not found|notfound' "$probe_file"; then
+            echo "::error::silver access probe returned 404/not found (UNVERIFIED)"
+            exit 1
+          fi
+          if ! grep -Eqi '(^|[^0-9])403([^0-9]|$)|access denied|permission[[:space:]_-]+denied' "$probe_file"; then
+            echo "::error::silver access probe did not contain an explicit authorization denial (UNVERIFIED)"
             exit 1
           fi
           echo "EXPECTED_DENIAL=silver_dataset_read"
