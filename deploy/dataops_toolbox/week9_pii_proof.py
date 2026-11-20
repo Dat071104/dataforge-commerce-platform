@@ -9,10 +9,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from dataforge.privacy.synthetic import EXPECTED_PROJECT, load_customer_profiles
 from run_cost_guard import RunCostGuardError
-from week9_pii_cost_guard import build_cost_receipt, PII_SAFE_MART_TABLE
+from week9_pii_cost_guard import PII_SAFE_MART_TABLE, build_cost_receipt
 from week9_pii_mask_probe import verify_masked_access
+
+from dataforge.privacy.synthetic import EXPECTED_PROJECT, load_customer_profiles
 
 JOB_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,256}")
 DBT_PROJECT_DIR = Path("/workspace/dbt/dataforge")
