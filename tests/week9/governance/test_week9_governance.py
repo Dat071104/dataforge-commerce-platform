@@ -75,7 +75,9 @@ def test_pii_safe_schema_patch_uses_filename_and_preserves_relation_alias(check_
 
 
 @pytest.mark.parametrize("check_id", ["G3-POLICY-TAG-001"], ids=lambda value: value)
-def test_restricted_dbt_view_persists_policy_tags_on_direct_pii_columns(check_id: str) -> None:
+def test_restricted_dbt_view_keeps_tags_declared_but_does_not_persist_view_columns(
+    check_id: str,
+) -> None:
     schema_path = Path("dbt/dataforge/models/pii/restricted/schema.yml")
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
     model = next(
@@ -85,7 +87,7 @@ def test_restricted_dbt_view_persists_policy_tags_on_direct_pii_columns(check_id
         column["name"] for column in model["columns"] if column.get("policy_tags")
     }
 
-    assert model["config"]["persist_docs"]["columns"] is True
+    assert model["config"]["persist_docs"] == {"relation": True, "columns": False}
     assert tagged_columns == {"full_name", "cccd", "email", "phone", "birth_date"}
     tags_by_column = {
         column["name"]: column["policy_tags"][0]

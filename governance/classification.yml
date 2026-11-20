@@ -1617,6 +1617,9 @@ models:
       pii_type: none
       purpose: Explicitly distinguish synthetic data from real customer information.
       retention_days: 365
+  # BigQuery did not persist policyTags on the restricted view in the T2 metadata probe.
+  # Keep these classifications and the dbt policy_tags declarations; the restricted base
+  # table carries the tags and BigQuery enforces them through this view.
   stg_customer_profile_restricted:
     fixture_id:
       classification: internal
