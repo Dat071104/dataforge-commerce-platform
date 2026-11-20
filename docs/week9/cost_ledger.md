@@ -6,8 +6,8 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 | Scope | Cap | Stop line | Current state |
 |---|---:|---:|---|
-| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross estimate ≈USD 0.01584 (query + 7-day secret version + 330 MiB BigQuery billed); lineage processing estimate ≈USD 0.01794; Q8 reserve USD 0.11; remaining paid-run reserves USD 0.22; current W9 forecast ≈USD 0.36378; actual invoice/C10 storage unverified |
-| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled 2026-11-19 (LINEAGE_DAY 1/5); weather lineage captured and policy-tag lineage pending G3/G4; observed 36 refs imply ≈USD 0.01794 estimate; reserve USD 0.02 for the G4 run while enabled; disable early after policy-tag evidence; actual SKU unverified |
+| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01584 plus active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 12 remaining paid-run reserves USD 0.28; forecast ≈USD 0.43759; actual invoice/C10 storage unverified |
+| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled 2026-11-19 (LINEAGE_DAY 1/5); weather lineage captured and policy-tag lineage pending G3/G4; observed 36 refs imply ≈USD 0.01794 estimate; reserve USD 0.02 each for G3/G4 while enabled; disable early after policy-tag evidence; actual SKU unverified |
 
 ## Cumulative preflight
 
@@ -60,6 +60,8 @@ Before every paid W9 action, refresh the latest Week 7 estimate, confirm the cur
 | 2026-11-19 ~11:50 +07 | O-PR2 WIF lineage retry, run `44460769849` / job `135346755986` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; [Knowledge Catalog pricing](https://cloud.google.com/products/knowledge-catalog/pricing): ≈$0.0004984/reference | Final artifact: 30 MiB helper queries + 270 MiB dbt adapter = 300 MiB; 50/50 dbt jobs billed; 4 weather models; build PASS. 18 lineage events/36 references imply ≈$0.018 processing at example rate; storage and actual SKU unverified | GCP metadata confirms source copy plus staging, silver, and Gold relations. Process job metadata shows four queries at 10 MiB billed and one view job at 0 bytes. Five unique links connect `weather_mini3` → `w9_drill` → staging → silver → gold. Later reconciliation below confirms run success and exact query totals. | Invoice and Dataplex SKU unavailable; do not infer zero | G7 link/process/run/event identifiers are in `docs/week9/evidence/g7-lineage-w9-drill.md`; `w9_drill` only was written. PII tag evidence and AF12 cleanup pending. |
 | 2026-11-19 ~11:50 +07 | O-PR2 WIF lineage retry, run `44460769849` / job `135346755986` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; 10 MiB minimum per query; [Knowledge Catalog pricing](https://cloud.google.com/products/knowledge-catalog/pricing): ≈$0.0004984/reference | Final artifact: 30 MiB helper queries + 270 MiB dbt adapter = 300 MiB; 50/50 dbt jobs billed; 4 weather models; build PASS. 18 lineage events/36 references imply ≈$0.018 processing at example rate; storage and actual SKU unverified | GCP metadata confirms WIF-created `w9_drill` source, staging, silver, and Gold relations; process/job IDs and UTC event IDs are in `g7-lineage-w9-drill.md`. Later reconciliation below confirms the successful build and exact query totals. | Invoice and Dataplex SKU unavailable; do not infer zero | GCP `SearchLinks`/process/run/event API results are read-only. W9-only writes; `weather_mini3` was read-only. Policy-tag lineage pending G3/G4; AF12 cleanup remains pending. |
 
+| 2026-11-19 ~21:35 +07 | Create `w9-pii-hmac-key` version 1; 32 random bytes generated and submitted from memory; payload not printed or logged | [Secret Manager pricing](https://cloud.google.com/secret-manager/pricing): $0.000082192 per active version-hour above free quota; free tier not assumed | ≈$0.01381 for 168 active hours; included in current W9 forecast | Secret Manager returned version `1`; metadata only. No BigQuery query or table write occurred in this action. | Invoice unavailable | Secret version payload was not read back; no service-account key used. |
+
 Local package downloads and offline dbt parsing are not GCP spend and are not included as cloud actions. They do not establish an actual cloud bill.
 
 ## O-PR2 first lineage-build preflight (2026-11-19 11:12 +07; historical before first dispatch)
@@ -94,17 +96,19 @@ The 13:56 estimate of ≈USD 2.2555 used the retired 100-job × 1-GiB envelope. 
 
 ## Actuals-based cost rebaseline and per-run reserves (2026-11-19 15:50 +07)
 
-The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so far is ≈USD 0.01584: initial 10 MiB slice + seven-day secret version baseline, plus 330 MiB BigQuery billed across the two lineage attempts (≈USD 0.00197 of that total). Observed Dataplex lineage usage is estimated at ≈USD 0.01794 from 36 entity references; actual SKU billing remains unavailable. Keep `maximum_bytes_billed=1 GiB` per query. The 5-GiB run guard is implemented in O-PR2 with cumulative usage artifacts and fail-closed missing-metadata handling; focused local tests pass, with exact-head CI/Gitleaks pending.
+The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so far is ≈USD 0.01584: initial 10 MiB slice + seven-day Slack secret version baseline, plus 330 MiB BigQuery billed across the two lineage attempts (≈USD 0.00197 of that total). HMAC version 1 is active; its 168-hour reserve is ≈USD 0.01381 without assuming free-tier use. Observed Dataplex lineage usage is estimated at ≈USD 0.01794 from 36 entity references; actual SKU billing remains unavailable. Keep `maximum_bytes_billed=1 GiB` per query. The 5-GiB run guard is implemented in O-PR2 with cumulative usage artifacts and fail-closed missing-metadata handling; focused local tests pass. Remote exact head `8748263` passed DataOps/Gitleaks/5-GiB run `44535596893` and Week 7 run `44535596788`; local PII proof changes are not yet pushed or CI-verified.
 
 | Remaining paid run | Count | BigQuery reserve | Lineage reserve | Notes |
 |---|---:|---:|---:|---|
-| G4 analyst/privileged impersonation query batch | 1 | $0.02 | $0.02 | Run while lineage is on; G4 guard sums successful query jobs. |
+| G3 synthetic load + PII dbt materialization | 1 | $0.02 | $0.02 | Includes one bounded BigQuery build to create tagged PII tables and capture policy-tag lineage before shutdown. |
+| G4 analyst/privileged impersonation query batch | 1 | $0.02 | $0.02 | Conservatively keep lineage reserve until G4 evidence is captured; G4 guard sums successful query jobs. |
+| O-PR2 exact-head PR dataset build (`dbt_ci_pr_46`) | 1 | $0.02 | $0.00 | Required O4 proof; schedule after the Lineage API is disabled. |
 | F07/F10 live fault-matrix dispatch | 1 | $0.02 | $0.00 | Run after policy-tag evidence and early lineage shutdown. |
 | W9-3 E2E PR W9-E2E cloud build | 1 | $0.02 | $0.00 | Offline fixtures add no paid run. |
 | F13/F14/F15 throwaway PR cloud builds | 3 | $0.06 | $0.00 | Reserve one bounded cloud build per PR. |
 | F06 live drill | 1 | $0.02 | $0.00 | After H-W9-3; isolated W9 only. |
 | F-N0 precision run | 1 | $0.02 | $0.00 | Clean-control query run. |
 | W9-4 game-day Injector / Responder | 2 | $0.04 | $0.00 | Separate isolated runs. |
-| **Remaining run reserve** | **10** | **$0.20** | **$0.02** | **$0.22 total** |
+| **Remaining run reserve** | **12** | **$0.24** | **$0.04** | **$0.28 total** |
 
-Current W9 forecast = known gross USD 0.01584 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 + remaining paid-run reserves USD 0.22 = **≈USD 0.36378**. W7 USD 12.89274 + W8 reserve USD 0.10 + W9 forecast USD 0.36378 = **≈USD 13.35652**, below the USD 16 cumulative stop. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**. Retire the unused envelope reserve; recompute before each paid run and stop at W9 USD 2.40 or lineage USD 0.80. Disable `datalineage.googleapis.com` through AF12 immediately after G3/G4 policy-tag lineage evidence is captured, before the later runs listed above.
+Current W9 forecast = known gross USD 0.01584 + active HMAC version 1 reserve USD 0.01381 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 + 12 remaining paid-run reserves USD 0.28 = **≈USD 0.43759**. W7 USD 12.89274 + W8 reserve USD 0.10 + W9 forecast USD 0.43759 = **≈USD 13.43033**, below the USD 16 cumulative stop. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**. Retire the unused envelope reserve; recompute before each paid run and stop at W9 USD 2.40 or lineage USD 0.80. Disable `datalineage.googleapis.com` through AF12 immediately after G3/G4 policy-tag lineage evidence is captured, before the later runs listed above.

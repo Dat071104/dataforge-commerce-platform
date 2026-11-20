@@ -2,9 +2,9 @@
 
 **Branch:** `feat/w9-g-2` from `origin/main` `3a20050e813700cd0a050c69aa1dbd652ca9fc08`
 
-**Status:** G1–G5 merged in PR #45. G6/G8/G9 local artifacts are implemented. G6 Actions workflow, G4 live access, G3 Terraform plan/apply, and G CI remain **UNVERIFIED/PENDING**. The integrator's WIF dbt dispatch produced the isolated W9 weather lineage graph; its terminal GitHub conclusion and the PII policy-tag lineage are still pending.
+**Status:** G1–G5 merged in PR #45. G6/G8/G9 local artifacts are implemented. The integrator applied G3 policy-tag resources (four tags and four data policies) and the Q8 monitoring resources; synthetic PII load, G4 live access, G6 Actions run, and PII policy-tag lineage remain pending.
 
-**Data boundary:** synthetic-only; no GCP query/load, WIF token request, IAM mutation, API enablement, secret creation, local OpenMetadata/Docker run, or production write was performed. OpenMetadata runs only through the GitHub Actions workflow, which remains unrun in this worker block.
+**Worker-block boundary:** synthetic-only; Worker G performed no GCP query/load, WIF token request, IAM mutation, API enablement, secret creation, local OpenMetadata/Docker run, or production write. OpenMetadata runs only through the GitHub Actions workflow, which remains unrun in this worker block.
 
 ## Changed files
 
@@ -205,4 +205,17 @@ The scheduler retry scenario showed one sensor-state mismatch on the earlier GPR
 - G7 weather lineage remains captured in the tracked evidence and sanitized successful-build artifact. Policy-tag lineage remains pending G3/G4; the Data Lineage API stays enabled only until that evidence is captured.
 - WIF positive/least-privilege smoke run `44471823452` passed; non-allowlisted workflow denial run `44483082696` passed with the sanitized expected marker. G-B log now records both.
 - `scripts/week9_verify_access.py` now enforces the 1-GiB per-query cap and a 5-GiB cumulative billed-byte guard across successful G4 queries. Local governance suite: **19 passed**; py_compile and `git diff --check` passed. Live impersonation checks remain pending the separate G3/Q8 applies.
-- Cost rebaseline forecasts ≈USD 0.36378 W9 with ten remaining paid-run reserves. Billing/SKU and C10 storage remain **UNVERIFIED**. This G branch has local evidence commits and must merge current `origin/main` before its future push, after O-PR2 and Q-PR2 in sequence.
+- The prior ≈USD 0.36378 / ten-run forecast is superseded by the actuals-based cost ledger (≈USD 0.43759 / twelve remaining run reserves). Billing/SKU and C10 storage remain **UNVERIFIED**. This G branch must merge latest `origin/main` after O-PR2 and Q-PR2, before its push.
+
+## Integrator reconciliation — I-4 / AF2-ext-1 (2026-11-19)
+
+- G3 Terraform now has four policy tags, four data policies, two test identities, two temporary operator TokenCreator bindings, and two AF2-ext-1 CI dataset-writer bindings. Data Policy IDs use underscore-only names after the API rejected the original hyphenated IDs; the partial apply created 17 resources and a fresh recovery plan created the remaining four. No data rows were loaded.
+- The `google_client_openid_userinfo` data source now uses a provider alias without the billing/quota override so it obtains the authenticated identity without committing an e-mail. The temporary CI writer bindings apply only to `restricted_pii` and `pii_safe`, with a dataset IAM condition expiring 2026-11-23 23:59 +07. Read-only BigQuery inventory verified exactly one conditional writer binding on each dataset. AF2-ext-1 is recorded in Addendum F and removal is listed in AF12.
+- Secret Manager HMAC version 1 was created from 32 random bytes in memory; payload was not printed or read back. AF2/AF5 limits keep secret reads in GitHub Actions via the CI SA. A WIF PII proof job is being prepared in O-PR2; it must load/build the synthetic tables, run the CI masked-column negative probe, and pass the 5-GiB run guard before G4.
+- Q8 is applied separately: five metrics and four policies (three enabled P1; heartbeat disabled; freshness excluded). The initial dead-man alert was rejected because the combined evaluation horizon exceeded 25 hours; Q's `alerts.tf` now uses a 60-second alignment with an 84,600-second absence duration. Live alerts and G4 remain unverified; keep Lineage API on until PII tag lineage is captured.
+- Current actuals-based forecast is ≈USD 0.43759 with 12 paid-run reserves; billed amount, Dataplex SKU and C10 storage are **UNVERIFIED**. This G branch must merge latest `origin/main` after O-PR2 and Q-PR2, before its push.
+
+## Integrator reconciliation — PII mart model-name alignment (2026-11-20)
+
+- dbt's model `name` in properties YAML must match the SQL filename; `alias` changes the database relation identifier. The safe model file is `dim_synthetic_customer_safe.sql`, while the BigQuery relation remains `pii_safe.dim_customer_profile_safe`. Updated the properties patch, Gold-model key and classification registry, safe-manifest fixture, and model-ID assertion to use the filename. The enforced contract and column metadata now attach to the intended model. [dbt model name](https://docs.getdbt.com/reference/resource-properties/name); [dbt alias](https://docs.getdbt.com/reference/resource-configs/alias)
+- Focused governance suite: **20 passed** under Python 3.13 with pinned Faker 40.54.0 in a temporary target; pinned Ruff 0.14.6 and Terraform 1.17.1 `fmt -check` passed. The single WIF PII proof dispatch was issued once; GitHub run status is **UNVERIFIED** after the 443 network failure, and the latest read-only inventories still show no tables in `restricted_pii` or `pii_safe`.

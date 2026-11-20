@@ -24,7 +24,7 @@ GOLD_MODELS = {
     "fct_week7_build_receipt",
     "fct_mini3_weather_daily",
     "mart_weather_province_daily",
-    "dim_customer_profile_safe",
+    "dim_synthetic_customer_safe",
 }
 
 

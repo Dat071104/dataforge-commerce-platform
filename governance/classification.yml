@@ -1591,7 +1591,7 @@ models:
       pii_type: none
       purpose: Province-level weather reporting and data-quality controls.
       retention_days: 3650
-  dim_customer_profile_safe:
+  dim_synthetic_customer_safe:
     customer_token:
       classification: confidential
       pii_type: pseudonymous_customer_identifier

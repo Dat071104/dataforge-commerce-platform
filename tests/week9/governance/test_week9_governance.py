@@ -44,6 +44,7 @@ def test_all_source_model_snapshot_and_gold_columns_are_classified(check_id: str
 
     assert result["status"] == "PASS"
     assert result["source_tables"] == 8
+    assert result["gold_columns"] == 55
     assert result["gold_coverage_percent"] == 100.0
     assert result["gold_meta_complete"] == result["gold_columns"]
 
@@ -60,6 +61,18 @@ def test_pii_dataset_override_keeps_default_non_pii_schema_naming(check_id: str)
     assert str(module.generate_schema_name("restricted_pii", None)).strip() == "restricted_pii"
     assert str(module.generate_schema_name("dataforge_dq", None)).strip() == "dataforge_dq"
     assert str(module.generate_schema_name("custom_dev", None)).strip() == "dbt_local_custom_dev"
+
+
+@pytest.mark.parametrize("check_id", ["G3-DBT-MODEL-NAME-001"], ids=lambda value: value)
+def test_pii_safe_schema_patch_uses_filename_and_preserves_relation_alias(check_id: str) -> None:
+    model_path = Path("dbt/dataforge/models/pii/marts/dim_synthetic_customer_safe.sql")
+    schema_path = Path("dbt/dataforge/models/pii/marts/schema.yml")
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    model = next(item for item in schema["models"] if item["name"] == model_path.stem)
+
+    assert model["config"]["contract"]["enforced"] is True
+    assert model["config"]["persist_docs"] == {"relation": True, "columns": True}
+    assert "alias='dim_customer_profile_safe'" in model_path.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("check_id", ["G3-POLICY-TAG-001"], ids=lambda value: value)
@@ -173,7 +186,7 @@ def test_f13_manifest_is_rejected_and_safe_masked_manifest_passes(check_id: str)
 @pytest.mark.parametrize("check_id", ["G5-INDIRECT-CUSTOMER-001"], ids=lambda value: value)
 def test_confidential_customer_id_is_allowed_but_public_customer_id_is_blocked(check_id: str) -> None:
     manifest = json.loads((GOVERNANCE_FIXTURES / "safe_masked_manifest.json").read_text(encoding="utf-8"))
-    model_id = "model.dataforge.dim_customer_profile_safe"
+    model_id = "model.dataforge.dim_synthetic_customer_safe"
     manifest["nodes"][model_id]["schema"] = "gold"
     manifest["nodes"][model_id]["columns"]["customer_id"] = {
         "name": "customer_id",

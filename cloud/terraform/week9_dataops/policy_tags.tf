@@ -2,6 +2,14 @@
 # preflight confirms project, APIs, identities, and retention. This file was
 # intentionally not planned or applied by the governance worker.
 
+# Keep userinfo lookup off the main provider's billing/quota override; with ADC,
+# google_client_openid_userinfo can otherwise return a null email.
+provider "google" {
+  alias   = "userinfo"
+  project = var.project_id
+  region  = var.region
+}
+
 variable "week9_pii_enabled" {
   description = "Opt in to the isolated Week-9 synthetic PII datasets, test identities, and column policies after integrator review."
   type        = bool
@@ -16,6 +24,17 @@ variable "week9_pii_test_impersonation_enabled" {
   validation {
     condition     = !var.week9_pii_test_impersonation_enabled || var.week9_pii_enabled
     error_message = "Week-9 test impersonation can be enabled only while the PII test identities are enabled."
+  }
+}
+
+variable "week9_pii_ci_writer_enabled" {
+  description = "Temporary AF2-ext-1 dataset writer for the CI dbt SA during synthetic G3/G4 only; remove after G4."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.week9_pii_ci_writer_enabled || (var.week9_pii_enabled && var.week9_pii_test_impersonation_enabled)
+    error_message = "The temporary CI PII writer requires the authorized PII resources and G4 test identities to be enabled."
   }
 }
 
@@ -61,7 +80,8 @@ resource "google_service_account" "week9_pii_privileged_test" {
 }
 
 data "google_client_openid_userinfo" "week9_operator" {
-  count = var.week9_pii_test_impersonation_enabled ? 1 : 0
+  count    = var.week9_pii_test_impersonation_enabled ? 1 : 0
+  provider = google.userinfo
 }
 
 resource "google_service_account_iam_member" "week9_pii_analyst_operator_token_creator" {
@@ -108,6 +128,36 @@ resource "google_bigquery_dataset_iam_member" "week9_pii_privileged_raw_reader" 
   member     = "serviceAccount:${google_service_account.week9_pii_privileged_test[0].email}"
 }
 
+# AF2-ext-1: short-lived CI writer only for the two synthetic PII datasets.
+# Keep the IAM condition and remove both bindings immediately after G4.
+resource "google_bigquery_dataset_iam_member" "week9_pii_ci_restricted_writer" {
+  count      = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.restricted_pii.dataset_id
+  role       = "roles/bigquery.dataEditor"
+  member     = "serviceAccount:${google_service_account.ci_dbt.email}"
+
+  condition {
+    title       = "af2_ext_1_g3_g4_expiry_20261123"
+    description = "Temporary synthetic-only G3/G4 writer; expires 2026-11-23 23:59 +07."
+    expression  = "request.time < timestamp(\"2026-11-23T16:59:00Z\")"
+  }
+}
+
+resource "google_bigquery_dataset_iam_member" "week9_pii_ci_safe_writer" {
+  count      = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.pii_safe.dataset_id
+  role       = "roles/bigquery.dataEditor"
+  member     = "serviceAccount:${google_service_account.ci_dbt.email}"
+
+  condition {
+    title       = "af2_ext_1_g3_g4_expiry_20261123"
+    description = "Temporary synthetic-only G3/G4 writer; expires 2026-11-23 23:59 +07."
+    expression  = "request.time < timestamp(\"2026-11-23T16:59:00Z\")"
+  }
+}
+
 resource "google_data_catalog_taxonomy" "week9_pii" {
   count                  = var.week9_pii_enabled ? 1 : 0
   project                = var.project_id
@@ -128,7 +178,7 @@ resource "google_bigquery_datapolicy_data_policy" "week9_pii_mask" {
   for_each         = var.week9_pii_enabled ? local.week9_pii_masks : {}
   project          = var.project_id
   location         = var.region
-  data_policy_id   = "w9-pii-${replace(each.key, "_", "-")}-mask"
+  data_policy_id   = "w9_pii_${each.key}_mask"
   policy_tag       = google_data_catalog_policy_tag.week9_pii[each.key].name
   data_policy_type = "DATA_MASKING_POLICY"
   data_masking_policy {

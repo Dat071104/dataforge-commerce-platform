@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: dim_customer_profile_safe
+  - name: dim_synthetic_customer_safe
     description: >-
       Minimized synthetic customer mart. Raw name, CCCD, phone, and birth date
       remain in restricted_pii; this table contains only an HMAC token,
