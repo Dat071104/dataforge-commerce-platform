@@ -1839,19 +1839,26 @@ legal_mapping:
     official_metadata: https://vanban.chinhphu.vn/?docid=207759&pageid=27160
   decree_330_2026_ND_CP:
     effective_date: '2026-08-19'
-    official_scope: Government metadata identifies administrative penalties for cybersecurity and personal-data protection; the official Government summary lists erasure/de-identification and cross-border transfers among covered topics.
+    official_scope: >-
+      Government metadata identifies administrative penalties for cybersecurity and personal-data protection; the
+      official Government summary lists erasure/de-identification and cross-border transfers among covered topics.
     official_metadata: https://vanban.chinhphu.vn/?classid=1&docid=219266&pageid=27160&typegroupid=4
     official_summary: https://baochinhphu.vn/muc-xu-phat-vi-pham-hanh-chinh-doi-voi-hanh-vi-vi-pham-ve-bao-ve-du-lieu-ca-nhan-102260822154959691.htm
     official_text_pdf: https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/8/330_2026_nd-cp_19082026-signed.signed.pdf
     article_level_crosswalk: LEGAL_UNVERIFIED; the signed PDF was too large for this review fetch, so no article numbers or penalty amounts are mapped.
   decree_363_2026_ND_CP:
     effective_date: '2026-11-11'
-    official_scope: General data-sector administrative penalties. The official Government summary says conduct covered by the separate cybersecurity and personal-data penalty decree is excluded; detailed application to this project is not determined.
+    official_scope: >-
+      General data-sector administrative penalties. The official Government summary says conduct covered by the
+      separate cybersecurity and personal-data penalty decree is excluded; detailed application to this project is
+      not determined.
     official_metadata: https://vanban.chinhphu.vn/?docid=219598&pageid=27160
     official_gazette_record: https://congbao.chinhphu.vn/van-ban/nghi-dinh-so-363-2026-nd-cp-470550.htm
     official_summary: https://baochinhphu.vn/chi-dao-dieu-hanh-cua-chinh-phu-thu-tuong-chinh-phu-ngay-23-9-2026-102260923175708968.htm
     official_text_pdf: https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/9/363_2026_nd-cp_19092026-signed.signed.pdf
-    article_level_crosswalk: LEGAL_UNVERIFIED; the signed PDF was too large for this review fetch, so the exclusion is recorded from the official summary and not presented as a legal determination.
+    article_level_crosswalk: >-
+      LEGAL_UNVERIFIED; the signed PDF was too large for this review fetch, so the exclusion is recorded from the
+      official summary and not presented as a legal determination.
   region_implication: The configured us-central1 region is in the United States. If real personal data collected
     in Vietnam were stored or processed there, this would be a cross-border-transfer scenario under Article 20;
     no exception is assumed. This work uses synthetic data only.

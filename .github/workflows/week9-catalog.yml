@@ -50,6 +50,14 @@ jobs:
       - name: Start ephemeral catalog stack
         run: docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml up -d --wait
 
+      - name: Show catalog bootstrap diagnostics
+        if: failure()
+        # Ephemeral CI-only stack with throwaway local credentials; no cloud credentials exist yet.
+        run: |
+          docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml ps -a
+          docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml \
+            logs --no-color --tail 120 migrate
+
       - name: Register W9 catalog service
         run: |
           curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 \
@@ -118,7 +126,8 @@ jobs:
           else
             echo "DBT_MANIFEST_CATALOG=UNVERIFIED (manifest ingestion did not complete successfully)." >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "BigQuery connector is restricted to W9 schemas: w9_drill, dataforge_dq, restricted_pii, pii_safe, dbt_ci_pr_*; profiler, sample data, usage, query-log, policy tags, and Dataplex extraction are disabled." >> "$GITHUB_STEP_SUMMARY"
+          echo "BigQuery connector is restricted to W9 schemas: w9_drill, dataforge_dq, restricted_pii, pii_safe, dbt_ci_pr_*;" >> "$GITHUB_STEP_SUMMARY"
+          echo "profiler, sample data, usage, query-log, policy tags, and Dataplex extraction are disabled." >> "$GITHUB_STEP_SUMMARY"
           echo "Dataplex is the separate live GCP lineage path; G7 remains pending the integrator-run CI build and lineage event." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove ephemeral WIF credentials and connector log
