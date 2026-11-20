@@ -442,6 +442,31 @@ def run_landing_gate(
     )
 
 
+def _align_bigquery_dtypes(frame: Any, fields: dict[str, Any]) -> Any:
+    """Map BigQuery client dtypes onto the contract's pandas representation.
+
+    google-cloud-bigquery returns DATE as db-dtypes ``dbdate``, INT64 as nullable
+    ``Int64`` and TIMESTAMP as ``datetime64[us, UTC]``, while the G1 contract was
+    captured from the landing parquet (``object`` dates, ``int64``,
+    ``datetime64[ns, UTC]``). Only columns whose BigQuery physical type already
+    matches are converted, so real drift (for example DATE -> STRING) still fails
+    G1.LANDING.SCHEMA. Run 44706679381 blocked on exactly this false positive.
+    """
+    aligned = frame.copy()
+    for name, field in fields.items():
+        if name not in aligned.columns:
+            continue
+        field_type = str(getattr(field, "field_type", "")).upper()
+        column = aligned[name]
+        if field_type == "DATE":
+            aligned[name] = column.astype(object)
+        elif field_type in {"INTEGER", "INT64"} and not column.isna().any():
+            aligned[name] = column.astype("int64")
+        elif field_type == "TIMESTAMP":
+            aligned[name] = column.astype("datetime64[ns, UTC]")
+    return aligned
+
+
 def _read_bigquery_frame(project: str, dataset: str, observation_date: date):
     from google.cloud import bigquery
 
@@ -464,7 +489,7 @@ def _read_bigquery_frame(project: str, dataset: str, observation_date: date):
         labels={"application": "dataforge", "phase": "week9", "action": "dq-gate"},
     )
     job = client.query(query, job_config=job_config, location="us-central1")
-    frame = job.to_dataframe(create_bqstorage_client=False)
+    frame = _align_bigquery_dtypes(job.to_dataframe(create_bqstorage_client=False), fields)
     usage_path = os.environ.get("DATAFORGE_W9_COST_USAGE_FILE")
     if usage_path:
         job_id = getattr(job, "job_id", None)
