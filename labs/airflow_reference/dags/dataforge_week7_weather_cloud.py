@@ -1378,6 +1378,7 @@ def dataforge_week7_weather_cloud():
     landing >> reconciliation_operation >> landing_reconciliation >> gate_result >> build_operation
     build >> publish_operation >> publish >> gold
     gold >> execution_receipt
+    gate_result >> execution_receipt
 
 
 dataforge_week7_weather_cloud()

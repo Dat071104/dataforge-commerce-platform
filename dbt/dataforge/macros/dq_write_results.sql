@@ -53,14 +53,18 @@
             {% set failures = result.failures | default(0, true) | int %}
             {% set result_dataset = target.schema %}
             {% if result.node.resource_type == 'source' %}
-                {% set result_dataset = result.node.schema | default(target.schema, true) %}
+                {% set result_dataset =
+                    result.node.schema | default(target.schema, true)
+                %}
             {% endif %}
             {% set result_date = var('weather_observation_date', '') | string %}
             {% if not result_date or result_date == '1970-01-01' %}
                 {% set result_date = run_started_at.strftime('%Y-%m-%d') %}
             {% endif %}
             {% set safe_observed_status = status | replace("'", "''") %}
-            {% set safe_dataset = result_dataset | string | replace("'", "''") %}
+            {% set safe_dataset =
+                result_dataset | string | replace("'", "''")
+            %}
             {% set safe_result_date = result_date | replace("'", "''") %}
             {% set observed_sql =
                 "TO_JSON_STRING(STRUCT('" ~ safe_observed_status ~ "' AS status, "

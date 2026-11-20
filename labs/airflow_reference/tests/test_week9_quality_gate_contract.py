@@ -21,7 +21,8 @@ class Week9AirflowGateContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.dag = weather_cloud.dataforge_week7_weather_cloud()
-        cls.gate = cls.dag.get_task("quality_gate_landing").python_callable
+        # staticmethod: a plain function stored on the class would bind `self`.
+        cls.gate = staticmethod(cls.dag.get_task("quality_gate_landing").python_callable)
 
     def setUp(self) -> None:
         self.request = {"observation_date": "2026-11-06"}
