@@ -952,7 +952,7 @@ jobs:
               "repos/$GITHUB_REPOSITORY/commits/$CURRENT_SHA/check-runs?per_page=100" \
               --jq '.check_runs[]'
           )"
-          checks="$(jq -s --arg current_run "$GITHUB_RUN_ID" '
+          checks="$(jq -s -r --arg current_run "$GITHUB_RUN_ID" '
             [
               .[]
               | select(((.details_url // "") | contains("/actions/runs/" + $current_run)) | not)
