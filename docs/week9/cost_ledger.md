@@ -6,8 +6,8 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 | Scope | Cap | Stop line | Current state |
 |---|---:|---:|---|
-| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01584 plus active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 12 remaining paid-run reserves USD 0.28; forecast ≈USD 0.43759; actual invoice/C10 storage unverified |
-| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled 2026-11-19 (LINEAGE_DAY 1/5); weather lineage captured and policy-tag lineage pending G3/G4; observed 36 refs imply ≈USD 0.01794 estimate; reserve USD 0.02 each for G3/G4 while enabled; disable early after policy-tag evidence; actual SKU unverified |
+| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01751 including 280 MiB billed on 2026-11-20; active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 11 remaining paid-run reserves USD 0.26; forecast ≈USD 0.41926; actual invoice/C10 storage unverified |
+| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled (LINEAGE_DAY 3/5); weather lineage captured; T2 view probe rejected because policyTags did not persist on the view; G3/G4 policy-tag lineage pending; hard off by 2026-11-21 12:00 +07; actual SKU unverified |
 
 ## Cumulative preflight
 
@@ -62,6 +62,13 @@ Before every paid W9 action, refresh the latest Week 7 estimate, confirm the cur
 
 | 2026-11-19 ~21:35 +07 | Create `w9-pii-hmac-key` version 1; 32 random bytes generated and submitted from memory; payload not printed or logged | [Secret Manager pricing](https://cloud.google.com/secret-manager/pricing): $0.000082192 per active version-hour above free quota; free tier not assumed | ≈$0.01381 for 168 active hours; included in current W9 forecast | Secret Manager returned version `1`; metadata only. No BigQuery query or table write occurred in this action. | Invoice unavailable | Secret version payload was not read back; no service-account key used. |
 
+| 2026-11-20 15:17 +07 | PII proof gate attempt, run `44701407954` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; free usage not assumed | $0 BigQuery gross observed | 0 BigQuery bytes billed; no CI query job in the run window | Invoice unavailable | Run metadata / advisor reconciliation; gate attempt failed before any billable query. |
+| 2026-11-20 15:30 +07 | PII proof gate attempt, run `44703110844` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; free usage not assumed | $0 BigQuery gross observed | 0 BigQuery bytes billed; no CI query job in the run window | Invoice unavailable | Run metadata / advisor reconciliation; gate passed before the workflow later failed; no billable query. |
+| 2026-11-20 15:42 +07 | O-PR2 isolated BigQuery PR build, run `44704734326` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; minimum 10 MiB/query | ≈$0.00006 | 1 query job, 10,485,760 bytes billed; run failed on `bq show -j` missing location (R-2) | Invoice unavailable | BigQuery job metadata; job `w9_partition_46_44704734326`; RCA/fix `d15b1d7`. |
+| 2026-11-20 15:57 +07 | O-PR2 isolated BigQuery PR build, run `44706679381` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; minimum 10 MiB/query | ≈$0.00119 | 65 CI jobs; 20 query jobs billed 10 MiB each; 209,715,200 bytes total. G1 schema check had a pandas/bq dtype false positive (R-3). | Invoice unavailable | BigQuery job metadata (`total_bytes_billed`); PR dataset cleanup run `44707547529`; fix `8208587` verified by `44767282027`. |
+| 2026-11-20 22:35 +07 | Q-PR2 isolated BigQuery PR build, run `44764891391` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; minimum 10 MiB/query | ≈$0.00018 | 3 query jobs; 31,457,280 bytes billed. Cost receipt was empty because the guard read the wrong JSON path (R-7). | Invoice unavailable | BigQuery job metadata; the run itself failed. Fixed guard path is `.statistics.query.totalBytesBilled`. |
+| 2026-11-20 22:50 +07 | Q-PR2 isolated BigQuery PR build, run `44767282027` | [BigQuery pricing](https://cloud.google.com/bigquery/pricing): $6.25/TiB; minimum 10 MiB/query | ≈$0.00024 | 4 query jobs; 41,943,040 bytes billed; G1 9/9 PASS; cost guard PASS; data diff `SKIPPED_MART_NOT_MODIFIED`. | Invoice unavailable | `week9-run-cost-44767282027-cloud-pr` artifact and BigQuery job metadata; cleanup run `44769995055`. |
+
 Local package downloads and offline dbt parsing are not GCP spend and are not included as cloud actions. They do not establish an actual cloud bill.
 
 ## O-PR2 first lineage-build preflight (2026-11-19 11:12 +07; historical before first dispatch)
@@ -112,3 +119,7 @@ The former 100 jobs × 1 GiB × three-run envelope is retired. Known gross so fa
 | **Remaining run reserve** | **12** | **$0.24** | **$0.04** | **$0.28 total** |
 
 Current W9 forecast = known gross USD 0.01584 + active HMAC version 1 reserve USD 0.01381 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 + 12 remaining paid-run reserves USD 0.28 = **≈USD 0.43759**. W7 USD 12.89274 + W8 reserve USD 0.10 + W9 forecast USD 0.43759 = **≈USD 13.43033**, below the USD 16 cumulative stop. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**. Retire the unused envelope reserve; recompute before each paid run and stop at W9 USD 2.40 or lineage USD 0.80. Disable `datalineage.googleapis.com` through AF12 immediately after G3/G4 policy-tag lineage evidence is captured, before the later runs listed above.
+
+## Current reconciliation (2026-11-21)
+
+BigQuery job metadata confirms 280 MiB billed across the four 2026-11-20 PR-build runs (`44704734326`: 10 MiB; `44706679381`: 200 MiB; `44764891391`: 30 MiB; `44767282027`: 40 MiB). The two PII proof attempts (`44701407954`, `44703110844`) billed 0 bytes. Estimated gross at $6.25/TiB is ≈USD 0.00167, bringing known gross to ≈USD 0.01751. The `dbt_ci_pr_46` build reserve was consumed by run `44706679381`; cleanup `44707547529` removed the dataset. Eleven future paid-run reserves remain: USD 0.22 BigQuery plus USD 0.04 lineage = USD 0.26. Current W9 forecast is ≈USD 0.41926; W7 + W8 reserve + W9 forecast is ≈USD 13.41200. Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
