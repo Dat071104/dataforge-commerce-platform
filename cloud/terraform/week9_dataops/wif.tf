@@ -3,7 +3,7 @@ locals {
   github_repository_id       = "1446796465"
   github_repository_owner_id = "242334093"
   # Limit WIF to the AF9-approved workflow files; unrelated repo workflows cannot impersonate the CI SAs.
-  github_allowed_events = ["pull_request", "push", "workflow_dispatch", "schedule"]
+  github_allowed_events = ["pull_request_target", "push", "workflow_dispatch", "schedule"]
 }
 
 resource "google_iam_workload_identity_pool" "github_dataforge" {

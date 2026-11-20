@@ -1,0 +1,81 @@
+name: Week 9 main artifacts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dbt/dataforge/**"
+      - "deploy/dataops_toolbox/requirements.lock"
+      - "tests/week9/fault_matrix_report.md"
+      - ".github/workflows/week9-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: week9-main-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-main-artifacts:
+    name: Parse dbt and publish Week 9 artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install the hashed DataOps toolbox dependencies
+        run: python -m pip install --disable-pip-version-check --require-hashes -r deploy/dataops_toolbox/requirements.lock
+
+      - name: Set dbt temporary paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "DBT_TARGET_PATH=$RUNNER_TEMP/dbt-target" >> "$GITHUB_ENV"
+          echo "DBT_LOG_PATH=$RUNNER_TEMP/dbt-logs" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/dbt-target" "$RUNNER_TEMP/dbt-logs"
+
+      - name: Parse dbt offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dbt-profiles" "$DBT_TARGET_PATH" "$DBT_LOG_PATH"
+          cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
+          dbt parse --project-dir dbt/dataforge --profiles-dir "$RUNNER_TEMP/dbt-profiles" \
+            --target offline --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
+          test -s "$DBT_TARGET_PATH/manifest.json"
+
+      - name: Prepare the static Week 9 DQ report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/week9-dq-report"
+          cp tests/week9/fault_matrix_report.md "$RUNNER_TEMP/week9-dq-report/dq-report.md"
+          test -s "$RUNNER_TEMP/week9-dq-report/dq-report.md"
+
+      - name: Upload the production manifest for slim CI
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dataforge-prod-manifest
+          path: ${{ runner.temp }}/dbt-target/manifest.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload the DQ report for the existing Pages deployment
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-dq-report
+          path: ${{ runner.temp }}/week9-dq-report/dq-report.md
+          if-no-files-found: error
+          retention-days: 14
