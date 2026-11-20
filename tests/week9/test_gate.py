@@ -144,6 +144,73 @@ def test_nullable_weather_metrics_may_remain_null(clean_frame):
     assert not report.blocked
 
 
+@pytest.mark.parametrize("string_dtype", ["object", "str", "string"])
+def test_string_contract_accepts_pandas_2_and_3_representations(clean_frame, string_dtype):
+    frame = clean_frame.copy(deep=True)
+    for column in STRING_COLUMNS:
+        frame[column] = frame[column].astype(string_dtype)
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "PASS"
+    assert not report.blocked
+
+
+def test_string_contract_rejects_mixed_object_values(clean_frame):
+    frame = clean_frame.copy(deep=True)
+    frame["source"] = frame["source"].astype(object)
+    frame.loc[frame.index[0], "source"] = 42
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "FAIL"
+    assert schema.failing_rows == 1
+    assert "type_mismatch:source" in _result_observed(schema)["issues"]
+    assert report.blocked
+
+
+@pytest.mark.parametrize(
+    "column", ["request_id", "source", "model", "source_sha256", "manifest_uri"]
+)
+def test_required_string_columns_reject_null_values(clean_frame, column):
+    frame = clean_frame.copy(deep=True)
+    frame.loc[frame.index[0], column] = None
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "FAIL"
+    assert schema.failing_rows == 1
+    assert f"missing_values:{column}" in _result_observed(schema)["issues"]
+    assert report.blocked
+
+
+def test_null_province_remains_owned_by_not_null_check(clean_frame):
+    report, _ = run(mutate_landing_frame("F01", clean_frame))
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    province = next(
+        result
+        for result in report.results
+        if result.check_id == "G1.LANDING.PROVINCE_ID_NOT_NULL"
+    )
+    assert schema.status == "PASS"
+    assert province.status == "FAIL"
+
+
+def test_nullable_weather_metrics_may_remain_null(clean_frame):
+    frame = clean_frame.copy(deep=True)
+    frame.loc[frame.index[0], ["precipitation_mm", "temp_max_c"]] = None
+
+    report, _ = run(frame)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "PASS"
+    assert not report.blocked
+
+
 @pytest.mark.parametrize("fault_id, expected_check", EXPECTED_FAILURES.items())
 def test_catalogued_g1_faults_fail_their_owned_check(clean_frame, fault_id, expected_check):
     report, _ = run(mutate_landing_frame(fault_id, clean_frame))
