@@ -185,6 +185,50 @@ resource "google_bigquery_dataset_iam_member" "week9_pii_ci_restricted_tag_sette
   }
 }
 
+# AF2-ext-2b: attaching a policy tag also needs datacatalog.taxonomies.get on the
+# taxonomy; dbt persist_docs sends policyTags on the pii_safe mart too; and the
+# CI-built safe mart reads the email column, so CI needs masked (never raw) read.
+resource "google_bigquery_dataset_iam_member" "week9_pii_ci_safe_tag_setter" {
+  count      = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.pii_safe.dataset_id
+  role       = google_project_iam_custom_role.week9_pii_policy_tag_setter[0].name
+  member     = "serviceAccount:${google_service_account.ci_dbt.email}"
+
+  condition {
+    title       = "af2_ext_2b_g3_g4_expiry_20261123"
+    description = "Temporary synthetic-only policy-tag setter; expires 2026-11-23 23:59 +07."
+    expression  = "request.time < timestamp(\"2026-11-23T16:59:00Z\")"
+  }
+}
+
+resource "google_project_iam_custom_role" "week9_pii_taxonomy_getter" {
+  count       = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project     = var.project_id
+  role_id     = "w9PiiTaxonomyGetter"
+  title       = "DataForge W9 synthetic PII taxonomy getter"
+  description = "Read the W9 taxonomy so existing policy tags can be attached; grants no data access."
+  permissions = ["datacatalog.taxonomies.get"]
+  stage       = "GA"
+}
+
+# Taxonomy IAM takes no condition here; AF2-ext-2b removal enforces the deadline.
+resource "google_data_catalog_taxonomy_iam_member" "week9_pii_ci_taxonomy_getter" {
+  count    = var.week9_pii_ci_writer_enabled ? 1 : 0
+  taxonomy = google_data_catalog_taxonomy.week9_pii[0].id
+  role     = google_project_iam_custom_role.week9_pii_taxonomy_getter[0].name
+  member   = "serviceAccount:${google_service_account.ci_dbt.email}"
+}
+
+resource "google_bigquery_datapolicy_data_policy_iam_member" "week9_pii_ci_email_masked_reader" {
+  count          = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project        = var.project_id
+  location       = var.region
+  data_policy_id = google_bigquery_datapolicy_data_policy.week9_pii_mask["email"].data_policy_id
+  role           = "roles/bigquerydatapolicy.maskedReader"
+  member         = "serviceAccount:${google_service_account.ci_dbt.email}"
+}
+
 resource "google_data_catalog_taxonomy" "week9_pii" {
   count                  = var.week9_pii_enabled ? 1 : 0
   project                = var.project_id
