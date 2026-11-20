@@ -1,4 +1,5 @@
 dbt-bigquery==1.11.3
+google-cloud-secret-manager==2.32.0
 datacontract-cli==1.2.8
 great-expectations==1.25.0
 Faker==40.54.0

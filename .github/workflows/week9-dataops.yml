@@ -13,7 +13,7 @@ on:
         default: false
         type: boolean
       pr_number:
-        description: Exact open same-repository PR number when a manual cloud build is selected
+        description: Exact open same-repository PR number when a manual WIF proof is selected
         required: false
         default: ""
         type: string
@@ -37,6 +37,31 @@ on:
         required: false
         default: false
         type: boolean
+      run_pii_proof:
+        description: Load the fixed synthetic PII fixture, build the safe PII mart, and verify CI masking
+        required: false
+        default: false
+        type: boolean
+      policy_tag_identity:
+        description: Exact Terraform output policy-tag resource name for identity
+        required: false
+        default: ""
+        type: string
+      policy_tag_email:
+        description: Exact Terraform output policy-tag resource name for e-mail
+        required: false
+        default: ""
+        type: string
+      policy_tag_phone:
+        description: Exact Terraform output policy-tag resource name for phone
+        required: false
+        default: ""
+        type: string
+      policy_tag_birth_date:
+        description: Exact Terraform output policy-tag resource name for birth date
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -210,16 +235,24 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Reject concurrent lineage and F07/F10 dispatches
+      - name: Reject concurrent paid W9 proof dispatches
         env:
           EVENT_NAME: ${{ github.event_name }}
           RUN_LINEAGE_BUILD: ${{ inputs.run_lineage_build }}
           RUN_FAULT_MATRIX: ${{ inputs.run_fault_matrix }}
+          RUN_CLOUD_BUILD: ${{ inputs.run_cloud_build }}
+          RUN_PII_PROOF: ${{ inputs.run_pii_proof }}
         shell: bash
         run: |
-          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$RUN_LINEAGE_BUILD" == "true" && "$RUN_FAULT_MATRIX" == "true" ]]; then
-            echo "::error::run_lineage_build and run_fault_matrix both target w9_drill; select one per dispatch"
-            exit 1
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            selected=0
+            for value in "$RUN_CLOUD_BUILD" "$RUN_LINEAGE_BUILD" "$RUN_FAULT_MATRIX" "$RUN_PII_PROOF"; do
+              [[ "$value" == "true" ]] && selected=$((selected + 1))
+            done
+            if (( selected > 1 )); then
+              echo "::error::Select one paid W9 cloud proof per dispatch so its run-level 5-GiB guard remains auditable"
+              exit 1
+            fi
           fi
 
   wif-smoke:
@@ -229,7 +262,7 @@ jobs:
       (github.event_name == 'pull_request_target' &&
       github.event.pull_request.head.repo.id == github.repository_id &&
       vars.W9_WIF_PR_TARGET_ENABLED == 'true') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.run_wif_smoke || inputs.run_cloud_build || inputs.run_fault_matrix))
+      (github.event_name == 'workflow_dispatch' && (inputs.run_wif_smoke || inputs.run_cloud_build || inputs.run_fault_matrix || inputs.run_pii_proof))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -336,7 +369,7 @@ jobs:
 
   wif-smoke-not-requested:
     name: Manual WIF smoke not selected
-    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_lineage_build && !inputs.run_fault_matrix
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_lineage_build && !inputs.run_fault_matrix && !inputs.run_pii_proof
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -851,6 +884,195 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  pii-proof:
+    name: Synthetic PII load, dbt mart, and CI mask probe
+    if: github.event_name == 'workflow_dispatch' && inputs.run_pii_proof
+    needs: [wif-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+      id-token: write
+    concurrency:
+      group: week9-dataops-pii-${{ inputs.pr_number || github.ref }}
+      cancel-in-progress: false
+    env:
+      PROJECT_ID: dataforge-p7-lab-d0f725
+      PR_NUMBER: ${{ inputs.pr_number }}
+      WIF_PROVIDER: ${{ vars.W9_WIF_PROVIDER }}
+      WIF_SERVICE_ACCOUNT: ${{ vars.W9_CI_DBT_SA_EMAIL }}
+      DBT_DATAFORGE_PROJECT_ID: dataforge-p7-lab-d0f725
+      DBT_DATAFORGE_TARGET_DATASET: w9_drill
+      DBT_WEATHER_LANDING_SCHEMA: w9_drill
+      DBT_DATAFORGE_LOCATION: us-central1
+      DATAFORGE_PROJECT_ID: dataforge-p7-lab-d0f725
+      DATAFORGE_DQ_RESULTS_ENABLED: "false"
+      DATAFORGE_W9_PII_LOAD_ENABLED: "true"
+      DATAFORGE_W9_POLICY_TAG_IDENTITY: ${{ inputs.policy_tag_identity }}
+      DATAFORGE_W9_POLICY_TAG_EMAIL: ${{ inputs.policy_tag_email }}
+      DATAFORGE_W9_POLICY_TAG_PHONE: ${{ inputs.policy_tag_phone }}
+      DATAFORGE_W9_POLICY_TAG_BIRTH_DATE: ${{ inputs.policy_tag_birth_date }}
+      DATAFORGE_W9_COST_ARTIFACT_PATH: /runner-temp/run-cost-pii-proof.json
+      DATAFORGE_W9_PII_SUMMARY_PATH: /runner-temp/pii-proof-summary.json
+      DBT_TARGET_PATH: /runner-temp/pii-target
+      DBT_LOG_PATH: /runner-temp/pii-logs
+    steps:
+      - name: Validate exact same-repository PR and fixed policy-tag names before WIF
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_REPO_ID: ${{ github.repository_id }}
+          CURRENT_SHA: ${{ github.sha }}
+          TAG_IDENTITY: ${{ inputs.policy_tag_identity }}
+          TAG_EMAIL: ${{ inputs.policy_tag_email }}
+          TAG_PHONE: ${{ inputs.policy_tag_phone }}
+          TAG_BIRTH_DATE: ${{ inputs.policy_tag_birth_date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must be a positive numeric PR number"
+            exit 1
+          fi
+          metadata="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '[.state, (.head.repo.id | tostring), .head.sha] | @tsv')"
+          IFS=$'\t' read -r pr_state pr_repo_id pr_head_sha <<< "$metadata"
+          if [[ "$pr_state" != "open" || "$pr_repo_id" != "$BASE_REPO_ID" || "$pr_head_sha" != "$CURRENT_SHA" ]]; then
+            echo "::error::PII proof requires the open same-repository PR whose head matches this dispatch ref"
+            exit 1
+          fi
+          checks="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$CURRENT_SHA/check-runs?per_page=100" \
+            --jq '[.check_runs[] | select(((.details_url // "") | contains("/actions/runs/'"$GITHUB_RUN_ID"'")) | not)] | group_by(.name) | .[] | max_by(.completed_at // .started_at // .created_at) | [.name, .status, (.conclusion // "")] | @tsv')"
+          if [[ -z "$checks" ]]; then
+            echo "::error::No previous exact-head check runs were found; refusing WIF PII proof"
+            exit 1
+          fi
+          lint_green=false
+          cost_guard_green=false
+          week7_green=false
+          while IFS=$'\t' read -r check_name check_status check_conclusion; do
+            if [[ "$check_status" != "completed" || ( "$check_conclusion" != "success" && "$check_conclusion" != "skipped" && "$check_conclusion" != "neutral" ) ]]; then
+              echo "::error::A prior exact-head check is not green; refusing WIF PII proof"
+              exit 1
+            fi
+            [[ "$check_name" == "DataOps lint" && "$check_conclusion" == "success" ]] && lint_green=true
+            [[ "$check_name" == "Enforce 5 GiB cumulative BigQuery ceiling" && "$check_conclusion" == "success" ]] && cost_guard_green=true
+            [[ "$check_name" == "Local Airflow reference scenarios" && "$check_conclusion" == "success" ]] && week7_green=true
+          done <<< "$checks"
+          if [[ "$lint_green" != "true" || "$cost_guard_green" != "true" || "$week7_green" != "true" ]]; then
+            echo "::error::Exact-head DataOps lint/Gitleaks, 5-GiB guard, and Week 7 checks must all pass before WIF PII proof"
+            exit 1
+          fi
+          tag_pattern='^projects/955038620072/locations/us-central1/taxonomies/[0-9]+/policyTags/[0-9]+$'
+          for tag in "$TAG_IDENTITY" "$TAG_EMAIL" "$TAG_PHONE" "$TAG_BIRTH_DATE"; do
+            if [[ ! "$tag" =~ $tag_pattern ]]; then
+              echo "::error::All four policy-tag inputs must be resource names from the authorized W9 taxonomy"
+              exit 1
+            fi
+          done
+          echo "Validated open PR head and four W9 policy-tag resource names."
+
+      - name: Check out the verified same-repository PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build the locked toolbox without pushing
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: deploy/dataops_toolbox
+          file: deploy/dataops_toolbox/Dockerfile
+          tags: dataforge-dataops-toolbox:pii-proof
+          push: false
+          outputs: type=docker,name=dataforge-dataops-toolbox:pii-proof,compression=gzip,compression-level=6,force-compression=true
+
+      - name: Require AF9 WIF identity
+        shell: bash
+        run: |
+          if [[ -z "$WIF_PROVIDER" || -z "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo "::error::W9 WIF repository variables are required for the synthetic PII proof"
+            exit 1
+          fi
+
+      - name: Authenticate the CI service account with WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: Prepare the credential-free dbt profile and temp directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pii-profiles" "$RUNNER_TEMP/pii-target" "$RUNNER_TEMP/pii-logs"
+          cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/pii-profiles/profiles.yml"
+
+      - name: Load synthetic PII, build the safe mart, and verify CI masking under the 5-GiB guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+            echo "::error::WIF did not provide external-account credentials"
+            exit 1
+          fi
+          container_args=(
+            --rm
+            --volume "$GITHUB_WORKSPACE:/workspace"
+            --volume "$RUNNER_TEMP:/runner-temp"
+            --volume "$RUNNER_TEMP/pii-profiles:/profiles:ro"
+            --volume "$GOOGLE_APPLICATION_CREDENTIALS:/tmp/gha-creds.json:ro"
+            --workdir /workspace
+            --user "$(id -u):$(id -g)"
+            --env PYTHONPATH=/workspace/src
+            --env GOOGLE_APPLICATION_CREDENTIALS=/tmp/gha-creds.json
+            --env ACTIONS_ID_TOKEN_REQUEST_URL
+            --env ACTIONS_ID_TOKEN_REQUEST_TOKEN
+            --env PROJECT_ID="$PROJECT_ID"
+            --env DBT_DATAFORGE_PROJECT_ID="$DBT_DATAFORGE_PROJECT_ID"
+            --env DBT_DATAFORGE_TARGET_DATASET="$DBT_DATAFORGE_TARGET_DATASET"
+            --env DBT_WEATHER_LANDING_SCHEMA="$DBT_WEATHER_LANDING_SCHEMA"
+            --env DBT_DATAFORGE_LOCATION="$DBT_DATAFORGE_LOCATION"
+            --env DATAFORGE_PROJECT_ID="$DATAFORGE_PROJECT_ID"
+            --env DATAFORGE_DQ_RESULTS_ENABLED=false
+            --env DATAFORGE_W9_PII_LOAD_ENABLED=true
+            --env DATAFORGE_W9_POLICY_TAG_IDENTITY="$DATAFORGE_W9_POLICY_TAG_IDENTITY"
+            --env DATAFORGE_W9_POLICY_TAG_EMAIL="$DATAFORGE_W9_POLICY_TAG_EMAIL"
+            --env DATAFORGE_W9_POLICY_TAG_PHONE="$DATAFORGE_W9_POLICY_TAG_PHONE"
+            --env DATAFORGE_W9_POLICY_TAG_BIRTH_DATE="$DATAFORGE_W9_POLICY_TAG_BIRTH_DATE"
+            --env DBT_PROFILES_DIR=/profiles
+            --env DBT_TARGET_PATH=/runner-temp/pii-target
+            --env DBT_LOG_PATH=/runner-temp/pii-logs
+            --env DATAFORGE_W9_COST_ARTIFACT_PATH=/runner-temp/run-cost-pii-proof.json
+            --env DATAFORGE_W9_PII_SUMMARY_PATH=/runner-temp/pii-proof-summary.json
+            --env GITHUB_RUN_ID="$GITHUB_RUN_ID"
+          )
+          docker run "${container_args[@]}" dataforge-dataops-toolbox:pii-proof \
+            python deploy/dataops_toolbox/week9_pii_proof.py
+
+      - name: Upload the sanitized PII proof summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-pii-proof-${{ github.run_id }}
+          path: ${{ runner.temp }}/pii-proof-summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload per-run PII proof cost records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: week9-run-cost-${{ github.run_id }}-pii-proof
+          path: ${{ runner.temp }}/run-cost-pii-proof.json
+          if-no-files-found: warn
+          retention-days: 14
+
   lineage-build:
     name: Fixed w9_drill dbt lineage build
     if: github.event_name == 'workflow_dispatch' && inputs.run_lineage_build
@@ -1227,7 +1449,7 @@ jobs:
   run-cost-guard:
     name: Enforce 5 GiB cumulative BigQuery ceiling
     if: always()
-    needs: [cloud-pr, lineage-build, fault-matrix-live]
+    needs: [cloud-pr, lineage-build, fault-matrix-live, pii-proof]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1237,6 +1459,7 @@ jobs:
       CLOUD_PR_RESULT: ${{ needs.cloud-pr.result }}
       LINEAGE_BUILD_RESULT: ${{ needs.lineage-build.result }}
       FAULT_MATRIX_RESULT: ${{ needs.fault-matrix-live.result }}
+      PII_PROOF_RESULT: ${{ needs.pii-proof.result }}
     steps:
       - name: Check out the selected workflow ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1255,7 +1478,7 @@ jobs:
         run: |
           set -euo pipefail
           expected=0
-          for result in "$CLOUD_PR_RESULT" "$LINEAGE_BUILD_RESULT" "$FAULT_MATRIX_RESULT"; do
+          for result in "$CLOUD_PR_RESULT" "$LINEAGE_BUILD_RESULT" "$FAULT_MATRIX_RESULT" "$PII_PROOF_RESULT"; do
             if [[ "$result" != "skipped" ]]; then
               expected=$((expected + 1))
             fi

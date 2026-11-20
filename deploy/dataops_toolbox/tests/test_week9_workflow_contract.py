@@ -35,7 +35,7 @@ def step_index(steps: list[dict], name: str) -> int:
 def test_manual_cloud_build_is_bound_to_exact_open_same_repo_pr_head() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     inputs = workflow["on"]["workflow_dispatch"]["inputs"]
-    assert {"pr_number", "run_cloud_build", "run_fault_matrix"} <= set(inputs)
+    assert {"pr_number", "run_cloud_build", "run_fault_matrix", "run_pii_proof"} <= set(inputs)
 
     job = workflow["jobs"]["cloud-pr"]
     assert "inputs.run_cloud_build" in job["if"]
@@ -91,7 +91,7 @@ def test_manual_lineage_build_is_exact_head_gated_and_fixed_to_w9_drill() -> Non
     guard_step = guard["steps"][0]
     assert guard_step["env"]["RUN_LINEAGE_BUILD"] == "${{ inputs.run_lineage_build }}"
     assert guard_step["env"]["RUN_FAULT_MATRIX"] == "${{ inputs.run_fault_matrix }}"
-    assert "select one per dispatch" in guard_step["run"]
+    assert "Select one paid W9 cloud proof per dispatch" in guard_step["run"]
 
     job = workflow["jobs"]["lineage-build"]
     assert job["if"] == "github.event_name == 'workflow_dispatch' && inputs.run_lineage_build"
@@ -240,9 +240,44 @@ def test_lineage_per_run_cost_guard_fails_above_five_gib() -> None:
 def test_run_cost_guard_sums_paid_jobs_across_the_workflow_run() -> None:
     workflow = load_workflow(".github/workflows/week9-dataops.yml")
     guard = workflow["jobs"]["run-cost-guard"]
-    assert guard["needs"] == ["cloud-pr", "lineage-build", "fault-matrix-live"]
+    assert guard["needs"] == ["cloud-pr", "lineage-build", "fault-matrix-live", "pii-proof"]
     assert "run_cost_guard.py" in guard["steps"][-1]["run"]
+    assert "PII_PROOF_RESULT" in guard["steps"][-1]["run"]
     assert "5 GiB" in guard["name"]
+
+
+def test_manual_pii_proof_is_exact_head_gated_and_cost_guarded() -> None:
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    inputs = workflow["on"]["workflow_dispatch"]["inputs"]
+    assert inputs["run_pii_proof"]["type"] == "boolean"
+    assert inputs["run_pii_proof"]["default"] == "false"
+    for key in ("policy_tag_identity", "policy_tag_email", "policy_tag_phone", "policy_tag_birth_date"):
+        assert inputs[key]["type"] == "string"
+
+    job = workflow["jobs"]["pii-proof"]
+    assert job["if"] == "github.event_name == 'workflow_dispatch' && inputs.run_pii_proof"
+    assert job["needs"] == ["wif-smoke"]
+    assert job["permissions"]["id-token"] == "write"
+    assert job["permissions"]["checks"] == "read"
+    assert "inputs.run_pii_proof" in workflow["jobs"]["wif-smoke"]["if"]
+    assert "!inputs.run_pii_proof" in workflow["jobs"]["wif-smoke-not-requested"]["if"]
+    names = [step.get("name", "") for step in job["steps"]]
+    validation = names.index("Validate exact same-repository PR and fixed policy-tag names before WIF")
+    checkout = names.index("Check out the verified same-repository PR head")
+    auth = names.index("Authenticate the CI service account with WIF")
+    assert validation < checkout < auth
+    validation_run = job["steps"][validation]["run"]
+    assert ".head.repo.id" in validation_run and ".head.sha" in validation_run
+    assert "955038620072/locations/us-central1/taxonomies" in validation_run
+    assert "check-runs?per_page=100" in validation_run
+    assert "DataOps lint" in validation_run
+    assert "Enforce 5 GiB cumulative BigQuery ceiling" in validation_run
+    assert "Local Airflow reference scenarios" in validation_run
+    proof_run = job["steps"][names.index("Load synthetic PII, build the safe mart, and verify CI masking under the 5-GiB guard")]["run"]
+    assert "week9_pii_proof.py" in proof_run
+    assert "dataforge-dataops-toolbox:pii-proof" in proof_run
+    assert "DATAFORGE_W9_PII_LOAD_ENABLED=true" in proof_run
+    assert "week9-run-cost-${{ github.run_id }}-pii-proof" in "\n".join(str(step) for step in job["steps"])
 
 
 def test_lineage_manifest_guard_rejects_any_weather_relation_outside_w9_drill() -> None:
