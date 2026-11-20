@@ -158,6 +158,33 @@ resource "google_bigquery_dataset_iam_member" "week9_pii_ci_safe_writer" {
   }
 }
 
+# AF2-ext-2: dataEditor cannot attach column policy tags (run 44703110844 was
+# denied bigquery.tables.setCategory). One-permission role, restricted_pii only,
+# same expiry; removed with the AF2-ext-1 bindings after G4.
+resource "google_project_iam_custom_role" "week9_pii_policy_tag_setter" {
+  count       = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project     = var.project_id
+  role_id     = "w9PiiPolicyTagSetter"
+  title       = "DataForge W9 synthetic PII policy-tag setter"
+  description = "Attach existing policy tags to synthetic restricted_pii columns; grants no data access."
+  permissions = ["bigquery.tables.setCategory"]
+  stage       = "GA"
+}
+
+resource "google_bigquery_dataset_iam_member" "week9_pii_ci_restricted_tag_setter" {
+  count      = var.week9_pii_ci_writer_enabled ? 1 : 0
+  project    = var.project_id
+  dataset_id = google_bigquery_dataset.restricted_pii.dataset_id
+  role       = google_project_iam_custom_role.week9_pii_policy_tag_setter[0].name
+  member     = "serviceAccount:${google_service_account.ci_dbt.email}"
+
+  condition {
+    title       = "af2_ext_2_g3_g4_expiry_20261123"
+    description = "Temporary synthetic-only policy-tag setter; expires 2026-11-23 23:59 +07."
+    expression  = "request.time < timestamp(\"2026-11-23T16:59:00Z\")"
+  }
+}
+
 resource "google_data_catalog_taxonomy" "week9_pii" {
   count                  = var.week9_pii_enabled ? 1 : 0
   project                = var.project_id
