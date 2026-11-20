@@ -120,6 +120,7 @@ if _TEST_SCENARIO == "backfill":
 elif _TEST_SCENARIO.startswith("dq_gate_"):
     _expected_task_ids.update(
         {
+            "wait_for_api_ingest",
             "read_execution_receipt",
             "load_bigquery_landing",
             "wait_for_bigquery_landing",
