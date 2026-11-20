@@ -22,3 +22,18 @@ output "w9_secret_ids" {
   description = "Empty W9 secret containers; no secret versions are created."
   value       = local.w9_secret_ids
 }
+
+output "dq_logging_metric_names" {
+  description = "Week 9 structured-event log metrics; empty while DQ alerting is disabled."
+  value = {
+    for event_type, metric in google_logging_metric.week9_dq_event : event_type => metric.name
+  }
+}
+
+output "dq_alert_policy_names" {
+  description = "Week 9 enabled P1 policies plus the disabled-by-default heartbeat policy."
+  value = concat(
+    [for policy in values(google_monitoring_alert_policy.week9_dq_p1) : policy.name],
+    [for policy in google_monitoring_alert_policy.week9_dq_deadman : policy.name],
+  )
+}

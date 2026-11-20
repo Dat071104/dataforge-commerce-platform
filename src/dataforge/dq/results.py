@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from typing import Protocol
 from uuid import uuid4
@@ -143,6 +143,31 @@ def make_result(
         contract_version=contract_version,
         ts=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
     )
+
+
+def add_result_context(
+    result: DQResult,
+    *,
+    dataset: str,
+    event_date: str,
+    publish_action: str,
+) -> DQResult:
+    """Add non-sensitive dataset/date context to the JSON ``observed`` field."""
+    try:
+        observed = json.loads(result.observed)
+    except json.JSONDecodeError:
+        observed = {"summary": result.observed}
+    if not isinstance(observed, dict):
+        observed = {"summary": observed}
+    observed.update(
+        {
+            "dataset": dataset,
+            "date": event_date,
+            "publish_action": publish_action,
+            "published": publish_action != "BLOCK",
+        }
+    )
+    return replace(result, observed=json.dumps(observed, sort_keys=True, default=str))
 
 
 def cloud_sink_from_env() -> BigQueryResultSink:

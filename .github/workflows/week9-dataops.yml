@@ -545,7 +545,7 @@ jobs:
             --maximum_bytes_billed=1073741824 --job_id="$partition_job" --format=csv "$partition_query" \
             > "$RUNNER_TEMP/weather-partitions.csv"
           bq --location=us-central1 show --format=json -j "$partition_job" > "$RUNNER_TEMP/partition-job.json"
-          partition_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/partition-job.json")"
+          partition_bytes="$(jq -r '.statistics.query.totalBytesBilled // empty' "$RUNNER_TEMP/partition-job.json")"
           partition_filter="$(
             python - "$RUNNER_TEMP/weather-partitions.csv" <<'PY'
           import csv
@@ -593,9 +593,9 @@ jobs:
             exit 1
           fi
           bq --location=us-central1 show --format=json -j "$as_of_job" > "$RUNNER_TEMP/as-of-job.json"
-          as_of_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/as-of-job.json")"
+          as_of_bytes="$(jq -r '.statistics.query.totalBytesBilled // empty' "$RUNNER_TEMP/as-of-job.json")"
           bq --location=us-central1 show --format=json -j "$copy_job" > "$RUNNER_TEMP/source-copy-job.json"
-          copy_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/source-copy-job.json")"
+          copy_bytes="$(jq -r '.statistics.query.totalBytesBilled // empty' "$RUNNER_TEMP/source-copy-job.json")"
           echo "W9_PARTITION_JOB_ID=$partition_job" >> "$GITHUB_ENV"
           echo "W9_PARTITION_BYTES_BILLED=$partition_bytes" >> "$GITHUB_ENV"
           echo "W9_AS_OF_DATE=$as_of_date" >> "$GITHUB_ENV"
@@ -681,8 +681,17 @@ jobs:
           if [[ -s "$DBT_TARGET_PATH/run_results.json" ]]; then
             cp "$DBT_TARGET_PATH/run_results.json" "$RUNNER_TEMP/dbt-build-run-results.json"
           fi
-          run_toolbox dbt test --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
-            --select test_type:unit --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
+          # Unit tests must use the same selection mode as the build: in slim CI the unbuilt
+          # parents exist only in production, so resolve them through the deferred manifest.
+          rm -f "$DBT_TARGET_PATH/run_results.json"
+          if [[ "$W9_HAS_PROD_MANIFEST" == "true" ]]; then
+            run_toolbox dbt test --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
+              --select "state:modified+,test_type:unit" --defer --state /prod-manifest --no-partial-parse \
+              --no-send-anonymous-usage-stats --no-version-check
+          else
+            run_toolbox dbt test --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
+              --select test_type:unit --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
+          fi
           if [[ -s "$DBT_TARGET_PATH/run_results.json" ]]; then
             cp "$DBT_TARGET_PATH/run_results.json" "$RUNNER_TEMP/dbt-unit-run-results.json"
           fi
@@ -707,6 +716,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "$W9_HAS_PROD_MANIFEST" == "true" ]]; then
+            # Slim CI builds only state:modified+. When the mart is unchanged it is never
+            # created in the PR dataset; record that explicitly instead of a fake zero diff.
+            if ! mart_meta="$(bq --location=us-central1 show --format=json \
+              "${PROJECT_ID}:${PR_DATASET}.mart_weather_province_daily" 2>&1)"; then
+              if grep -q "Not found" <<< "$mart_meta"; then
+                for name in W9_PROD_ROWS W9_CI_ROWS W9_PROD_ONLY W9_CI_ONLY; do
+                  echo "${name}=SKIPPED_MART_NOT_MODIFIED" >> "$GITHUB_ENV"
+                done
+                echo "W9_DIFF_SKIPPED=mart_not_modified" >> "$GITHUB_ENV"
+                echo "::notice::Slim CI did not rebuild mart_weather_province_daily; data diff skipped."
+                exit 0
+              fi
+              echo "::error::Could not read PR mart metadata"
+              exit 1
+            fi
+          fi
           diff_job="w9_diff_${PR_NUMBER}_${GITHUB_RUN_ID}"
           diff_sql="$(cat <<SQL
           WITH prod AS (
@@ -731,7 +757,7 @@ jobs:
             --maximum_bytes_billed=1073741824 --job_id="$diff_job" --format=csv --max_rows=1 "$diff_sql" | tail -n 1)"
           IFS=, read -r prod_rows ci_rows prod_only ci_only <<< "$diff_result"
           bq --location=us-central1 show --format=json -j "$diff_job" > "$RUNNER_TEMP/data-diff-job.json"
-          diff_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/data-diff-job.json")"
+          diff_bytes="$(jq -r '.statistics.query.totalBytesBilled // empty' "$RUNNER_TEMP/data-diff-job.json")"
           echo "W9_PROD_ROWS=$prod_rows" >> "$GITHUB_ENV"
           echo "W9_CI_ROWS=$ci_rows" >> "$GITHUB_ENV"
           echo "W9_PROD_ONLY=$prod_only" >> "$GITHUB_ENV"
@@ -804,6 +830,12 @@ jobs:
           for job_name, bytes_name in direct_usage:
               job_id = os.environ.get(job_name, "")
               raw_bytes = os.environ.get(bytes_name, "")
+              if (
+                  job_name == "W9_DIFF_JOB_ID"
+                  and not job_id
+                  and os.environ.get("W9_DIFF_SKIPPED") == "mart_not_modified"
+              ):
+                  continue
               if not job_id or not raw_bytes:
                   raise SystemExit("UNVERIFIED: a bounded BigQuery helper job has no usage receipt")
               usage_records.append({"job_id": job_id, "bytes_billed": int(raw_bytes)})

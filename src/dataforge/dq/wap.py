@@ -133,7 +133,12 @@ def write_audit_publish(
                         layer="G1",
                         severity="None",
                         status="NOOP",
-                        observed={"candidate_sha256": digest, "published_hash_matches": True},
+                        observed={
+                            "candidate_sha256": digest,
+                            "published_hash_matches": True,
+                            "dataset": root.name,
+                            "date": gate_report.observation_date,
+                        },
                         threshold="same request content does not append or republish",
                         failing_rows=0,
                         contract_version="1.0.0",

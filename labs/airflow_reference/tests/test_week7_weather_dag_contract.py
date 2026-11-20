@@ -83,6 +83,7 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             "wait_for_bigquery_landing",
             "verify_landing_reconciliation",
             "wait_for_landing_reconciliation",
+            "quality_gate_landing",
             "dbt_weather_build",
             "wait_for_dbt_weather_build",
             "publish_weather_gold",
@@ -119,7 +120,8 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             ("load_bigquery_landing", "wait_for_bigquery_landing"),
             ("wait_for_bigquery_landing", "verify_landing_reconciliation"),
             ("verify_landing_reconciliation", "wait_for_landing_reconciliation"),
-            ("wait_for_landing_reconciliation", "dbt_weather_build"),
+            ("wait_for_landing_reconciliation", "quality_gate_landing"),
+            ("quality_gate_landing", "dbt_weather_build"),
             ("dbt_weather_build", "wait_for_dbt_weather_build"),
             ("wait_for_dbt_weather_build", "publish_weather_gold"),
             ("publish_weather_gold", "wait_for_publish_weather_gold"),
@@ -135,6 +137,7 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
             "read_execution_receipt",
             "wait_for_bigquery_landing",
             "wait_for_landing_reconciliation",
+            "quality_gate_landing",
             "wait_for_dbt_weather_build",
             "wait_for_publish_weather_gold",
             "verify_published_gold",
@@ -607,9 +610,14 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
                 callbacks = task.on_failure_callback
                 if not isinstance(callbacks, list):
                     callbacks = [callbacks]
+                expected_callback = (
+                    "local_dq_gate_failure_log"
+                    if task.task_id == "quality_gate_landing"
+                    else "local_failure_log"
+                )
                 self.assertEqual(
                     [callback.__name__ for callback in callbacks],
-                    ["local_failure_log"],
+                    [expected_callback],
                 )
         for task_id in (
             "execute_api_ingest",
@@ -622,6 +630,9 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
                 self.assertEqual(self.dag.get_task(task_id).retries, 1)
         self.assertEqual(self.dag.get_task("resolve_cloud_request").retries, 0)
         self.assertEqual(self.dag.get_task("authorize_cloud_execution").retries, 0)
+        gate = self.dag.get_task("quality_gate_landing")
+        self.assertEqual(gate.retries, 0)
+        self.assertEqual(gate.execution_timeout, timedelta(minutes=2))
         for task_id in (
             "wait_for_api_ingest",
             "wait_for_bigquery_landing",
@@ -641,7 +652,7 @@ class WeatherCloudDagStructureTests(unittest.TestCase):
         )
         self.assertNotIn("dbt_weather_test", self.dag.task_ids)
         self.assertIn(
-            "landing >> reconciliation_operation >> landing_reconciliation >> build_operation",
+            "landing >> reconciliation_operation >> landing_reconciliation >> gate_result >> build_operation",
             dag_source,
         )
         self.assertIn("build >> publish_operation >> publish >> gold", dag_source)
