@@ -544,7 +544,7 @@ jobs:
           bq query --quiet --use_legacy_sql=false --location=us-central1 \
             --maximum_bytes_billed=1073741824 --job_id="$partition_job" --format=csv "$partition_query" \
             > "$RUNNER_TEMP/weather-partitions.csv"
-          bq show --format=json -j "$partition_job" > "$RUNNER_TEMP/partition-job.json"
+          bq --location=us-central1 show --format=json -j "$partition_job" > "$RUNNER_TEMP/partition-job.json"
           partition_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/partition-job.json")"
           partition_filter="$(
             python - "$RUNNER_TEMP/weather-partitions.csv" <<'PY'
@@ -592,9 +592,9 @@ jobs:
             echo "::error::The isolated PR weather slice has no valid observation date"
             exit 1
           fi
-          bq show --format=json -j "$as_of_job" > "$RUNNER_TEMP/as-of-job.json"
+          bq --location=us-central1 show --format=json -j "$as_of_job" > "$RUNNER_TEMP/as-of-job.json"
           as_of_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/as-of-job.json")"
-          bq show --format=json -j "$copy_job" > "$RUNNER_TEMP/source-copy-job.json"
+          bq --location=us-central1 show --format=json -j "$copy_job" > "$RUNNER_TEMP/source-copy-job.json"
           copy_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/source-copy-job.json")"
           echo "W9_PARTITION_JOB_ID=$partition_job" >> "$GITHUB_ENV"
           echo "W9_PARTITION_BYTES_BILLED=$partition_bytes" >> "$GITHUB_ENV"
@@ -730,7 +730,7 @@ jobs:
           diff_result="$(bq query --quiet --use_legacy_sql=false --location=us-central1 \
             --maximum_bytes_billed=1073741824 --job_id="$diff_job" --format=csv --max_rows=1 "$diff_sql" | tail -n 1)"
           IFS=, read -r prod_rows ci_rows prod_only ci_only <<< "$diff_result"
-          bq show --format=json -j "$diff_job" > "$RUNNER_TEMP/data-diff-job.json"
+          bq --location=us-central1 show --format=json -j "$diff_job" > "$RUNNER_TEMP/data-diff-job.json"
           diff_bytes="$(jq -r '.statistics.totalBytesBilled // empty' "$RUNNER_TEMP/data-diff-job.json")"
           echo "W9_PROD_ROWS=$prod_rows" >> "$GITHUB_ENV"
           echo "W9_CI_ROWS=$ci_rows" >> "$GITHUB_ENV"
