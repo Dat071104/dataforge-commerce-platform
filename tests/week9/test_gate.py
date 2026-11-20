@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
 from faults.cases import mutate_landing_frame
 
-from dataforge.dq.gate import run_landing_gate
+from dataforge.dq.gate import _align_bigquery_dtypes, run_landing_gate
 from dataforge.dq.results import MemoryResultSink
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -70,6 +72,10 @@ def test_captured_clean_slice_has_no_p1_or_p2_findings(clean_frame):
     assert not failed_ids(report)
     assert not [result for result in report.results if result.status == "WARN"]
     assert len(sink.results) == len(report.results)
+    observed = json.loads(report.results[0].observed)
+    assert observed["dataset"] == "w9_drill"
+    assert observed["date"] == AS_OF.isoformat()
+    assert observed["publish_action"] == "PUBLISH"
 
 
 @pytest.mark.parametrize("string_dtype", ["object", "str", "string"])
@@ -170,3 +176,49 @@ def test_dataset_guard_rejects_production_dataset(clean_frame):
             observation_date=AS_OF,
             result_sink=MemoryResultSink(),
         )
+
+
+def _bigquery_client_frame(clean_frame: pd.DataFrame) -> pd.DataFrame:
+    """Reproduce the dtypes google-cloud-bigquery 3.47 + pandas 3 return (run 44706679381)."""
+    db_dtypes = pytest.importorskip("db_dtypes")
+    frame = clean_frame.copy(deep=True)
+    frame["observation_date"] = pd.Series(
+        frame["observation_date"].tolist(), index=frame.index, dtype=db_dtypes.DateDtype()
+    )
+    frame["manifest_generation"] = frame["manifest_generation"].astype("Int64")
+    frame["landed_at"] = frame["landed_at"].astype("datetime64[us, UTC]")
+    return frame
+
+
+def _fields(**types: str) -> dict[str, SimpleNamespace]:
+    return {name: SimpleNamespace(field_type=field_type) for name, field_type in types.items()}
+
+
+def test_bigquery_client_dtypes_are_aligned_to_the_contract(clean_frame):
+    raw = _bigquery_client_frame(clean_frame)
+    raw_report, _ = run(raw)
+    assert "G1.LANDING.SCHEMA" in failed_ids(raw_report)
+
+    aligned = _align_bigquery_dtypes(
+        raw,
+        _fields(observation_date="DATE", manifest_generation="INTEGER", landed_at="TIMESTAMP"),
+    )
+    report, _ = run(aligned)
+
+    assert not failed_ids(report)
+    assert not report.blocked
+
+
+def test_bigquery_dtype_alignment_keeps_real_type_drift_visible(clean_frame):
+    raw = _bigquery_client_frame(clean_frame)
+    raw["manifest_generation"] = raw["manifest_generation"].astype("float64")
+
+    aligned = _align_bigquery_dtypes(
+        raw,
+        _fields(observation_date="DATE", manifest_generation="FLOAT", landed_at="TIMESTAMP"),
+    )
+    report, _ = run(aligned)
+
+    schema = next(result for result in report.results if result.check_id == "G1.LANDING.SCHEMA")
+    assert schema.status == "FAIL"
+    assert "type_mismatch:manifest_generation" in _result_observed(schema)["issues"]

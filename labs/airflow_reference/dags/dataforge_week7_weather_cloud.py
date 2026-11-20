@@ -70,6 +70,79 @@ _IDENTITY_MODE_ATTACHED = "attached_service_account"
 _AIRFLOW_CALLER = re.compile(
     rf"^dataforge-week7-airflow@{re.escape(PROJECT_ID)}\.iam\.gserviceaccount\.com$"
 )
+_W9_DQ_GATE_ADAPTER_UNAVAILABLE = "ALERTING.DQ_GATE_ADAPTER_UNAVAILABLE"
+
+
+class Week9DQGateFailure(AirflowFailException):
+    """Sanitized gate failure metadata for the local Airflow callback only."""
+
+    def __init__(
+        self,
+        *,
+        check_id: str,
+        severity: str,
+        dataset: str | None,
+        event_date: str | None,
+        failing_rows: int = 0,
+    ) -> None:
+        self.check_id = check_id
+        self.severity = severity
+        self.dataset = dataset
+        self.event_date = event_date
+        self.failing_rows = failing_rows
+        super().__init__(f"Week 9 DQ gate failed: {check_id}")
+
+
+def _week9_dq_gate_enabled() -> bool:
+    """Keep the Week 9 adapter disabled by default in the W7 reference runtime."""
+    return os.environ.get("DATAFORGE_DQ_GATE_ENABLED", "false").strip().lower() == "true"
+
+
+def _run_week9_landing_gate(
+    request: dict[str, Any], landing_reconciliation: dict[str, Any]
+) -> dict[str, Any]:
+    """A live isolated-dataset adapter is intentionally not wired into the W7 DAG."""
+    del landing_reconciliation
+    raise Week9DQGateFailure(
+        check_id=_W9_DQ_GATE_ADAPTER_UNAVAILABLE,
+        severity="P1",
+        dataset=None,
+        event_date=request.get("observation_date"),
+    )
+
+
+def local_dq_gate_failure_log(context: dict[str, Any]) -> None:
+    """Emit a local-only, sanitized DQ_GATE_FAILED event for the reference harness."""
+    task_instance = context.get("task_instance")
+    dag_run = context.get("dag_run")
+    exception = context.get("exception")
+    receipt = {
+        "event_type": "DQ_GATE_FAILED",
+        "run_id": getattr(dag_run, "run_id", None),
+        "check_id": getattr(exception, "check_id", _W9_DQ_GATE_ADAPTER_UNAVAILABLE),
+        "severity": getattr(exception, "severity", "P1"),
+        "status": "FAIL",
+        "dataset": getattr(exception, "dataset", None),
+        "date": getattr(exception, "event_date", None),
+        "failing_rows": getattr(exception, "failing_rows", 0),
+        "published": False,
+        "runbook_url": (
+            "https://github.com/Dat071104/dataforge-commerce-platform/blob/main/"
+            "docs/week9/runbooks/DQ_GATE_FAILED.md"
+        ),
+        "task_id": getattr(task_instance, "task_id", None),
+        "event_destination": "local_airflow_log_only",
+        "external_notification_sent": False,
+    }
+    _LOGGER.error("DATAFORGE_AIRFLOW_DQ_GATE_FAILED %s", json.dumps(receipt, sort_keys=True))
+
+
+def _log_dq_gate_result(result: dict[str, Any]) -> None:
+    safe_fields = {
+        key: result.get(key)
+        for key in ("status", "check_id", "severity", "dataset", "date", "failing_rows", "published")
+    }
+    _LOGGER.info("DATAFORGE_AIRFLOW_DQ_GATE_RESULT %s", json.dumps(safe_fields, sort_keys=True))
 
 
 def _require_cloud_authorization() -> str:
@@ -740,7 +813,7 @@ def _read_cloud_execution_receipt(
     tags=["dataforge", "week7", "mini3", "cloud-integration", "opt-in"],
 )
 def dataforge_week7_weather_cloud():
-    """Run separate source, manifest, landing, dbt, publication and reconciliation stages."""
+    """Run source, manifest, landing, optional DQ, dbt, publication and reconciliation stages."""
 
     @task(
         task_id="resolve_cloud_request",
@@ -920,6 +993,123 @@ def dataforge_week7_weather_cloud():
                 str(receipt["manifest_generation"]),
             ],
         )
+
+    @task(
+        task_id="quality_gate_landing",
+        retries=0,
+        execution_timeout=timedelta(minutes=2),
+        on_failure_callback=local_dq_gate_failure_log,
+        doc_md=(
+            "Optional Week 9 landing gate seam. `DATAFORGE_DQ_GATE_ENABLED` defaults false; "
+            "the W7 Airflow runtime has no live isolated-dataset gate adapter. The CI harness "
+            "injects a test-only adapter to prove a P1 failure blocks dbt."
+        ),
+    )
+    def quality_gate_landing(
+        request: dict[str, Any], landing_reconciliation: dict[str, Any]
+    ) -> dict[str, Any]:
+        if not _week9_dq_gate_enabled():
+            result = {
+                "status": "DISABLED",
+                "check_id": None,
+                "severity": None,
+                "dataset": None,
+                "date": request.get("observation_date"),
+                "failing_rows": 0,
+                "published": None,
+            }
+            _log_dq_gate_result(result)
+            return result
+
+        try:
+            result = _run_week9_landing_gate(request, landing_reconciliation)
+        except Week9DQGateFailure as exc:
+            _log_dq_gate_result(
+                {
+                    "status": "FAIL",
+                    "check_id": exc.check_id,
+                    "severity": exc.severity,
+                    "dataset": exc.dataset,
+                    "date": exc.event_date,
+                    "failing_rows": 0,
+                    "published": False,
+                }
+            )
+            raise
+        except Exception:
+            failure = Week9DQGateFailure(
+                check_id=_W9_DQ_GATE_ADAPTER_UNAVAILABLE,
+                severity="P1",
+                dataset=None,
+                event_date=request.get("observation_date"),
+            )
+            _log_dq_gate_result(
+                {
+                    "status": "FAIL",
+                    "check_id": failure.check_id,
+                    "severity": failure.severity,
+                    "dataset": failure.dataset,
+                    "date": failure.event_date,
+                    "failing_rows": 0,
+                    "published": False,
+                }
+            )
+            raise failure from None
+
+        if not isinstance(result, dict):
+            result = {}
+        check_id = result.get("check_id")
+        severity = result.get("severity")
+        dataset = result.get("dataset")
+        event_date = result.get("date", request.get("observation_date"))
+        status = result.get("status")
+        failing_rows = result.get("failing_rows", 0)
+        valid_dataset = dataset == "w9_drill" or (
+            isinstance(dataset, str)
+            and re.fullmatch(r"dbt_ci_pr_[A-Za-z0-9_-]+", dataset) is not None
+        )
+        valid_status = isinstance(status, str) and status in {"PASS", "WARN", "FAIL"}
+        valid_severity = isinstance(severity, str) and severity in {"P1", "P2", "P3"}
+        valid_status_severity = valid_status and valid_severity and not (
+            (status == "FAIL" and severity != "P1")
+            or (status == "WARN" and severity not in {"P2", "P3"})
+        )
+        if (
+            not isinstance(check_id, str)
+            or re.fullmatch(r"[A-Z0-9_.-]+", check_id) is None
+            or not valid_status_severity
+            or not valid_dataset
+            or event_date != request.get("observation_date")
+            or isinstance(failing_rows, bool)
+            or not isinstance(failing_rows, int)
+            or failing_rows < 0
+        ):
+            status = "FAIL"
+            check_id = _W9_DQ_GATE_ADAPTER_UNAVAILABLE
+            severity = "P1"
+            dataset = None
+            event_date = request.get("observation_date")
+            failing_rows = 0
+        published = status in {"PASS", "WARN"} or severity != "P1"
+        safe_result = {
+            "status": status,
+            "check_id": check_id,
+            "severity": severity,
+            "dataset": dataset,
+            "date": event_date,
+            "failing_rows": failing_rows,
+            "published": published,
+        }
+        _log_dq_gate_result(safe_result)
+        if status == "FAIL" and severity == "P1":
+            raise Week9DQGateFailure(
+                check_id=check_id,
+                severity=severity,
+                dataset=dataset,
+                event_date=event_date,
+                failing_rows=failing_rows,
+            )
+        return safe_result
 
     @task(
         task_id="load_bigquery_landing",
@@ -1157,6 +1347,7 @@ def dataforge_week7_weather_cloud():
         operation_name=reconciliation_operation,
     )
     landing_reconciliation = reconciliation_sensor.output
+    gate_result = quality_gate_landing(request, landing_reconciliation)
     build_operation = dbt_weather_build(request)
     build_sensor = wait_for_cloud_run(
         task_id="wait_for_dbt_weather_build",
@@ -1184,9 +1375,10 @@ def dataforge_week7_weather_cloud():
         gold,
     )
 
-    landing >> reconciliation_operation >> landing_reconciliation >> build_operation
+    landing >> reconciliation_operation >> landing_reconciliation >> gate_result >> build_operation
     build >> publish_operation >> publish >> gold
     gold >> execution_receipt
+    gate_result >> execution_receipt
 
 
 dataforge_week7_weather_cloud()

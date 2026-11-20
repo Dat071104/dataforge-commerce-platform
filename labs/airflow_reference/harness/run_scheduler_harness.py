@@ -28,6 +28,16 @@ BACKFILL_TASK_IDS = TASK_IDS + (
     "load_bigquery_landing",
     "wait_for_bigquery_landing",
 )
+DQ_GATE_TASK_IDS = TASK_IDS + (
+    "read_execution_receipt",
+    "load_bigquery_landing",
+    "wait_for_bigquery_landing",
+    "verify_landing_reconciliation",
+    "wait_for_landing_reconciliation",
+    "quality_gate_landing",
+    "dbt_weather_build",
+)
+DQ_GATE_SCENARIOS = {"dq_gate_disabled", "dq_gate_pass", "dq_gate_fail"}
 TERMINAL_DAG_STATES = {"success", "failed", "canceled"}
 
 
@@ -352,6 +362,14 @@ def _deadline_events(home: Path, service_log: Path) -> list[dict[str, object]]:
     return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_WEATHER_DEADLINE ")
 
 
+def _dq_gate_events(home: Path, service_log: Path) -> list[dict[str, object]]:
+    return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_DQ_GATE_FAILED ")
+
+
+def _dq_gate_result_events(home: Path, service_log: Path) -> list[dict[str, object]]:
+    return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_DQ_GATE_RESULT ")
+
+
 def _redacted_component_errors(path: Path) -> str:
     if not path.exists():
         return ""
@@ -436,6 +454,9 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             "DATAFORGE_AIRFLOW_HARNESS_SCENARIO": scenario,
             "DATAFORGE_AIRFLOW_HARNESS_LEDGER": str(ledger_path),
             "DATAFORGE_AIRFLOW_HARNESS_STATE_DIR": str(state_dir),
+            "DATAFORGE_DQ_GATE_ENABLED": (
+                "true" if scenario in {"dq_gate_pass", "dq_gate_fail"} else "false"
+            ),
             "DATAFORGE_WEATHER_CLOUD_ENABLED": "false" if scenario == "gate_off" else "true",
             "DATAFORGE_WEATHER_PROJECT_ID": "dataforge-p7-lab-d0f725",
             "DATAFORGE_WEATHER_REGION": "us-central1",
@@ -597,6 +618,12 @@ def _run_scenario(scenario: str) -> dict[str, object]:
                 if _failure_events(home, service_log):
                     break
                 time.sleep(0.5)
+        elif scenario == "dq_gate_fail":
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                if _dq_gate_events(home, service_log):
+                    break
+                time.sleep(0.5)
         elif scenario == "deadline":
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
@@ -611,7 +638,12 @@ def _run_scenario(scenario: str) -> dict[str, object]:
         ingest = task_states.get("execute_api_ingest")
         sensor = task_states.get("wait_for_api_ingest")
         sensor_reschedules = snapshot["reschedules"].get("wait_for_api_ingest", 0)
-        expected_task_ids = set(BACKFILL_TASK_IDS if scenario == "backfill" else TASK_IDS)
+        if scenario == "backfill":
+            expected_task_ids = set(BACKFILL_TASK_IDS)
+        elif scenario in DQ_GATE_SCENARIOS:
+            expected_task_ids = set(DQ_GATE_TASK_IDS)
+        else:
+            expected_task_ids = set(TASK_IDS)
         if set(task_states) != expected_task_ids:
             raise AssertionError(
                 f"scheduler ran an unexpected task set: {sorted(task_states)}; "
@@ -631,7 +663,76 @@ def _run_scenario(scenario: str) -> dict[str, object]:
             "sensor_reschedules": sensor_reschedules,
             "network": "Docker network_mode=none; _authorized_session intercepted",
         }
-        if scenario == "retry_once":
+        if scenario in DQ_GATE_SCENARIOS:
+            gate_task = task_states.get("quality_gate_landing")
+            build_task = task_states.get("dbt_weather_build")
+            gate_results = _dq_gate_result_events(home, service_log)
+            gate_failures = _dq_gate_events(home, service_log)
+            build_posts = [call for call in calls if call.get("target") == "cloud_run_build"]
+            expected_gate_status = {
+                "dq_gate_disabled": "DISABLED",
+                "dq_gate_pass": "PASS",
+                "dq_gate_fail": "FAIL",
+            }[scenario]
+            if len(gate_results) != 1 or gate_results[0].get("status") != expected_gate_status:
+                raise AssertionError(
+                    f"Week 9 Airflow gate result mismatch: scenario={scenario}; "
+                    f"results={gate_results}"
+                )
+            if scenario == "dq_gate_fail":
+                if (
+                    snapshot["dag_run_state"] != "failed"
+                    or gate_task != {"state": "failed", "try_number": 1}
+                    or build_task is None
+                    or build_task["state"] != "upstream_failed"
+                    or build_posts
+                    or len(gate_failures) != 1
+                    or gate_failures[0].get("event_type") != "DQ_GATE_FAILED"
+                    or gate_failures[0].get("check_id") != "G1.LANDING.PHYSICAL_RANGE"
+                    or gate_failures[0].get("severity") != "P1"
+                    or gate_failures[0].get("dataset") != "w9_drill"
+                    or gate_failures[0].get("failing_rows") != 1
+                    or gate_failures[0].get("published") is not False
+                    or gate_failures[0].get("task_id") != "quality_gate_landing"
+                ):
+                    raise AssertionError(
+                        "Week 9 P1 gate block mismatch: "
+                        f"gate={gate_task}; dbt={build_task}; builds={build_posts}; "
+                        f"gate_failures={gate_failures}"
+                    )
+                evidence["week9_quality_gate"] = {
+                    "gate_task": gate_task,
+                    "dbt_task": build_task,
+                    "dbt_build_submissions": len(build_posts),
+                    "result_events": gate_results,
+                    "failure_events": gate_failures,
+                    "cloud_requests_are_faked": True,
+                }
+            else:
+                if (
+                    snapshot["dag_run_state"] != "success"
+                    or gate_task is None
+                    or gate_task["state"] != "success"
+                    or build_task is None
+                    or build_task["state"] != "success"
+                    or len(build_posts) != 1
+                    or gate_failures
+                ):
+                    raise AssertionError(
+                        "Week 9 gate pass/disabled control mismatch: "
+                        f"scenario={scenario}; gate={gate_task}; dbt={build_task}; "
+                        f"builds={build_posts}; gate_failures={gate_failures}"
+                    )
+                evidence["week9_quality_gate"] = {
+                    "status": expected_gate_status,
+                    "gate_task": gate_task,
+                    "dbt_task": build_task,
+                    "dbt_build_submissions": len(build_posts),
+                    "result_events": gate_results,
+                    "failure_events": gate_failures,
+                    "cloud_requests_are_faked": True,
+                }
+        elif scenario == "retry_once":
             history = snapshot["attempts"].get("execute_api_ingest", [])
             posts = [call for call in calls if call.get("method") == "POST"]
             args = [call["args"] for call in posts]
@@ -899,6 +1000,9 @@ def main() -> int:
         "retry_once",
         "forbidden",
         "gate_off",
+        "dq_gate_disabled",
+        "dq_gate_pass",
+        "dq_gate_fail",
         "execution_failed",
         "deadline",
         "backfill",

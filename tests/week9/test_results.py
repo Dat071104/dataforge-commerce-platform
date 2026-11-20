@@ -8,6 +8,7 @@ import pytest
 from dataforge.dq.results import (
     JsonlResultSink,
     MemoryResultSink,
+    add_result_context,
     cloud_sink_from_env,
     make_result,
     require_isolated_dataset,
@@ -33,6 +34,31 @@ def test_result_row_has_contract_fields_and_summary_only():
     assert json.loads(row.observed) == {"failing_rows": 1}
     assert "province_id" not in row.observed
     assert row.ts.endswith("Z")
+
+
+def test_result_context_adds_dataset_date_and_publish_impact():
+    row = make_result(
+        run_id="unit-run",
+        check_id="G1.LANDING.PROVINCE_DOMAIN",
+        layer="G1",
+        severity="P1",
+        status="FAIL",
+        observed={"unexpected_count": 1},
+        threshold={"allowed_values": ["HCM", "HN", "DN"]},
+        failing_rows=1,
+        contract_version="1.0.0",
+    )
+    contextual = add_result_context(
+        row,
+        dataset="w9_drill",
+        event_date="2026-11-18",
+        publish_action="BLOCK",
+    )
+    observed = json.loads(contextual.observed)
+    assert observed["dataset"] == "w9_drill"
+    assert observed["date"] == "2026-11-18"
+    assert observed["publish_action"] == "BLOCK"
+    assert observed["published"] is False
 
 
 def test_local_sinks_persist_only_result_summaries(tmp_path):

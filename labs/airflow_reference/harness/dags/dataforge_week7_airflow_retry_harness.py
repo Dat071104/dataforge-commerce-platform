@@ -35,6 +35,21 @@ from dataforge_week7_airflow_test_session import (  # noqa: E402
 
 production._read_cloud_execution_receipt = make_fake_execution_receipt
 
+if _TEST_SCENARIO in {"dq_gate_pass", "dq_gate_fail"}:
+
+    def _fake_week9_landing_gate(request, landing_reconciliation):
+        del landing_reconciliation
+        return {
+            "status": "FAIL" if _TEST_SCENARIO == "dq_gate_fail" else "PASS",
+            "check_id": "G1.LANDING.PHYSICAL_RANGE",
+            "severity": "P1",
+            "dataset": "w9_drill",
+            "date": request["observation_date"],
+            "failing_rows": 1 if _TEST_SCENARIO == "dq_gate_fail" else 0,
+        }
+
+    production._run_week9_landing_gate = _fake_week9_landing_gate
+
 
 def _dag_from_entry(entry):
     return entry[0] if isinstance(entry, tuple) else entry
@@ -69,6 +84,11 @@ _target_task_ids = {"wait_for_api_ingest"}
 if _TEST_SCENARIO == "backfill":
     _sensor_task_ids.add("wait_for_bigquery_landing")
     _target_task_ids = {"wait_for_bigquery_landing"}
+elif _TEST_SCENARIO.startswith("dq_gate_"):
+    _sensor_task_ids.update(
+        {"wait_for_bigquery_landing", "wait_for_landing_reconciliation"}
+    )
+    _target_task_ids = {"dbt_weather_build"}
 
 dag = _production_dag.partial_subset(
     task_ids=_target_task_ids,
@@ -95,6 +115,19 @@ if _TEST_SCENARIO == "backfill":
             "read_execution_receipt",
             "load_bigquery_landing",
             "wait_for_bigquery_landing",
+        }
+    )
+elif _TEST_SCENARIO.startswith("dq_gate_"):
+    _expected_task_ids.update(
+        {
+            "wait_for_api_ingest",
+            "read_execution_receipt",
+            "load_bigquery_landing",
+            "wait_for_bigquery_landing",
+            "verify_landing_reconciliation",
+            "wait_for_landing_reconciliation",
+            "quality_gate_landing",
+            "dbt_weather_build",
         }
     )
 else:
@@ -140,8 +173,26 @@ if _TEST_SCENARIO == "backfill":
 
     _landing.python_callable = _load_landing_with_fake_session
 
-# Avoid one-second LocalExecutor state churn during the five-date backfill.
-_sensor_poke_interval = 5 if _TEST_SCENARIO == "backfill" else 1
+if _TEST_SCENARIO.startswith("dq_gate_"):
+    for _task_id in (
+        "load_bigquery_landing",
+        "verify_landing_reconciliation",
+        "dbt_weather_build",
+    ):
+        _task = dag.get_task(_task_id)
+        _production_callable = _task.python_callable
+
+        def _run_cloud_submitter_with_fake_session(*args, _callable=_production_callable):
+            return _run_with_fake_session(_callable, *args)
+
+        _task.python_callable = _run_cloud_submitter_with_fake_session
+
+# Avoid one-second LocalExecutor state churn when several rescheduling sensors run in
+# sequence (five-date backfill, Week 9 gate chain). At 1 s the executor can report a
+# finished sensor while its task instance is already back in `scheduled`.
+_sensor_poke_interval = (
+    5 if _TEST_SCENARIO == "backfill" or _TEST_SCENARIO.startswith("dq_gate_") else 1
+)
 for _sensor_task_id in _sensor_task_ids:
     dag.get_task(_sensor_task_id).poke_interval = _sensor_poke_interval
 _production_sensor_poke = production.CloudRunExecutionReceiptSensor.poke
