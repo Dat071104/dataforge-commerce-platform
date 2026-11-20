@@ -5,18 +5,27 @@ checks:
   schema:
     check_id: G1.LANDING.SCHEMA
     severity: P1
+    # `str` is a logical value type: GX checks non-null values across Pandas 2/3
+    # representations rather than requiring one pandas container dtype.
     required_columns:
-      province_id: object
+      province_id: str
       observation_date: object
       precipitation_mm: float64
       temp_max_c: float64
-      source: object
-      model: object
-      request_id: object
-      source_sha256: object
-      manifest_uri: object
+      source: str
+      model: str
+      request_id: str
+      source_sha256: str
+      manifest_uri: str
       manifest_generation: int64
       landed_at: datetime64[ns, UTC]
+    # `province_id` has its own null check; precipitation and temperature are nullable.
+    required_non_null:
+      - request_id
+      - source
+      - model
+      - source_sha256
+      - manifest_uri
   schema_additive:
     check_id: G1.LANDING.SCHEMA_ADDITIVE
     severity: P2

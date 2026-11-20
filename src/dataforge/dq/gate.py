@@ -5,6 +5,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
@@ -164,24 +165,48 @@ def run_landing_gate(
         expectation_failures += 1
         schema_messages.append("table_has_no_columns")
 
-    for column, dtype in expected_columns.items():
+    for column, expected_type in expected_columns.items():
         if column not in columns:
             expectation_passes.append(False)
             expectation_failures += 1
             schema_messages.append(f"missing:{column}")
             continue
+        if expected_type == "str":
+            # Pandas 2 represents parquet strings as object dtype; Pandas 3 uses
+            # its dedicated str dtype. Validate the logical value type across
+            # both representations instead of pinning the check to one dtype.
+            # Nulls remain governed by the contract's separate null checks.
+            expectation = gxe.ExpectColumnValuesToBeOfType(
+                column=column,
+                type_="str",
+                result_format={"result_format": "SUMMARY"},
+            )
+        else:
+            expectation = gxe.ExpectColumnTypeToBe(
+                column=column,
+                type_=expected_type,
+                result_format={"result_format": "SUMMARY"},
+            )
+        ok, count, _ = _expect(batch, expectation)
+        expectation_passes.append(ok)
+        expectation_failures += count or (0 if ok else 1)
+        if not ok:
+            schema_messages.append(f"type_mismatch:{column}")
+
+    for column in schema_cfg.get("required_non_null", []):
+        if column not in columns:
+            continue
         ok, count, _ = _expect(
             batch,
-            gxe.ExpectColumnTypeToBe(
+            gxe.ExpectColumnValuesToNotBeNull(
                 column=column,
-                type_=dtype,
                 result_format={"result_format": "SUMMARY"},
             ),
         )
         expectation_passes.append(ok)
         expectation_failures += count or (0 if ok else 1)
         if not ok:
-            schema_messages.append(f"type_mismatch:{column}")
+            schema_messages.append(f"missing_values:{column}")
 
     extras = sorted(columns - set(expected_columns))
     non_nullable_extras: list[str] = []
@@ -203,7 +228,9 @@ def run_landing_gate(
             severity=schema_cfg["severity"],
             passed=schema_passed,
             observed={"issues": schema_messages, "required_columns": len(expected_columns)},
-            threshold={"required_columns": "present with approved pandas dtypes"},
+            threshold={
+                "required_columns": "present with contracted logical/physical types and required non-null values"
+            },
             failing_rows=expectation_failures,
             contract_version=contract_version,
         )
@@ -424,7 +451,24 @@ def _read_bigquery_frame(project: str, dataset: str, observation_date: date):
         labels={"application": "dataforge", "phase": "week9", "action": "dq-gate"},
     )
     job = client.query(query, job_config=job_config, location="us-central1")
-    return job.to_dataframe(create_bqstorage_client=False), fields
+    frame = job.to_dataframe(create_bqstorage_client=False)
+    usage_path = os.environ.get("DATAFORGE_W9_COST_USAGE_FILE")
+    if usage_path:
+        job_id = getattr(job, "job_id", None)
+        bytes_billed = getattr(job, "total_bytes_billed", None)
+        if (
+            not isinstance(job_id, str)
+            or re.fullmatch(r"[A-Za-z0-9_-]{1,256}", job_id) is None
+            or isinstance(bytes_billed, bool)
+            or not isinstance(bytes_billed, int)
+            or bytes_billed < 0
+        ):
+            raise RuntimeError("G1 BigQuery usage metadata is unavailable for the run-cost guard")
+        usage = {"job_id": job_id, "bytes_billed": bytes_billed}
+        destination = Path(usage_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(usage, sort_keys=True), encoding="utf-8")
+    return frame, fields
 
 
 def main(argv: list[str] | None = None) -> int:

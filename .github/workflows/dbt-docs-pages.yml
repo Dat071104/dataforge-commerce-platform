@@ -19,23 +19,46 @@ on:
       - 'cloud/jobs/week7/requirements.lock'
       - 'README.md'
       - '.github/workflows/dbt-docs-pages.yml'
+  workflow_run:
+    workflows:
+      - Week 9 main artifacts
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
-  group: dbt-pages-${{ github.ref }}
+  group: dbt-pages-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pages: read
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Download Week 9 data-quality report
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: week9-dq-report
+          path: ${{ runner.temp }}/week9-dq-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -55,7 +78,9 @@ jobs:
         run: |
           cp profiles.example.yml profiles.yml
           dbt parse --project-dir . --profiles-dir . --target offline --no-send-anonymous-usage-stats --no-version-check --no-partial-parse
-          dbt docs generate --project-dir . --profiles-dir . --target offline --no-compile --empty-catalog --static --no-send-anonymous-usage-stats --no-version-check
+          dbt docs generate --project-dir . --profiles-dir . --target offline \
+            --no-compile --empty-catalog --static \
+            --no-send-anonymous-usage-stats --no-version-check
       - name: Prepare repository-base static site
         env:
           DBT_TARGET_PATH: ${{ runner.temp }}/dbt-target
@@ -63,6 +88,7 @@ jobs:
         run: |
           python - <<'PY'
           import os
+          import html as html_lib
           import subprocess
           import tempfile
           from html.parser import HTMLParser
@@ -98,6 +124,21 @@ jobs:
                       self.in_head = False
 
           target = Path(os.environ['DBT_TARGET_PATH'])
+          report_path = Path(os.environ['RUNNER_TEMP']) / 'week9-dq-report' / 'dq-report.md'
+          report_html = None
+          if os.environ.get('GITHUB_EVENT_NAME') == 'workflow_run':
+              if not report_path.is_file():
+                  raise SystemExit('Week 9 DQ report artifact is missing dq-report.md')
+              report_text = report_path.read_text(encoding='utf-8')
+              report_html = (
+                  '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                  '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                  '<title>Week 9 data-quality report</title></head><body>'
+                  '<main><h1>Week 9 data-quality report</h1>'
+                  '<p><a href="./">Back to dbt docs</a></p>'
+                  f'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">{html_lib.escape(report_text)}</pre>'
+                  '</main></body></html>'
+              )
           static_index = target / 'static_index.html'
           if not static_index.is_file():
               raise SystemExit('dbt static_index.html was not generated')
@@ -159,6 +200,17 @@ jobs:
 
           site = Path('_site')
           site.mkdir(exist_ok=True)
+          if report_html is not None:
+              (site / 'dq-report.html').write_text(report_html, encoding='utf-8')
+              (site / 'dq-report.md').write_text(report_text, encoding='utf-8')
+              body_end = '</body>'
+              if html.count(body_end) != 1:
+                  raise SystemExit('Expected one body end tag to add the Week 9 DQ report link')
+              html = html.replace(
+                  body_end,
+                  '<nav aria-label="Data quality"><a href="dq-report.html">Week 9 data-quality report</a></nav>' + body_end,
+                  1,
+              )
           (site / 'index.html').write_text(html, encoding='utf-8')
           print('Prepared static dbt docs with valid inline JavaScript and a repository-base URL.')
           PY
@@ -168,7 +220,9 @@ jobs:
           path: _site
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     needs: build
     runs-on: ubuntu-latest
     permissions:

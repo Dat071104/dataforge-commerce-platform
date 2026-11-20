@@ -6,6 +6,16 @@
 
 <!-- List what changes and what remains deliberately out of scope. -->
 
+## Data impact
+
+- Source datasets and owners:
+- Target models / datasets:
+- Grain, keys, and date range:
+- Contract version and compatibility impact:
+- PII classification, retention, and access changes:
+- Production reads / writes versus isolated CI writes:
+- Maximum bytes billed, observed bytes, and cleanup:
+
 ## Data contract and grain
 
 - Source / owner:
