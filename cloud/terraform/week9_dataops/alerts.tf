@@ -117,7 +117,7 @@ resource "google_monitoring_alert_policy" "week9_dq_deadman" {
       duration = "84600s"
 
       aggregations {
-        alignment_period     = "84600s"
+        alignment_period     = "60s"
         per_series_aligner   = "ALIGN_DELTA"
         cross_series_reducer = "REDUCE_SUM"
       }

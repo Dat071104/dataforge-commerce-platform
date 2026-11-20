@@ -1,6 +1,6 @@
 # Worker Q — W9-2 Quality + Observability lane
 
-Branch: `feat/w9-q-2` from `origin/main` at `3a20050e813700cd0a050c69aa1dbd652ca9fc08`. This report covers Q1–Q6 (Q-PR1) and Q7–Q11 (Q-PR2). Q10 proceeded only after the parent confirmed W7 PR #40 S12 merged at `4b0cdd9`; the Airflow gate remains disabled by default, and Airflow behavior is **UNVERIFIED** pending exact-head CI. Q8 Monitoring HCL is authored for review but unplanned and unapplied. No Terraform plan/apply, GCP dataset/table write, image build, deployment, or production write was performed. One bounded public Open-Meteo GET was captured as a test fixture and documented.
+Branch: `feat/w9-q-2` from `origin/main` at `3a20050e813700cd0a050c69aa1dbd652ca9fc08`. This report covers Q1–Q6 (Q-PR1) and Q7–Q11 (Q-PR2). Q10 proceeded only after the parent confirmed W7 PR #40 S12 merged at `4b0cdd9`; the Airflow gate remains disabled by default, and Airflow behavior is **UNVERIFIED** pending exact-head CI. Q8 HCL was authored for review; the integrator has now applied its separate Terraform plan. Live event routing and alert receipt remain **UNVERIFIED**. Worker Q did no Terraform apply, GCP dataset/table write, image build, deployment, or production write. One bounded public Open-Meteo GET was captured as a test fixture and documented.
 
 ## Q-PR1 status (Q1–Q6)
 
@@ -189,3 +189,13 @@ RCA for O-PR2 toolbox CI run `44418972138` (head `7015e9066143b2967af2b3535258a2
 - After the fix, `PYTHONPATH=src; PYTEST_DISABLE_PLUGIN_AUTOLOAD=1; python -m pytest -q -p no:cacheprovider tests/week9` in the exact locked venv: **63 passed**. The seven Q-owned modules in the GX 1.25.0 / Pandas 2.3.3 venv: **52 passed**. Targeted Ruff, `python -m compileall -q src/dataforge/dq/gate.py tests/week9/test_gate.py`, PyYAML parse, and `git diff --check` also passed.
 - O-PR2 DataForge CI run `44423313989` separately failed Ruff F821 because its cherry-picked test file referenced `json.loads` without carrying the Q branch's pre-existing import. This follow-up uses a self-contained `_result_observed()` helper with a local JSON import and keeps the parsed `issues` assertions exact. Ruff and the focused locked-toolbox gate tests now pass (**23 passed**). No post-fix CI run ID exists yet.
 - Integrator action: cherry-pick this Q follow-up commit into O-PR2, rerun exact-head toolbox CI, and confirm the required-string nulls and six downstream WAP cases pass. The toolbox's Pandas 3.1.1 lock differs from `pyproject.toml`'s project extra bound (`pandas<3`); this Q fix supports both representations, but the lock/version policy remains for O/integrator review.
+
+## Integrator reconciliation — Q8 plan/apply (2026-11-19)
+
+- Read-only Monitoring inventory verified the existing C9 channel (`email`, enabled) and found no prior W9 metrics or alert policies. The Q8 plan contained exactly five log metrics and four policies, with freshness excluded and the dead-man policy disabled.
+- The first apply created all five metrics and three enabled P1 policies. Monitoring rejected the disabled dead-man policy because its 84,600-second alignment plus 84,600-second absence window exceeded the 25-hour evaluation limit. The Q-owned `alerts.tf` now keeps the 84,600-second absence duration with a 60-second alignment (84,660 seconds total); a fresh one-resource plan created only the disabled heartbeat policy.
+- Final read-only state lists five `dataforge_w9_dq_*` metrics and four `DataForge W9` policies (three enabled P1; heartbeat disabled). No structured event was emitted and no notification was sent. Q8 reserves USD 0.11 in the integrator cost ledger; invoice/SKU remain unverified.
+
+## Integrator verification — Q8 review (2026-11-20)
+
+- Focused `test_observability.py` and `test_notifications.py` passed locally (**9 passed**, Python 3.13); pinned Terraform 1.17.1 `fmt -check` passed for `alerts.tf`. This verifies the static changes only; no alert event or notification was emitted in this review.
