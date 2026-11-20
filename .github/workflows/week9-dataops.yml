@@ -369,7 +369,13 @@ jobs:
 
   wif-smoke-not-requested:
     name: Manual WIF smoke not selected
-    if: github.event_name == 'workflow_dispatch' && !inputs.run_wif_smoke && !inputs.run_cloud_build && !inputs.run_lineage_build && !inputs.run_fault_matrix && !inputs.run_pii_proof
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      !inputs.run_wif_smoke &&
+      !inputs.run_cloud_build &&
+      !inputs.run_lineage_build &&
+      !inputs.run_fault_matrix &&
+      !inputs.run_pii_proof
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -941,8 +947,21 @@ jobs:
             echo "::error::PII proof requires the open same-repository PR whose head matches this dispatch ref"
             exit 1
           fi
-          checks="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$CURRENT_SHA/check-runs?per_page=100" \
-            --jq '[.check_runs[] | select(((.details_url // "") | contains("/actions/runs/'"$GITHUB_RUN_ID"'")) | not)] | group_by(.name) | .[] | max_by(.completed_at // .started_at // .created_at) | [.name, .status, (.conclusion // "")] | @tsv')"
+          check_runs_json="$(
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/commits/$CURRENT_SHA/check-runs?per_page=100" \
+              --jq '.check_runs[]'
+          )"
+          checks="$(jq -s --arg current_run "$GITHUB_RUN_ID" '
+            [
+              .[]
+              | select(((.details_url // "") | contains("/actions/runs/" + $current_run)) | not)
+            ]
+            | group_by(.name)
+            | .[]
+            | max_by(.completed_at // .started_at // .created_at)
+            | [.name, .status, (.conclusion // "")] | @tsv
+          ' <<< "$check_runs_json")"
           if [[ -z "$checks" ]]; then
             echo "::error::No previous exact-head check runs were found; refusing WIF PII proof"
             exit 1
@@ -951,7 +970,10 @@ jobs:
           cost_guard_green=false
           week7_green=false
           while IFS=$'\t' read -r check_name check_status check_conclusion; do
-            if [[ "$check_status" != "completed" || ( "$check_conclusion" != "success" && "$check_conclusion" != "skipped" && "$check_conclusion" != "neutral" ) ]]; then
+            if [[ "$check_status" != "completed" || \
+                  ( "$check_conclusion" != "success" && \
+                    "$check_conclusion" != "skipped" && \
+                    "$check_conclusion" != "neutral" ) ]]; then
               echo "::error::A prior exact-head check is not green; refusing WIF PII proof"
               exit 1
             fi

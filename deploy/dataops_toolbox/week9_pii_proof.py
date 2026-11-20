@@ -11,7 +11,7 @@ from typing import Any
 
 from dataforge.privacy.synthetic import EXPECTED_PROJECT, load_customer_profiles
 from run_cost_guard import RunCostGuardError
-from week9_pii_cost_guard import PII_SAFE_MART_TABLE, build_cost_receipt
+from week9_pii_cost_guard import build_cost_receipt, PII_SAFE_MART_TABLE
 from week9_pii_mask_probe import verify_masked_access
 
 JOB_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,256}")
@@ -34,7 +34,6 @@ def run() -> dict[str, Any]:
     cost_path = Path(os.environ.get("DATAFORGE_W9_COST_ARTIFACT_PATH", "/runner-temp/run-cost-pii-proof.json"))
     summary_path = Path(os.environ.get("DATAFORGE_W9_PII_SUMMARY_PATH", "/runner-temp/pii-proof-summary.json"))
 
-    stage = "synthetic-load"
     load_receipt = load_customer_profiles()
     if (
         load_receipt.get("status") != "LOADED_SYNTHETIC_ONLY"
@@ -47,7 +46,6 @@ def run() -> dict[str, Any]:
     if not isinstance(load_job_id, str) or JOB_ID_RE.fullmatch(load_job_id) is None:
         raise RunCostGuardError("Synthetic load job ID is missing")
 
-    stage = "pii-dbt-build"
     target_path.mkdir(parents=True, exist_ok=True)
     logs_path.mkdir(parents=True, exist_ok=True)
     dbt_env = os.environ.copy()
@@ -85,7 +83,6 @@ def run() -> dict[str, Any]:
         run_results = json.loads(run_results_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         raise RunCostGuardError("PII dbt run_results.json is missing or invalid") from None
-    stage = "ci-policy-tag-mask-probe"
     mask = verify_masked_access()
     if mask.get("status") not in {"MASKED", "DENIED_BY_POLICY_TAG"}:
         raise RunCostGuardError("CI identity did not prove the policy-tag mask boundary")
