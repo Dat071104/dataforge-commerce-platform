@@ -145,4 +145,4 @@ Run-level cost artifacts (`week9-run-cost-<run>-*`, `total_bytes_billed`):
 
 Operator queries: F-N0 precision run and the H-W9-3 drill (backup, DELETE, restore, counts, gate and monitor reads) ≈ 20 queries at the 10 MiB minimum ≈ 209,715,200 bytes.
 
-Total for this block ≈ 2.41 GiB ≈ USD 0.0147 at $6.25/TiB. Known gross is now ≈ USD 0.0325; forecast with the remaining reserves ≈ USD 0.37. W7 + W8 reserve + W9 forecast ≈ USD 13.36, below the USD 16 cumulative stop. `DRILL_EMAILS` 1/6. Invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
+Total for this block ≈ 2.25 GiB ≈ USD 0.0137 at $6.25/TiB. Known gross is now ≈ USD 0.0315; forecast with the remaining reserves ≈ USD 0.37. W7 + W8 reserve + W9 forecast ≈ USD 13.36, below the USD 16 cumulative stop. `DRILL_EMAILS` 1/6. Invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
