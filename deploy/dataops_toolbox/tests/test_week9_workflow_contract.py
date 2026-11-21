@@ -496,3 +496,9 @@ def test_live_fault_container_receives_the_workflow_run_id() -> None:
     start = dataops.index("python deploy/dataops_toolbox/week9_live_faults.py")
     container = dataops[dataops.rindex("docker run", 0, start) : start]
     assert '--env GITHUB_RUN_ID="$GITHUB_RUN_ID"' in container
+
+
+def test_pull_request_events_do_not_share_a_concurrency_group() -> None:
+    # R-21: one group for pull_request and pull_request_target cancelled the cloud run.
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    assert "github.event_name" in workflow["concurrency"]["group"]
