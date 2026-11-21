@@ -43,6 +43,8 @@ with weather as (
 select
     province_id,
     observation_date,
+    -- F13 fixture (do not merge): a raw personal e-mail column in a public mart.
+    cast(null as string) as reporter_email,
     precipitation_mm,
     temp_max_c,
     case

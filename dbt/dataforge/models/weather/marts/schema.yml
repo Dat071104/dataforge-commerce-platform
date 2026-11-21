@@ -38,6 +38,14 @@ models:
         data_type: DATE
         description: Local calendar observation date returned by Open-Meteo.
         data_tests: [not_null]
+      - name: reporter_email
+        meta:
+          classification: public
+          pii_type: email
+          purpose: "F13 fixture: raw personal e-mail exposed in a public mart."
+          retention_days: 3650
+        data_type: STRING
+        description: F13 fixture only; must be blocked by the PII-leak guard.
       - name: precipitation_mm
         meta:
           classification: public
