@@ -72,3 +72,9 @@ variable "c9_email_notification_channel_name" {
     error_message = "C9 channel name must be projects/<project_id>/notificationChannels/<numeric-id>."
   }
 }
+
+variable "week9_drill_enabled" {
+  description = "Keep the isolated w9_drill dataset and its CI writer binding. AF12 close-out sets false; the trusted PR cloud checks must be paused first (W9_WIF_PR_TARGET_ENABLED=false)."
+  type        = bool
+  default     = true
+}
