@@ -62,6 +62,21 @@ def test_openmetadata_catalog_profile_is_actions_only_and_manifest_matched(check
     assert bigquery_source_config["includeDDL"] is False
     assert bigquery_source_config["includeOwners"] is False
     assert "profiler" not in bigquery_config and "usage" not in bigquery_config
+    server_env = compose["services"]["migrate"]["environment"]
+    assert server_env["AUTHENTICATION_PROVIDER"] == "basic"
+    assert server_env["AUTHORIZER_CLASS_NAME"] == "org.openmetadata.service.security.DefaultAuthorizer"
+    assert server_env["AUTHORIZER_REQUEST_FILTER"] == "org.openmetadata.service.security.JwtFilter"
+    assert compose["services"]["openmetadata-server"]["environment"] == server_env
+    for ingestion_config in (dbt_config, bigquery_config):
+        server_config = ingestion_config["workflowConfig"]["openMetadataServerConfig"]
+        assert server_config["authProvider"] == "openmetadata"
+        assert server_config["securityConfig"] == {"jwtToken": "__OM_JWT_TOKEN__"}
+    assert workflow_text.count("::add-mask::") >= 2
+    assert 'Authorization: Bearer $OM_ADMIN_TOKEN' in workflow_text
+    assert "ingest -c /om-config/dbt_ingestion.yaml" in workflow_text
+    assert "ingest -c /om-config/bigquery_ingestion.yaml" in workflow_text
+    assert 'rm -rf -- "$RUNNER_TEMP/om-config"' in workflow_text
+    assert "no-auth" not in workflow_text
     assert "docker.getcollate.io/openmetadata/ingestion:2.0.7" in workflow_text
     assert "dbt parse" in workflow_text
     assert "google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093" in workflow_text

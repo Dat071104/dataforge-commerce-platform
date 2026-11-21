@@ -50,9 +50,11 @@ services:
       ELASTICSEARCH_USER: ""
       ELASTICSEARCH_PASSWORD: ""
       SEARCH_TYPE: opensearch
-      AUTHENTICATION_PROVIDER: no-auth
-      AUTHORIZER_CLASS_NAME: org.openmetadata.service.security.NoopAuthorizer
-      AUTHORIZER_REQUEST_FILTER: org.openmetadata.service.security.NoopFilter
+      # OpenMetadata 2.0.7 rejects `no-auth` (run 44765152599). Use the built-in basic provider,
+      # the default authorizer, and the default ingestion-bot JWT; all credentials are throwaway CI values.
+      AUTHENTICATION_PROVIDER: basic
+      AUTHORIZER_CLASS_NAME: org.openmetadata.service.security.DefaultAuthorizer
+      AUTHORIZER_REQUEST_FILTER: org.openmetadata.service.security.JwtFilter
       AUTHORIZER_ADMIN_PRINCIPALS: "[admin]"
       AUTHORIZER_INGESTION_PRINCIPALS: "[ingestion-bot]"
       AUTHORIZER_PRINCIPAL_DOMAIN: open-metadata.org

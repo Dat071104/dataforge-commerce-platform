@@ -37,6 +37,9 @@ workflowConfig:
   loggerLevel: INFO
   openMetadataServerConfig:
     hostPort: http://openmetadata-server:8585/api
-    authProvider: no-auth
+    authProvider: openmetadata
+    securityConfig:
+      # Placeholder only; the workflow renders a masked copy under RUNNER_TEMP.
+      jwtToken: __OM_JWT_TOKEN__
     verifySSL: ignore
     storeServiceConnection: false

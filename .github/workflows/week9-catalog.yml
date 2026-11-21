@@ -56,14 +56,51 @@ jobs:
         run: |
           docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml ps -a
           docker compose --project-name dataforge-w9-catalog -f governance/openmetadata/docker-compose.yml \
-            logs --no-color --tail 120 migrate
+            logs --no-color --tail 120 migrate openmetadata-server
+
+      - name: Obtain masked catalog tokens and render ingestion configs
+        # Throwaway default admin of the ephemeral CI stack (basic auth; password "admin" sent base64-encoded).
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 \
+            http://127.0.0.1:8586/healthcheck >/dev/null
+          api=http://127.0.0.1:8585/api/v1
+          login_body='{"email":"admin@open-metadata.org","password":"YWRtaW4="}'
+          admin_token="$(curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 \
+            --header 'Content-Type: application/json' --data "$login_body" "$api/users/login" \
+            | jq -r '.accessToken // empty')"
+          if [ -z "$admin_token" ]; then
+            echo "::error::OpenMetadata admin login returned no access token"
+            exit 1
+          fi
+          echo "::add-mask::$admin_token"
+          bot_id="$(curl --fail --silent --show-error --header "Authorization: Bearer $admin_token" \
+            "$api/bots/name/ingestion-bot" | jq -r '.botUser.id // empty')" || bot_id=""
+          bot_token=""
+          if [ -n "$bot_id" ]; then
+            bot_token="$(curl --fail --silent --show-error --header "Authorization: Bearer $admin_token" \
+              "$api/users/auth-mechanism/$bot_id" | jq -r '.config.JWTToken // empty')" || bot_token=""
+          fi
+          if [ -n "$bot_token" ]; then
+            echo "::add-mask::$bot_token"
+            echo "OM_TOKEN_SOURCE=ingestion-bot" >> "$GITHUB_STEP_SUMMARY"
+          else
+            bot_token="$admin_token"
+            echo "OM_TOKEN_SOURCE=admin-fallback (ingestion-bot JWT unavailable)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "OM_ADMIN_TOKEN=$admin_token" >> "$GITHUB_ENV"
+          install -d -m 700 "$RUNNER_TEMP/om-config"
+          for config in dbt_ingestion.yaml bigquery_ingestion.yaml; do
+            sed "s|__OM_JWT_TOKEN__|$bot_token|" "governance/openmetadata/$config" > "$RUNNER_TEMP/om-config/$config"
+          done
+          chmod 755 "$RUNNER_TEMP/om-config"
+          chmod 644 "$RUNNER_TEMP"/om-config/*.yaml
 
       - name: Register W9 catalog service
         run: |
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 \
-            http://127.0.0.1:8586/healthcheck >/dev/null
           curl --fail --silent --show-error --request POST \
             --header 'Content-Type: application/json' \
+            --header "Authorization: Bearer $OM_ADMIN_TOKEN" \
             --data-binary @governance/openmetadata/dataforge_service.json \
             http://127.0.0.1:8585/api/v1/services/databaseServices >/dev/null
 
@@ -72,10 +109,11 @@ jobs:
         run: >-
           docker run --rm --network dataforge-w9-catalog-net
           --volume "${{ github.workspace }}:/workspace:ro"
+          --volume "${{ runner.temp }}/om-config:/om-config:ro"
           --workdir /workspace
           --entrypoint metadata
           docker.getcollate.io/openmetadata/ingestion:2.0.7
-          ingest -c /workspace/governance/openmetadata/dbt_ingestion.yaml
+          ingest -c /om-config/dbt_ingestion.yaml
 
       - name: Authenticate metadata reader through WIF
         id: gcp_auth
@@ -99,11 +137,12 @@ jobs:
           credential_name="$(basename "$WIF_CREDENTIAL_FILE")"
           docker run --rm --network dataforge-w9-catalog-net \
             --volume "${{ github.workspace }}:/workspace:ro" \
+            --volume "$RUNNER_TEMP/om-config:/om-config:ro" \
             --workdir /workspace \
             --env "GOOGLE_APPLICATION_CREDENTIALS=/workspace/$credential_name" \
             --entrypoint metadata \
             docker.getcollate.io/openmetadata/ingestion:2.0.7 \
-            ingest -c /workspace/governance/openmetadata/bigquery_ingestion.yaml \
+            ingest -c /om-config/bigquery_ingestion.yaml \
             > "$RUNNER_TEMP/openmetadata-bigquery-ingestion.log" 2>&1
           connector_exit_code=$?
           echo "exit_code=$connector_exit_code" >> "$GITHUB_OUTPUT"
@@ -139,6 +178,7 @@ jobs:
             rm -f -- "$WIF_CREDENTIAL_FILE"
           fi
           rm -f -- "$RUNNER_TEMP/openmetadata-bigquery-ingestion.log"
+          rm -rf -- "$RUNNER_TEMP/om-config"
 
       - name: Stop ephemeral catalog stack
         if: always()
