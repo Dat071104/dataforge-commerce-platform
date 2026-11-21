@@ -41,7 +41,7 @@ Limitations: both reports record the Gold hash `e3b0c442…`, the SHA-256 of an 
 |---|---|---|---|---|
 | F13 raw e-mail column in public Gold mart | #54 (closed) | PII-leak guard | CI red: "DataOps toolbox build and offline gates" job `136748255564` failed in the governance unit test (Gold column registry count 56 ≠ 55), which runs before the guard step. Local run of `scripts/week9_pii_guard.py` on the PR manifest: `PII_GUARD_STATUS=FAIL`, one finding `reporter_email` (public, email), exit 1. | PASS (blocked); guard proven locally, CI caught it one step earlier |
 | F14 drop contracted Gold column `temp_max_c` | #55 (closed) | `datacontract breaking` vs `origin/main` | CI red: job `136744399247`, step "Check contract compatibility against main", `Removed` property `temp_max_c` | PASS |
-| F15 `temp_max_c + 1` in the Gold mart | #56 | slim-CI build + data diff vs production | PENDING. First run `44871686099` failed before the diff: R-17 (state manifest parsed with a fake offline target, so `--defer` could not reach production). Fixed in `f2a11f2`. | PENDING |
+| F15 `temp_max_c + 1` in the Gold mart | #56 (closed) | slim-CI build + data diff vs production | First run `44871686099` failed before the diff: R-17 (state manifest parsed with a fake offline target, so `--defer` could not reach production); fixed in `f2a11f2` and merged in #57. Rerun `44882607355` on head `f9ffba3` after the CD run `44882474347` published the `prod_state` manifest: "Data diff: prod=6, ci=6, prod_only=6, ci_only=6" with the notice "Data diff found rows that require PR review"; run cost guard `PASS paid_jobs=2 bytes_billed=828375040` (R-19 fix verified); no cancelled job (R-21). Cleanup run `44883752761` dropped `dbt_ci_pr_56`. | PASS |
 
 ## Live alert drill (H-W9-3)
 

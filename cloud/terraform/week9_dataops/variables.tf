@@ -74,7 +74,7 @@ variable "c9_email_notification_channel_name" {
 }
 
 variable "week9_drill_enabled" {
-  description = "Keep the isolated w9_drill dataset and its CI writer binding. AF12 close-out sets false; the trusted PR cloud checks must be paused first (W9_WIF_PR_TARGET_ENABLED=false)."
+  description = "Recreate the isolated w9_drill dataset and its CI writer binding. False since AF12 close-out (2026-11-21); set true only with W9_WIF_PR_TARGET_ENABLED=true for a new authorized drill."
   type        = bool
-  default     = true
+  default     = false
 }

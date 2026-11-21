@@ -40,7 +40,7 @@ Chi tiết ở [fault_matrix.md](evidence/fault_matrix.md) và [failure_modes.md
 | F07, F10 | PASS | CI-live BigQuery (runs `44872770442`, `44873779562`); hash slice Gold rỗng nên chưa chứng minh "Gold không đổi" (A4) |
 | F13 | Bị chặn | CI chặn ở test registry (56≠55) trước bước guard; PII guard chỉ được chứng minh local (exit 1) |
 | F14 | PASS | `datacontract breaking` đỏ (job `136744399247`) |
-| F15 | PENDING | chạy lại sau khi merge fix R-17 |
+| F15 | PASS | data diff `prod_only=6`, `ci_only=6` (run `44882607355`, sau khi merge fix R-17/R-19/R-21 trong #57) |
 | F-A1 Slack outage | PASS | unit fixture |
 | F-N0 live (precision) | PASS | 13:20: 12 event đều PASS, 0 alert |
 | Live drill F06 (H-W9-3) | PASS | block 26 s, event 58 s, Slack ≤ 98 s, email nhận được (chưa đo giờ); MTTR 1 phút 58 giây ([drill](evidence/h-w9-3-f06-live-drill.md)) |
@@ -88,6 +88,8 @@ Rủi ro chấp nhận (có owner): dead-man switch đang tắt sau teardown VM;
 | R-18 | Parquet `timestamp[ns]` thành INT64 trong BigQuery → đổi sang µs trước khi load |
 | R-19 | Container không nhận `GITHUB_RUN_ID` → guard 5 GiB của run fail-closed → truyền biến vào |
 | R-20 | Gate-test ghi lỗi tiêm vào `dq_results` → tắt ghi kết quả + watermark `--since` |
+| R-21 | Concurrency group chung huỷ run đang chờ → group theo event + PR |
+| R-22 | `ready_for_review` lúc merge: build chạy song song với cleanup và tạo lại `dbt_ci_pr_57` sau khi đã xoá → xoá tay ở AF12; action A8 |
 | F-A1 | Slack lỗi chặn luôn việc log, mất email → log trước, route sau |
 | T3 | Drift WIF (`38b08a9` chưa apply) → apply có duyệt (AF2-ext-2c) |
 
@@ -95,13 +97,13 @@ R-1…R-15 (lỗi build/CI không đổi thiết kế) nằm trong `failure_mode
 
 ## Appendix B: action items
 
-A1 check freshness 10:00 ICT · A2 cơ chế override theo check · A3 data diff dùng dung sai và trở thành check bắt buộc có review · A4 hash Gold không rỗng cho F07/F10 · A5 đưa test đếm cột registry ra sau PII guard · A6 fixture cho stuck-value và upstream revision · A7 bước thông báo cơ quan quản lý trong runbook vi phạm.
+A1 check freshness 10:00 ICT · A2 cơ chế override theo check · A3 data diff dùng dung sai và trở thành check bắt buộc có review · A4 hash Gold không rỗng cho F07/F10 · A5 đưa test đếm cột registry ra sau PII guard · A6 fixture cho stuck-value và upstream revision · A7 bước thông báo cơ quan quản lý trong runbook vi phạm · A8 job build bỏ qua khi PR đã đóng/merge, và cleanup chờ build cùng PR xong (R-22).
 
 ## Decision log (pre-review, 2026-11-21)
 
 | # | Comment | Quyết định |
 |---|---|---|
-| 1 | Claim "đã xong" khi chưa có evidence | Accepted: F15 ghi PENDING; drill chỉ ghi PASS sau khi có evidence; thêm evidence lineage PII + bản ghi tắt API; commit postmortem-000; sửa ngày sự cố |
+| 1 | Claim "đã xong" khi chưa có evidence | Accepted: F15 ghi PENDING (PASS sau đó, run `44882607355`); drill chỉ ghi PASS sau khi có evidence; thêm evidence lineage PII + bản ghi tắt API; commit postmortem-000; sửa ngày sự cố |
 | 2 | Fault matrix bị tóm thành PASS chung | Accepted: thêm cột mức evidence/ghi chú (§6); bổ sung R-19 |
 | 3 | Rollback `warn` mâu thuẫn runbook; mặc định fail-open | Accepted: rollback theo check (A2), CLI mặc định `block` (`ddc4078`), shadow kết thúc theo số lần chạy |
 | 4 | SLO không đo được | Accepted: một SLI consumer, chỉ hiệu lực khi có lịch chạy; A1 |
