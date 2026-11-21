@@ -130,3 +130,19 @@ BigQuery job metadata confirms 280 MiB billed across the four 2026-11-20 PR-buil
 ## Reconciliation after G3/G4 (2026-11-21 11:45 +07)
 
 Runs `44865173398` (10 MiB) and `44866987378` (10 MiB) plus the local G4 check (20 MiB) billed 40 MiB, ≈USD 0.00024 at $6.25/TiB. Known gross is now ≈USD 0.01775. Three of the eleven paid-run reserves (USD 0.02 each) are consumed, so eight remain (USD 0.16 BigQuery + USD 0.04 lineage). Current W9 forecast ≈USD 0.35950; W7 + W8 reserve + W9 forecast ≈USD 13.35224, below the USD 16 cumulative stop. AF2-ext-1/2/2b IAM was removed at 11:43 +07 (plan 0/0/8, verified read-only). Actual invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
+
+## Reconciliation after CI live faults and the H-W9-3 drill (2026-11-21 14:30 +07)
+
+Run-level cost artifacts (`week9-run-cost-<run>-*`, `total_bytes_billed`):
+
+| Run | PR / head | Paid jobs | Bytes billed |
+|---|---|---|---:|
+| `44871686099` | #56 F15 (first) | fault-matrix (cloud-pr failed before its artifact; ≥ 3 helper queries of 10 MiB not in an artifact) | 10,485,760 (+ ≥ 31,457,280 unartifacted) |
+| `44871827026` | #57 `2fdf638`+ | cloud-pr 41,943,040; fault-matrix 10,485,760 | 52,428,800 |
+| `44872770442` | #57 `fed8ea9` | cloud-pr 41,943,040; fault-matrix (F07/F10 PASS) 660,602,880 | 702,545,920 |
+| `44873779562` | #57 `ad79774` | cloud-pr 41,943,040; fault-matrix 660,602,880 | 702,545,920 |
+| `44875222761` | #57 `7474357` | cloud-pr + fault-matrix (artifacts not reconciled yet) | ≈ 702,545,920 (assumed equal to the previous head) |
+
+Operator queries: F-N0 precision run and the H-W9-3 drill (backup, DELETE, restore, counts, gate and monitor reads) ≈ 20 queries at the 10 MiB minimum ≈ 209,715,200 bytes.
+
+Total for this block ≈ 2.41 GiB ≈ USD 0.0147 at $6.25/TiB. Known gross is now ≈ USD 0.0325; forecast with the remaining reserves ≈ USD 0.37. W7 + W8 reserve + W9 forecast ≈ USD 13.36, below the USD 16 cumulative stop. `DRILL_EMAILS` 1/6. Invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
