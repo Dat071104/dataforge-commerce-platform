@@ -1541,6 +1541,11 @@ models:
       purpose: Operational monitoring, data-quality validation, or order-to-cash analytics.
       retention_days: 365
   mart_weather_province_daily:
+    reporter_email:
+      classification: public
+      pii_type: email
+      purpose: 'F13 fixture: raw personal e-mail exposed in a public mart.'
+      retention_days: 3650
     province_id:
       classification: public
       pii_type: none
