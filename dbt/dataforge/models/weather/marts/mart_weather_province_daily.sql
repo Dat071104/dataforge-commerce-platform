@@ -44,7 +44,8 @@ select
     province_id,
     observation_date,
     precipitation_mm,
-    temp_max_c,
+    -- F15 fixture (do not merge): silent logic change that shifts historical values.
+    temp_max_c + 1.0 as temp_max_c,
     case
         when precipitation_mm is null then cast(null as bool)
         else precipitation_mm > 0
