@@ -1,0 +1,32 @@
+TIMESTAMP | 2026-11-21T15:16:37+07:00
+PROJECT | dataforge-p7-lab-d0f725
+DATASETS | dataforge_dq,dbt_scd2_proof_history,dbt_scd2_proof_input,dbt_weather_mini3,dbt_weather_mini3_full,dbt_week7,dbt_week7_full,gold,gold_weather_mini3,gold_week7,ops,pii_safe,restricted_pii,silver,staging,weather_mini3
+CHECK w9_drill absent | PASS
+CHECK dbt_ci_pr_* absent | PASS
+CHECK kept dataforge_dq | PASS
+CHECK kept restricted_pii | PASS
+CHECK kept pii_safe | PASS
+CHECK prod dataset present weather_mini3 | PASS
+CHECK prod dataset present dbt_weather_mini3 | PASS
+CHECK prod dataset present silver | PASS
+CHECK prod dataset present ops | PASS
+CHECK prod dataset present gold | PASS
+CHECK restricted_pii CI-writer bindings absent | PASS (iam=0, acl=0)
+CHECK pii_safe CI-writer bindings absent | PASS (iam=0, acl=0)
+CHECK dataforge-w9-analyst-test TokenCreator user grants | PASS (0)
+CHECK dataforge-w9-privileged-test TokenCreator user grants | PASS (0)
+CHECK w9PiiPolicyTagSetter/w9PiiTaxonomyGetter not active | PASS
+CUSTOM ROLES deleted (w9) | projects/dataforge-p7-lab-d0f725/roles/w9PiiPolicyTagSetter,projects/dataforge-p7-lab-d0f725/roles/w9PiiTaxonomyGetter
+CUSTOM ROLES active (w9) | projects/dataforge-p7-lab-d0f725/roles/w9DatasetCreator
+CHECK datalineage.googleapis.com disabled | PASS
+CHECK AF10 no VM | PASS
+CHECK AF10 no catalog firewall rule | PASS
+AF10 cloud routers (NAT) | none
+KEPT W9 service accounts | dataforge-w9-ci-dbt,dataforge-w9-analyst-test,dataforge-w9-meta-read,dataforge-w9-privileged-test
+CHECK no user-managed SA keys (W9 SAs) | PASS (0 keys on all 4 W9 SAs)
+KEPT WIF provider condition | attribute.repository_id == '1446796465' && attribute.repository_owner_id == '242334093' && (attribute.workflow_ref.contains('/.github/workflows/week9-dataops.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-cleanup.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-cd.yml@') || attribute.workflow_ref.contains('/.github/workflows/week9-catalog.yml@')) && attribute.event_name in ["pull_request_target","push","workflow_dispatch","schedule"]
+KEPT secrets (names only) | w9-pii-hmac-key,w9-slack-webhook-url
+KEPT alert policies (name=enabled) | DataForge W9 P1 DQ gate failure=True; DataForge W9 P1 volume anomaly=True; DataForge W9 P1 schema drift=True; DataForge W9 DQ heartbeat missing=False (enable_dq_deadman=false)
+REPO VAR W9_WIF_PR_TARGET_ENABLED | false
+TERRAFORM week9_dataops plan (close-out vars, -detailed-exitcode) | exit=0 No changes. Your infrastructure matches the configuration. and found no differences, so no changes are needed.
+SCOPE NOTE | read-only; member emails and secret values are not printed. AF12 destroy applied 15:15 (+07) via Terraform plan 0/0/4; dbt_ci_pr_57 deleted by bq rm 15:14 after R-22 race; W9_WIF_PR_TARGET_ENABLED set false 15:14.

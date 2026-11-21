@@ -6,8 +6,8 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 | Scope | Cap | Stop line | Current state |
 |---|---:|---:|---|
-| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01775 including 280 MiB billed on 2026-11-20 and 40 MiB on 2026-11-21; active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 8 remaining paid-run reserves USD 0.20; forecast ≈USD 0.35950 (2026-11-21 11:45); actual invoice/C10 storage unverified |
-| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled (LINEAGE_DAY 3/5); weather lineage captured; T2 view probe rejected because policyTags did not persist on the view; G3/G4 policy-tag lineage pending; hard off by 2026-11-21 12:00 +07; actual SKU unverified |
+| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01775 including 280 MiB billed on 2026-11-20 and 40 MiB on 2026-11-21; active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 8 remaining paid-run reserves USD 0.20; forecast ≈USD 0.35950 (2026-11-21 11:45), superseded by the final block: known gross ≈USD 0.0457, forecast ≈USD 0.19, cumulative ≈USD 13.18 (2026-11-21 15:20); actual invoice/C10 storage unverified |
+| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled (LINEAGE_DAY 3/5); weather lineage captured; T2 view probe rejected because policyTags did not persist on the view; G3/G4 policy-tag lineage pending; hard off by 2026-11-21 12:00 +07; actual SKU unverified. Final: PII lineage captured; API disabled 2026-11-21 11:54:50 +07 (LINEAGE_DAY 3/5) |
 
 ## Cumulative preflight
 
@@ -146,3 +146,18 @@ Run-level cost artifacts (`week9-run-cost-<run>-*`, `total_bytes_billed`):
 Operator queries: F-N0 precision run and the H-W9-3 drill (backup, DELETE, restore, counts, gate and monitor reads) ≈ 20 queries at the 10 MiB minimum ≈ 209,715,200 bytes.
 
 Total for this block ≈ 2.25 GiB ≈ USD 0.0137 at $6.25/TiB. Known gross is now ≈ USD 0.0315; forecast with the remaining reserves ≈ USD 0.37. W7 + W8 reserve + W9 forecast ≈ USD 13.36, below the USD 16 cumulative stop. `DRILL_EMAILS` 1/6. Invoice, Dataplex SKU and C10 storage remain **UNVERIFIED**.
+
+## Final reconciliation at AF12 close-out (2026-11-21 15:20 +07)
+
+Run-level cost artifacts (`week9-run-cost-<run>-*`, sum of `total_bytes_billed`):
+
+| Run | PR / head | Bytes billed |
+|---|---|---:|
+| `44875222761` | #57 `7474357` (actual 754,974,720; the block above assumed 702,545,920) | +52,428,800 (delta counted here) |
+| `44881425185` | #57 `00b2802` (synchronize) | 754,974,720 |
+| `44882469242` | #57 `00b2802` (`ready_for_review`, R-22) | 754,974,720 |
+| `44882607355` | #56 F15 rerun `f9ffba3` (run guard PASS) | 828,375,040 |
+
+Operator queries for game day 001 (inject, gate, restore, monitor reads) ≈ 10 queries at the 10 MiB minimum ≈ 104,857,600 bytes. AF12 checks used metadata calls only (`bq ls`/`show`, IAM, Terraform plan), which are not billed as query bytes.
+
+Total for this block ≈ 2.32 GiB ≈ USD 0.0142 at $6.25/TiB. **Known W9 gross ≈ USD 0.0457.** No further paid W9 runs are planned: the trusted PR cloud checks are paused (`W9_WIF_PR_TARGET_ENABLED=false`), `w9_drill` and every `dbt_ci_pr_*` are deleted, and `datalineage.googleapis.com` is disabled, so the remaining paid-run reserves are retired. **Final W9 forecast** = known gross USD 0.0457 + HMAC secret version reserve USD 0.01381 + lineage processing estimate USD 0.01794 + Q8 reserve USD 0.11 ≈ **USD 0.19** (W9 cap USD 3, stop USD 2.40; lineage cap USD 1). W7 USD 12.89274 + W8 reserve USD 0.10 + W9 ≈ **USD 13.18**, below the USD 16 cumulative stop. Invoice, Dataplex SKU and C10 storage remain **UNVERIFIED** until the billing export for 2026-11 closes.

@@ -1,6 +1,6 @@
 # Drill restore and incident close-out (isolated `w9_drill` only)
 
-Added after game day 001 ([postmortem-001](../postmortem-001.md)); it fills gaps the responder hit. It applies only to the isolated drill dataset. Production has no write path in W9.
+Added after game day 001 ([postmortem-001](../postmortem-001.md)); it fills gaps the responder hit. It applies only to the isolated drill dataset. Production has no write path in W9. `w9_drill` was destroyed at AF12 close-out (2026-11-21); a new drill must first recreate it under a new authorization ([AF12 record](../evidence/af12-closeout-20261121.md)).
 
 ## 1. One cause, several alerts
 A single bad batch can raise several P1 events at once. In game day 001, one duplicated row raised `G1.LANDING.GRAIN_UNIQUE` (DQ_GATE_FAILED) and `G1.LANDING.ROWS_PER_DATE` (VOLUME_ANOMALY). Group the alerts by `run_id` and `date`. Open one incident, follow the runbook of the most specific check (grain/null/domain before volume), and close every alert from that run together.

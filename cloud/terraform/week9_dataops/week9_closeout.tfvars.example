@@ -1,0 +1,16 @@
+# Week 9 closed state after AF12 (2026-11-21). Every Weeks 10-12 plan of this
+# module must start from these values; several flags default to false, so a
+# plan without them would propose destroying kept resources (taxonomy, data
+# policies, test service accounts, log metrics, the three P1 alert policies).
+#   terraform plan -var-file=week9_closeout.tfvars.example
+# Expected: "No changes". Any diff needs a new authorization row first.
+project_id                           = "dataforge-p7-lab-d0f725"
+region                               = "us-central1"
+c9_email_notification_channel_name   = "projects/dataforge-p7-lab-d0f725/notificationChannels/3620451898436714690"
+enable_dq_alerting                   = true
+enable_dq_deadman                    = false
+enable_dq_freshness_alert            = false
+week9_pii_enabled                    = true
+week9_pii_ci_writer_enabled          = false
+week9_pii_test_impersonation_enabled = false
+week9_drill_enabled                  = false
