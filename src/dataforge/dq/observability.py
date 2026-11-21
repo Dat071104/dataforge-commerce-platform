@@ -658,6 +658,44 @@ def run_monitors(
     return events
 
 
+def delivery_failure_event(event: DQEvent, error: Exception) -> DQEvent:
+    """A P1 event that reaches email through the DQ gate policy when Slack delivery fails."""
+    return replace(
+        event,
+        event_type="DQ_GATE_FAILED",
+        check_id="ALERTING.DELIVERY_FAILED",
+        severity="P1",
+        status="FAIL",
+        runbook_url=f"{RUNBOOK_BASE_URL}/{_RUNBOOKS['DQ_GATE_FAILED']}",
+        observed={
+            **event.observed,
+            "failed_check_id": event.check_id,
+            "error_class": type(error).__name__,
+        },
+    )
+
+
+def deliver_alerts(events: list[DQEvent], sink: EventSink, router: Any) -> tuple[dict[str, int], int]:
+    """Log every event first, then route each one independently.
+
+    Monitoring email depends only on the structured log, so a Slack or Secret Manager
+    failure must neither stop later events from being logged nor be silent.
+    """
+    for event in events:
+        sink.write(event)
+    routes: dict[str, int] = {}
+    failures = 0
+    for event in events:
+        try:
+            route = router.route(event)
+        except Exception as error:  # noqa: BLE001 - delivery errors are reported as events
+            failures += 1
+            sink.write(delivery_failure_event(event, error))
+            route = "DELIVERY_FAILED"
+        routes[route] = routes.get(route, 0) + 1
+    return routes, failures
+
+
 def _logging_severity(event: DQEvent) -> str:
     if event.status == "PASS" or event.severity == "P3":
         return "INFO"
@@ -688,6 +726,8 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("--since must include a UTC offset")
         events = run_monitors(source, dataset=args.dataset, run_date=run_date, since=since)
         digest_events: list[DQEvent] = []
+        routes: dict[str, int] = {}
+        delivery_failures = 0
         if args.send_alerts:
             from .notifications import (
                 BigQueryAlertStateStore,
@@ -703,9 +743,7 @@ def main(argv: list[str] | None = None) -> int:
                 digest=MemoryDigestSink(),
             )
             sink: EventSink = CloudLoggingEventSink()
-            for event in events:
-                sink.write(event)
-                router.route(event)
+            routes, delivery_failures = deliver_alerts(events, sink, router)
             digest_events = router.digest.events
         elif args.emit_logs:
             sink = CloudLoggingEventSink()
@@ -723,6 +761,8 @@ def main(argv: list[str] | None = None) -> int:
                 "events": len(events),
                 "logged_to_cloud": args.emit_logs or args.send_alerts,
                 "daily_digest_events": len(digest_events),
+                "routes": routes,
+                "delivery_failures": delivery_failures,
                 "daily_digest": [event.as_log_payload() for event in digest_events],
             },
             sort_keys=True,

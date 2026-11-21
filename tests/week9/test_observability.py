@@ -6,6 +6,7 @@ from datetime import date, datetime, timezone
 from dataforge.dq.observability import (
     DQEvent,
     JsonlEventSink,
+    deliver_alerts,
     event_from_result,
     run_monitors,
     schema_drift_events,
@@ -233,6 +234,45 @@ def test_monitor_since_watermark_skips_earlier_results():
     )
     failed = {event.check_id for event in events if event.status == "FAIL"}
     assert failed == {"G1.LANDING.ROWS_PER_DATE"}
+
+
+def test_slack_outage_does_not_suppress_logging_or_email():
+    # F-A1: a webhook failure must not stop later events from being logged (email path)
+    # and must itself emit a P1 delivery-failure event.
+    failing = event_from_result(
+        result_row("G1.LANDING.ROWS_PER_DATE", status="FAIL"), dataset="w9_drill", fallback_date=AS_OF
+    )
+    passing = event_from_result(
+        result_row("G1.LANDING.SCHEMA", status="PASS"), dataset="w9_drill", fallback_date=AS_OF
+    )
+
+    class Sink:
+        def __init__(self):
+            self.written = []
+
+        def write(self, event):
+            self.written.append(event)
+
+    class BrokenRouter:
+        def route(self, event):
+            if event.status == "FAIL":
+                raise RuntimeError("Slack webhook delivery failed")
+            return "NO_ALERT"
+
+    sink = Sink()
+    routes, failures = deliver_alerts([failing, passing], sink, BrokenRouter())
+
+    assert failures == 1
+    assert routes == {"DELIVERY_FAILED": 1, "NO_ALERT": 1}
+    assert [event.check_id for event in sink.written[:2]] == [failing.check_id, passing.check_id]
+    alert = sink.written[2]
+    assert (alert.check_id, alert.event_type, alert.severity, alert.status) == (
+        "ALERTING.DELIVERY_FAILED",
+        "DQ_GATE_FAILED",
+        "P1",
+        "FAIL",
+    )
+    assert alert.observed["failed_check_id"] == "G1.LANDING.ROWS_PER_DATE"
 
 
 def test_jsonl_sink_writes_one_structured_event_line(tmp_path):
