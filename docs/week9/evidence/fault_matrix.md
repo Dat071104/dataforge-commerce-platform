@@ -28,10 +28,12 @@ F09 and F-T1 are the harness-level replacements for the Week 7 S4 NO_OP and S6 r
 
 | Fault | Detector | Run | Result |
 |---|---|---|---|
-| F07 stale landing (> 72 h) | `G2.SOURCE.FRESHNESS` (dbt source freshness) | PENDING | PENDING |
-| F10 `rain_day=TRUE` with zero precipitation | `G2.WEATHER.RAIN_PRECIP_CONSISTENCY` (dbt singular test, P1) | PENDING | PENDING |
+| F07 stale landing (> 72 h) | `G2.SOURCE.FRESHNESS` (dbt source freshness) | `44872770442` on #57 head `fed8ea9`: injected 05:54:22Z, detected 05:54:34Z (12 s), `P1 BLOCK_NEW_PUBLISH after 72 hours` | **PASS** |
+| F10 `rain_day=TRUE` with zero precipitation | `G2.WEATHER.RAIN_PRECIP_CONSISTENCY` (dbt singular test, P1) | `44872770442`: injected 05:55:20Z, detected 05:55:36Z (16 s), `P1 BLOCK (dbt failures=3)` | **PASS** |
 
-First live attempts on #56 (`44871686099`) and #57 (`44871827026`) returned `UNVERIFIED (RuntimeError)`. RCA R-18: the captured parquet stores `landed_at` as `timestamp[ns, UTC]`; BigQuery has no nanosecond TIMESTAMP, so the load made it INT64 and `stg_weather_mini3_landing` failed with "Invalid cast from INT64 to TIMESTAMP" (BigQuery job history, 05:45:33Z). Fixed in `fed8ea9`.
+First live attempts on #56 (`44871686099`) and #57 (`44871827026`) returned `UNVERIFIED (RuntimeError)`. RCA R-18: the captured parquet stores `landed_at` as `timestamp[ns, UTC]`; BigQuery has no nanosecond TIMESTAMP, so the load made it INT64 and `stg_weather_mini3_landing` failed with "Invalid cast from INT64 to TIMESTAMP" (BigQuery job history, 05:45:33Z). Fixed in `fed8ea9`; the run above is the first live PASS. 630 MiB billed (660,602,880 bytes).
+
+Limitations: both reports record the Gold hash `e3b0c442…`, the SHA-256 of an empty string, so the hashed mart slice was empty and "Gold unchanged" is not demonstrated for F07/F10 (action item). The run-level 5-GiB guard of that run failed closed because the live-fault container did not receive `GITHUB_RUN_ID` and wrote `workflow_run_id="0"` (R-19, fixed in the W9-Z PR); the per-job guard itself passed with an upper bound of 1,734,344,704 bytes.
 
 ## F13–F15 (throwaway PR fixtures)
 

@@ -1477,6 +1477,7 @@ jobs:
             --env DBT_PROFILES_DIR=/profiles \
             --env FAULT_DATASET=w9_drill \
             --env DATAFORGE_DQ_RESULTS_ENABLED=true \
+            --env GITHUB_RUN_ID="$GITHUB_RUN_ID" \
             dataforge-dataops-toolbox:fault-ci \
             python deploy/dataops_toolbox/week9_live_faults.py \
               --project "$PROJECT_ID" \
