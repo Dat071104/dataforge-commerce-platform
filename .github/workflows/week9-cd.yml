@@ -52,9 +52,12 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/dbt-profiles" "$DBT_TARGET_PATH" "$DBT_LOG_PATH"
           cp dbt/dataforge/profiles.example.yml "$RUNNER_TEMP/dbt-profiles/profiles.yml"
+          # The slim-CI state manifest must name the real production relations; a parse of the
+          # fake offline target made --defer point at a non-existent project (R-17).
           dbt parse --project-dir dbt/dataforge --profiles-dir "$RUNNER_TEMP/dbt-profiles" \
-            --target offline --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
+            --target prod_state --no-partial-parse --no-send-anonymous-usage-stats --no-version-check
           test -s "$DBT_TARGET_PATH/manifest.json"
+          grep -q '"dbt_weather_mini3"' "$DBT_TARGET_PATH/manifest.json"
 
       - name: Prepare the static Week 9 DQ report
         shell: bash

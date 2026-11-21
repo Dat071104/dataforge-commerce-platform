@@ -1,6 +1,8 @@
 # G7 — BigQuery lineage in the isolated W9 drill
 
-**Status:** Partial; live GCP weather table-level lineage captured 2026-11-19. WIF lineage run `44460769849` completed `success` on exact head `a49802cdebee0c1a6ffa704d35baa61a1feb7070`; sanitized artifact `w9-lineage-summary-46-44460769849.json` confirms `status=PASS`, `dbt.build_status=PASS`, 50 dbt jobs with billing on all 50, 4 weather models, and 51 copied rows. PII policy-tag lineage remains pending I-4/G4. `LINEAGE_DAY 1/5`.
+**Status (2026-11-21):** Complete. Weather table-level lineage (below, 2026-11-19) plus synthetic-PII lineage captured 2026-11-21 11:52 +07: `restricted_pii.customer_profile → restricted_pii.customer_profile_restricted` and `→ pii_safe.dim_customer_profile_safe` (2 links, 2 processes, 5 policy-tagged raw columns; [JSON](g7-pii-lineage-20261121.json)). `datalineage.googleapis.com` was disabled at 2026-11-21 11:54:50 +07 and verified off read-only (final LINEAGE_DAY 3/5). The original 2026-11-19 status follows.
+
+**Status (2026-11-19):** Partial; live GCP weather table-level lineage captured 2026-11-19. WIF lineage run `44460769849` completed `success` on exact head `a49802cdebee0c1a6ffa704d35baa61a1feb7070`; sanitized artifact `w9-lineage-summary-46-44460769849.json` confirms `status=PASS`, `dbt.build_status=PASS`, 50 dbt jobs with billing on all 50, 4 weather models, and 51 copied rows. PII policy-tag lineage remains pending I-4/G4. `LINEAGE_DAY 1/5`.
 
 The Data Lineage and Dataplex APIs are enabled. The project-level BigQuery lineage-ingestion config has no override; Google documents BigQuery ingestion as enabled by default. The organization-level config is not readable with the current operator permission, but the live links and successful build artifact prove ingestion occurred in this project. The artifact reports 283,115,520 adapter bytes billed (270 MiB across 50 dbt jobs) plus three 10-MiB helper queries; the full retry billed 300 MiB.
 

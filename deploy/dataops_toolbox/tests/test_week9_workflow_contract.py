@@ -473,3 +473,32 @@ def test_stale_sweep_requires_closed_pr_and_old_dataset_creation_time() -> None:
     assert "timedelta(days=2)" in pr_query
     assert ".creationTime" in delete_script
     assert "now_ms - created_ms >= stale_after_ms" in delete_script
+
+
+def test_slim_ci_defers_unbuilt_parents_to_real_production_relations() -> None:
+    # R-17: the state manifest named a fake offline project, so --defer could never reach
+    # production, and unit-test fixtures looked for parents in the PR dataset.
+    dataops = Path(".github/workflows/week9-dataops.yml").read_text(encoding="utf-8")
+    cd = Path(".github/workflows/week9-cd.yml").read_text(encoding="utf-8")
+    profile = yaml.safe_load(Path("dbt/dataforge/profiles.example.yml").read_text(encoding="utf-8"))
+    prod_state = profile["dataforge"]["outputs"]["prod_state"]
+
+    assert dataops.count("--defer --favor-state --state /prod-manifest") == 2
+    assert "--target prod_state" in cd
+    assert (prod_state["project"], prod_state["dataset"]) == ("dataforge-p7-lab-d0f725", "dbt_weather_mini3")
+    assert profile["dataforge"]["target"] == "offline"
+
+
+def test_live_fault_container_receives_the_workflow_run_id() -> None:
+    # R-19: without GITHUB_RUN_ID the live-fault cost artifact said workflow_run_id="0",
+    # so the run-level 5-GiB guard rejected it.
+    dataops = Path(".github/workflows/week9-dataops.yml").read_text(encoding="utf-8")
+    start = dataops.index("python deploy/dataops_toolbox/week9_live_faults.py")
+    container = dataops[dataops.rindex("docker run", 0, start) : start]
+    assert '--env GITHUB_RUN_ID="$GITHUB_RUN_ID"' in container
+
+
+def test_pull_request_events_do_not_share_a_concurrency_group() -> None:
+    # R-21: one group for pull_request and pull_request_target cancelled the cloud run.
+    workflow = load_workflow(".github/workflows/week9-dataops.yml")
+    assert "github.event_name" in workflow["concurrency"]["group"]

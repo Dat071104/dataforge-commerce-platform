@@ -1,6 +1,7 @@
 """Run F07 and F10 as isolated BigQuery-only Week 9 fault tests in CI."""
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
@@ -56,6 +57,28 @@ def run_query(client: Any, sql: str, label: str) -> list[Any]:
         )
 
 
+def bigquery_ready_parquet(fixture: Path) -> io.BytesIO:
+    """Return the fixture with nanosecond timestamps narrowed to microseconds.
+
+    The captured fixture stores ``landed_at`` as ``timestamp[ns, UTC]``. BigQuery has no
+    nanosecond TIMESTAMP, so a Parquet load turned it into INT64 and every downstream
+    model failed with "Invalid cast from INT64 to TIMESTAMP" (R-18).
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pq.read_table(fixture)
+    for index, field in enumerate(table.schema):
+        if pa.types.is_timestamp(field.type) and field.type.unit == "ns":
+            table = table.set_column(
+                index, field.name, table.column(index).cast(pa.timestamp("us", tz=field.type.tz))
+            )
+    buffer = io.BytesIO()
+    pq.write_table(table, buffer)
+    buffer.seek(0)
+    return buffer
+
+
 def source_slice(client: Any, dataset: str) -> None:
     from google.cloud import bigquery
 
@@ -67,14 +90,16 @@ def source_slice(client: Any, dataset: str) -> None:
         source_format=bigquery.SourceFormat.PARQUET,
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
     )
-    with fixture.open("rb") as source_file:
-        job = client.load_table_from_file(
-            source_file,
-            table_id,
-            job_config=job_config,
-            location=LOCATION,
-        )
+    job = client.load_table_from_file(
+        bigquery_ready_parquet(fixture),
+        table_id,
+        job_config=job_config,
+        location=LOCATION,
+    )
     job.result(timeout=300)
+    loaded = {field.name: field.field_type for field in client.get_table(table_id).schema}
+    if loaded.get("landed_at") != "TIMESTAMP":
+        raise RuntimeError("isolated source slice did not load landed_at as TIMESTAMP")
 
 
 def as_of_date(client: Any, dataset: str) -> date:
@@ -117,7 +142,9 @@ def dbt_command(target_path: Path, *args: str) -> subprocess.CompletedProcess[st
     env["DBT_WEATHER_LANDING_SCHEMA"] = env["FAULT_DATASET"]
     env["DBT_DATAFORGE_LOCATION"] = LOCATION
     env["DATAFORGE_PROJECT_ID"] = PROJECT
-    env["DATAFORGE_DQ_RESULTS_ENABLED"] = "true"
+    # Gate tests only: injected faults must not reach dq_results, where the monitors would
+    # route them as real incidents for w9_drill (R-20). Detection is read from dbt artifacts.
+    env["DATAFORGE_DQ_RESULTS_ENABLED"] = "false"
     completed = subprocess.run(
         [
             "dbt",

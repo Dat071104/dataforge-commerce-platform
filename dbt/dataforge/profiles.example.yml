@@ -12,6 +12,17 @@ dataforge:
       location: us-central1
       threads: 1
 
+    # Parse-only target for the slim-CI state manifest (week9-cd.yml). It names the
+    # real production relations so `--defer --favor-state` resolves unbuilt parents to
+    # dbt_weather_mini3, which CI may only read. Never use it for run/build/test.
+    prod_state:
+      type: bigquery
+      method: oauth
+      project: dataforge-p7-lab-d0f725
+      dataset: dbt_weather_mini3
+      location: us-central1
+      threads: 1
+
     # For an explicitly authorized BigQuery run, set these environment
     # variables after configuring ADC. No credential material belongs here.
     dev:

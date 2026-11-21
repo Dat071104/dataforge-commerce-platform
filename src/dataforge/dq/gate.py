@@ -528,7 +528,8 @@ def main(argv: list[str] | None = None) -> int:
             frame,
             dataset=args.dataset,
             observation_date=parsed_date,
-            enforce=os.environ.get("DQ_ENFORCE", "warn"),
+            # Fail closed: a missing DQ_ENFORCE must not publish P1 failures (RFC-001 review #3).
+            enforce=os.environ.get("DQ_ENFORCE", "block"),
             schema_fields=schema_fields,
         )
     except Exception as exc:

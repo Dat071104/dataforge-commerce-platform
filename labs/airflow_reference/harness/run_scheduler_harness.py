@@ -366,8 +366,18 @@ def _dq_gate_events(home: Path, service_log: Path) -> list[dict[str, object]]:
     return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_DQ_GATE_FAILED ")
 
 
-def _dq_gate_result_events(home: Path, service_log: Path) -> list[dict[str, object]]:
-    return _structured_events(home, service_log, "DATAFORGE_AIRFLOW_DQ_GATE_RESULT ")
+def _dq_gate_result_events(
+    home: Path, service_log: Path, *, wait_seconds: float = 0.0
+) -> list[dict[str, object]]:
+    # Task logs are flushed by the Airflow supervisor after the task state is committed,
+    # so a DAG run can finish before its gate-result line reaches disk (R-15, job
+    # 136740928785). Poll briefly instead of asserting on the first read.
+    deadline = time.monotonic() + wait_seconds
+    while True:
+        events = _structured_events(home, service_log, "DATAFORGE_AIRFLOW_DQ_GATE_RESULT ")
+        if events or time.monotonic() >= deadline:
+            return events
+        time.sleep(1)
 
 
 def _redacted_component_errors(path: Path) -> str:
@@ -666,7 +676,7 @@ def _run_scenario(scenario: str) -> dict[str, object]:
         if scenario in DQ_GATE_SCENARIOS:
             gate_task = task_states.get("quality_gate_landing")
             build_task = task_states.get("dbt_weather_build")
-            gate_results = _dq_gate_result_events(home, service_log)
+            gate_results = _dq_gate_result_events(home, service_log, wait_seconds=60)
             gate_failures = _dq_gate_events(home, service_log)
             build_posts = [call for call in calls if call.get("target") == "cloud_run_build"]
             expected_gate_status = {
