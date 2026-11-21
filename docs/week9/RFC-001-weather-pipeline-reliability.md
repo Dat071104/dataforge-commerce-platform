@@ -43,7 +43,7 @@ Chi tiết ở [fault_matrix.md](evidence/fault_matrix.md) và [failure_modes.md
 | F15 | PENDING | chạy lại sau khi merge fix R-17 |
 | F-A1 Slack outage | PASS | unit fixture |
 | F-N0 live (precision) | PASS | 13:20: 12 event đều PASS, 0 alert |
-| Live drill F06 | PENDING | H-W9-3, 14:00 |
+| Live drill F06 (H-W9-3) | PASS | block 26 s, event 58 s, Slack ≤ 98 s, email nhận được (chưa đo giờ); MTTR 1 phút 58 giây ([drill](evidence/h-w9-3-f06-live-drill.md)) |
 
 Chưa có fixture (rủi ro được chấp nhận, xem §11): pipeline không chạy (dead-man switch đang tắt), upstream sửa giá trị lịch sử, trùng lặp xuyên request, giá trị "kẹt"/lặp lại.
 
@@ -101,7 +101,7 @@ A1 check freshness 10:00 ICT · A2 cơ chế override theo check · A3 data diff
 
 | # | Comment | Quyết định |
 |---|---|---|
-| 1 | Claim "đã xong" khi chưa có evidence | Accepted: drill và F15 ghi PENDING; thêm evidence lineage PII + bản ghi tắt API; commit postmortem-000; sửa ngày sự cố |
+| 1 | Claim "đã xong" khi chưa có evidence | Accepted: F15 ghi PENDING; drill chỉ ghi PASS sau khi có evidence; thêm evidence lineage PII + bản ghi tắt API; commit postmortem-000; sửa ngày sự cố |
 | 2 | Fault matrix bị tóm thành PASS chung | Accepted: thêm cột mức evidence/ghi chú (§6); bổ sung R-19 |
 | 3 | Rollback `warn` mâu thuẫn runbook; mặc định fail-open | Accepted: rollback theo check (A2), CLI mặc định `block` (`ddc4078`), shadow kết thúc theo số lần chạy |
 | 4 | SLO không đo được | Accepted: một SLI consumer, chỉ hiệu lực khi có lịch chạy; A1 |
