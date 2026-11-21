@@ -142,7 +142,9 @@ def dbt_command(target_path: Path, *args: str) -> subprocess.CompletedProcess[st
     env["DBT_WEATHER_LANDING_SCHEMA"] = env["FAULT_DATASET"]
     env["DBT_DATAFORGE_LOCATION"] = LOCATION
     env["DATAFORGE_PROJECT_ID"] = PROJECT
-    env["DATAFORGE_DQ_RESULTS_ENABLED"] = "true"
+    # Gate tests only: injected faults must not reach dq_results, where the monitors would
+    # route them as real incidents for w9_drill (R-20). Detection is read from dbt artifacts.
+    env["DATAFORGE_DQ_RESULTS_ENABLED"] = "false"
     completed = subprocess.run(
         [
             "dbt",

@@ -205,6 +205,36 @@ def test_monitor_keeps_only_the_newest_result_per_check_and_date():
     assert sum(event.check_id == "G1.LANDING.ROW_COUNT" for event in events) == 2
 
 
+def test_monitor_since_watermark_skips_earlier_results():
+    # R-20: gate-test rows written earlier in the day must not be routed as incidents.
+    early = result_row("G2.WEATHER.RAIN_PRECIP_CONSISTENCY", layer="G2", status="FAIL")
+    late = result_row("G1.LANDING.ROWS_PER_DATE", status="FAIL")
+    late["ts"] = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+
+    class FakeSource:
+        def read_dq_results(self, run_date):
+            return [early, late]
+
+        def read_columns(self, dataset):
+            return []
+
+        def read_latest_landed_at(self, dataset):
+            return None
+
+        def read_temperature_distribution(self, dataset, as_of_date):
+            return []
+
+    events = run_monitors(
+        FakeSource(),
+        dataset="w9_drill",
+        run_date=AS_OF,
+        contract_columns={"province_id": "STRING"},
+        since=datetime(2026, 11, 18, 11, tzinfo=timezone.utc),
+    )
+    failed = {event.check_id for event in events if event.status == "FAIL"}
+    assert failed == {"G1.LANDING.ROWS_PER_DATE"}
+
+
 def test_jsonl_sink_writes_one_structured_event_line(tmp_path):
     event = DQEvent(
         event_type="DQ_GATE_FAILED",

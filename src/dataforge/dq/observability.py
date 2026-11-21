@@ -292,6 +292,15 @@ def _as_object(value: Any) -> dict[str, Any]:
     return {"summary": value}
 
 
+def _row_ts(row: dict[str, Any]) -> datetime | None:
+    value = row.get("ts")
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if isinstance(value, datetime) and value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value if isinstance(value, datetime) else None
+
+
 def _event_type(check_id: str) -> str:
     return _EVENT_TYPE_BY_CHECK.get(check_id, "DQ_GATE_FAILED")
 
@@ -572,11 +581,18 @@ def run_monitors(
     dataset: str,
     run_date: date,
     contract_columns: dict[str, str] | None = None,
+    since: datetime | None = None,
 ) -> list[DQEvent]:
-    """Build monitor events from persisted gate results and metadata."""
+    """Build monitor events from persisted gate results and metadata.
+
+    ``since`` is an incremental watermark: only results written at or after it are routed,
+    so gate-test rows or incidents already handled earlier in the day are not re-alerted.
+    """
     require_isolated_dataset(dataset)
     expected = contract_columns or load_weather_contract()
     rows = source.read_dq_results(run_date)
+    if since is not None:
+        rows = [row for row in rows if _row_ts(row) is None or _row_ts(row) >= since]
     # Rows arrive ordered by ts. Keep only the newest result per (check_id, event date):
     # a FAIL that a later run already fixed must not be re-sent as a new alert after
     # the incident was resolved (R-16).
@@ -654,6 +670,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", required=True, dest="run_date")
     parser.add_argument("--emit-logs", action="store_true")
     parser.add_argument("--send-alerts", action="store_true")
+    parser.add_argument(
+        "--since",
+        help="ISO-8601 timestamp with offset; route only results written at or after it",
+    )
     args = parser.parse_args(argv)
     try:
         run_date = date.fromisoformat(args.run_date)
@@ -661,7 +681,12 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("date must use canonical YYYY-MM-DD")
         require_isolated_dataset(args.dataset)
         source = BigQueryMonitorSource()
-        events = run_monitors(source, dataset=args.dataset, run_date=run_date)
+        since = None
+        if args.since:
+            since = datetime.fromisoformat(args.since)
+            if since.tzinfo is None:
+                raise ValueError("--since must include a UTC offset")
+        events = run_monitors(source, dataset=args.dataset, run_date=run_date, since=since)
         digest_events: list[DQEvent] = []
         if args.send_alerts:
             from .notifications import (
