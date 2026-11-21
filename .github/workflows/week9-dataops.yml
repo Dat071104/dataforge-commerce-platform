@@ -67,7 +67,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: week9-dataops-${{ github.event.pull_request.number || github.ref }}
+  # pull_request and pull_request_target fire together on every push; a shared group let the
+  # second one replace the first one's pending run and cancel the cloud jobs (R-21).
+  group: week9-dataops-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -672,7 +674,7 @@ jobs:
           run_toolbox() { docker run "${container_args[@]}" dataforge-dataops-toolbox:cloud-ci "$@"; }
           if [[ "$W9_HAS_PROD_MANIFEST" == "true" ]]; then
             run_toolbox dbt build --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
-              --select state:modified+ --defer --state /prod-manifest --no-partial-parse \
+              --select state:modified+ --defer --favor-state --state /prod-manifest --no-partial-parse \
               --no-send-anonymous-usage-stats --no-version-check
           else
             run_toolbox dbt build --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
@@ -683,10 +685,12 @@ jobs:
           fi
           # Unit tests must use the same selection mode as the build: in slim CI the unbuilt
           # parents exist only in production, so resolve them through the deferred manifest.
+          # --favor-state also makes unit-test fixtures read parent columns from production (R-17).
           rm -f "$DBT_TARGET_PATH/run_results.json"
           if [[ "$W9_HAS_PROD_MANIFEST" == "true" ]]; then
             run_toolbox dbt test --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
-              --select "state:modified+,test_type:unit" --defer --state /prod-manifest --no-partial-parse \
+              --select "state:modified+,test_type:unit" --defer --favor-state --state /prod-manifest \
+              --no-partial-parse \
               --no-send-anonymous-usage-stats --no-version-check
           else
             run_toolbox dbt test --project-dir /workspace/dbt/dataforge --profiles-dir /profiles --target w9_ci \
@@ -1474,7 +1478,8 @@ jobs:
             --env ACTIONS_ID_TOKEN_REQUEST_TOKEN \
             --env DBT_PROFILES_DIR=/profiles \
             --env FAULT_DATASET=w9_drill \
-            --env DATAFORGE_DQ_RESULTS_ENABLED=true \
+            --env DATAFORGE_DQ_RESULTS_ENABLED=false \
+            --env GITHUB_RUN_ID="$GITHUB_RUN_ID" \
             dataforge-dataops-toolbox:fault-ci \
             python deploy/dataops_toolbox/week9_live_faults.py \
               --project "$PROJECT_ID" \

@@ -1,0 +1,58 @@
+{
+  "captured_at": "2026-11-21T04:52:23.1940655Z",
+  "column_policy_tags": [
+    {
+      "column": "full_name",
+      "policyTag": "projects/dataforge-p7-lab-d0f725/locations/us-central1/taxonomies/7971329992600513363/policyTags/3954638215924039766",
+      "table": "restricted_pii.customer_profile"
+    },
+    {
+      "column": "cccd",
+      "policyTag": "projects/dataforge-p7-lab-d0f725/locations/us-central1/taxonomies/7971329992600513363/policyTags/3954638215924039766",
+      "table": "restricted_pii.customer_profile"
+    },
+    {
+      "column": "email",
+      "policyTag": "projects/dataforge-p7-lab-d0f725/locations/us-central1/taxonomies/7971329992600513363/policyTags/4164225447352763404",
+      "table": "restricted_pii.customer_profile"
+    },
+    {
+      "column": "phone",
+      "policyTag": "projects/dataforge-p7-lab-d0f725/locations/us-central1/taxonomies/7971329992600513363/policyTags/6373298909503763242",
+      "table": "restricted_pii.customer_profile"
+    },
+    {
+      "column": "birth_date",
+      "policyTag": "projects/dataforge-p7-lab-d0f725/locations/us-central1/taxonomies/7971329992600513363/policyTags/881108206943801401",
+      "table": "restricted_pii.customer_profile"
+    }
+  ],
+  "links": [
+    {
+      "name": "projects/955038620072/locations/us-central1/links/p:f8aa0e0b54615e2fc352d6dc19a5f62d",
+      "source": "bigquery:dataforge-p7-lab-d0f725.restricted_pii.customer_profile",
+      "startTime": "2026-11-21T04:17:46.630Z",
+      "target": "bigquery:dataforge-p7-lab-d0f725.pii_safe.dim_customer_profile_safe"
+    },
+    {
+      "name": "projects/955038620072/locations/us-central1/links/p:ef758467d3b87339c8e96a3c38bfd773",
+      "source": "bigquery:dataforge-p7-lab-d0f725.restricted_pii.customer_profile",
+      "startTime": "2026-11-21T04:17:45.627Z",
+      "target": "bigquery:dataforge-p7-lab-d0f725.restricted_pii.customer_profile_restricted"
+    }
+  ],
+  "processes": [
+    {
+      "links": [
+        "projects/955038620072/locations/us-central1/links/p:f8aa0e0b54615e2fc352d6dc19a5f62d"
+      ],
+      "process": "projects/955038620072/locations/us-central1/processes/sh-65b6a353883c9181d4163db53d196d86"
+    },
+    {
+      "links": [
+        "projects/955038620072/locations/us-central1/links/p:ef758467d3b87339c8e96a3c38bfd773"
+      ],
+      "process": "projects/955038620072/locations/us-central1/processes/3c4478a4af745b0e9e19d50afeffd012"
+    }
+  ]
+}

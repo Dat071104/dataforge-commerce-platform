@@ -39,3 +39,7 @@ GROUP BY observation_date;
 Escalate a P1 missing-province case to the source owner and integrator; escalate repeated P2 distribution warnings to the data owner within one business day. Never publish a partial daily population to clear the alert. If a false positive follows a code change, pause the run and revert the change after review. Restore the local last-good snapshot by its manifest hash if local WAP publication changed unexpectedly. No production write is authorized.
 
 For a controlled fault injection, record injection and alert delivery times independently for MTTD. No live alert delivery is claimed.
+
+## Drill restore and close-out
+
+For the isolated `w9_drill` dataset, follow [drill-restore-and-closeout.md](drill-restore-and-closeout.md): it covers several alerts from one cause, missing vs. extra rows, restoring one date, and the required close-out (gate in block mode, then `monitor --since --send-alerts` to resolve).

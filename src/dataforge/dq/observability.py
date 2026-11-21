@@ -292,6 +292,15 @@ def _as_object(value: Any) -> dict[str, Any]:
     return {"summary": value}
 
 
+def _row_ts(row: dict[str, Any]) -> datetime | None:
+    value = row.get("ts")
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if isinstance(value, datetime) and value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value if isinstance(value, datetime) else None
+
+
 def _event_type(check_id: str) -> str:
     return _EVENT_TYPE_BY_CHECK.get(check_id, "DQ_GATE_FAILED")
 
@@ -572,23 +581,28 @@ def run_monitors(
     dataset: str,
     run_date: date,
     contract_columns: dict[str, str] | None = None,
+    since: datetime | None = None,
 ) -> list[DQEvent]:
-    """Build monitor events from persisted gate results and metadata."""
+    """Build monitor events from persisted gate results and metadata.
+
+    ``since`` is an incremental watermark: only results written at or after it are routed,
+    so gate-test rows or incidents already handled earlier in the day are not re-alerted.
+    """
     require_isolated_dataset(dataset)
     expected = contract_columns or load_weather_contract()
     rows = source.read_dq_results(run_date)
-    events = [
-        event
-        for row in rows
-        if (
-            event := event_from_result(
-                row,
-                dataset=dataset,
-                fallback_date=run_date,
-            )
-        )
-        is not None
-    ]
+    if since is not None:
+        rows = [row for row in rows if _row_ts(row) is None or _row_ts(row) >= since]
+    # Rows arrive ordered by ts. Keep only the newest result per (check_id, event date):
+    # a FAIL that a later run already fixed must not be re-sent as a new alert after
+    # the incident was resolved (R-16).
+    latest: dict[tuple[str, str], DQEvent] = {}
+    for row in rows:
+        event = event_from_result(row, dataset=dataset, fallback_date=run_date)
+        if event is not None:
+            latest.pop((event.check_id, event.event_date), None)
+            latest[(event.check_id, event.event_date)] = event
+    events = list(latest.values())
     monitor_run_id = f"monitor-{uuid4().hex}"
     actual_columns = source.read_columns(dataset)
     if actual_columns:
@@ -644,6 +658,44 @@ def run_monitors(
     return events
 
 
+def delivery_failure_event(event: DQEvent, error: Exception) -> DQEvent:
+    """A P1 event that reaches email through the DQ gate policy when Slack delivery fails."""
+    return replace(
+        event,
+        event_type="DQ_GATE_FAILED",
+        check_id="ALERTING.DELIVERY_FAILED",
+        severity="P1",
+        status="FAIL",
+        runbook_url=f"{RUNBOOK_BASE_URL}/{_RUNBOOKS['DQ_GATE_FAILED']}",
+        observed={
+            **event.observed,
+            "failed_check_id": event.check_id,
+            "error_class": type(error).__name__,
+        },
+    )
+
+
+def deliver_alerts(events: list[DQEvent], sink: EventSink, router: Any) -> tuple[dict[str, int], int]:
+    """Log every event first, then route each one independently.
+
+    Monitoring email depends only on the structured log, so a Slack or Secret Manager
+    failure must neither stop later events from being logged nor be silent.
+    """
+    for event in events:
+        sink.write(event)
+    routes: dict[str, int] = {}
+    failures = 0
+    for event in events:
+        try:
+            route = router.route(event)
+        except Exception as error:  # noqa: BLE001 - delivery errors are reported as events
+            failures += 1
+            sink.write(delivery_failure_event(event, error))
+            route = "DELIVERY_FAILED"
+        routes[route] = routes.get(route, 0) + 1
+    return routes, failures
+
+
 def _logging_severity(event: DQEvent) -> str:
     if event.status == "PASS" or event.severity == "P3":
         return "INFO"
@@ -656,6 +708,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--date", required=True, dest="run_date")
     parser.add_argument("--emit-logs", action="store_true")
     parser.add_argument("--send-alerts", action="store_true")
+    parser.add_argument(
+        "--since",
+        help="ISO-8601 timestamp with offset; route only results written at or after it",
+    )
     args = parser.parse_args(argv)
     try:
         run_date = date.fromisoformat(args.run_date)
@@ -663,8 +719,15 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("date must use canonical YYYY-MM-DD")
         require_isolated_dataset(args.dataset)
         source = BigQueryMonitorSource()
-        events = run_monitors(source, dataset=args.dataset, run_date=run_date)
+        since = None
+        if args.since:
+            since = datetime.fromisoformat(args.since)
+            if since.tzinfo is None:
+                raise ValueError("--since must include a UTC offset")
+        events = run_monitors(source, dataset=args.dataset, run_date=run_date, since=since)
         digest_events: list[DQEvent] = []
+        routes: dict[str, int] = {}
+        delivery_failures = 0
         if args.send_alerts:
             from .notifications import (
                 BigQueryAlertStateStore,
@@ -680,9 +743,7 @@ def main(argv: list[str] | None = None) -> int:
                 digest=MemoryDigestSink(),
             )
             sink: EventSink = CloudLoggingEventSink()
-            for event in events:
-                sink.write(event)
-                router.route(event)
+            routes, delivery_failures = deliver_alerts(events, sink, router)
             digest_events = router.digest.events
         elif args.emit_logs:
             sink = CloudLoggingEventSink()
@@ -700,6 +761,8 @@ def main(argv: list[str] | None = None) -> int:
                 "events": len(events),
                 "logged_to_cloud": args.emit_logs or args.send_alerts,
                 "daily_digest_events": len(digest_events),
+                "routes": routes,
+                "delivery_failures": delivery_failures,
                 "daily_digest": [event.as_log_payload() for event in digest_events],
             },
             sort_keys=True,
