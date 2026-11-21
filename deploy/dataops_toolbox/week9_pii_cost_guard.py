@@ -22,6 +22,25 @@ def validate_safe_mart_build(results: Any) -> None:
         raise RunCostGuardError("Expected safe PII mart was not built successfully")
 
 
+def sql_node_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop dbt project hooks that ran no BigQuery job.
+
+    dbt-core records every on-run-start/on-run-end hook in run_results.json with an
+    empty adapter_response (dbt/task/run.py ``safe_run_hooks``). The W9 DQ results hook
+    is a no-op when DATAFORGE_DQ_RESULTS_ENABLED=false, so it has no job ID to bill.
+    A hook that did report an adapter response stays in the list and must be billed.
+    """
+    sql_results = []
+    for item in results:
+        is_hook = str(item.get("unique_id", "")).startswith("operation.")
+        if is_hook and not item.get("adapter_response"):
+            if item.get("status") not in {"success", "skipped"}:
+                raise RunCostGuardError("A dbt project hook did not finish successfully")
+            continue
+        sql_results.append(item)
+    return sql_results
+
+
 def _read_json(path: Path, label: str) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -41,6 +60,7 @@ def build_cost_receipt(
         raise RunCostGuardError("CI policy-tag probe exposed a raw column")
     results = dbt_results.get("results", [])
     validate_safe_mart_build(results)
+    results = sql_node_results(results)
     dbt = summarize_dbt_results(results)
     if (
         dbt["dbt_jobs_seen"] == 0

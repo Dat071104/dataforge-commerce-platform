@@ -9,7 +9,7 @@ models:
     config:
       persist_docs:
         relation: true
-        columns: true
+        columns: false
     columns:
       - name: fixture_id
         data_type: STRING

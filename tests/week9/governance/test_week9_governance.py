@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import date
 from pathlib import Path
@@ -9,6 +10,13 @@ import pytest
 import yaml
 from jinja2 import Environment
 
+from dataforge.privacy.erasure import (
+    BIGQUERY_FAIL_SAFE_DAYS,
+    BIGQUERY_TIME_TRAVEL_DEFAULT_DAYS,
+    ERASURE_RELATIONS,
+    plan_erasure,
+    simulate_local_erasure,
+)
 from dataforge.privacy.pseudonymize import PseudonymizationError, hmac_customer_cccd
 from dataforge.privacy.synthetic import (
     CCCD_RESERVED_PREFIX,
@@ -35,6 +43,7 @@ def test_all_source_model_snapshot_and_gold_columns_are_classified(check_id: str
 
     assert result["status"] == "PASS"
     assert result["source_tables"] == 8
+    assert result["gold_columns"] == 55
     assert result["gold_coverage_percent"] == 100.0
     assert result["gold_meta_complete"] == result["gold_columns"]
 
@@ -53,8 +62,22 @@ def test_pii_dataset_override_keeps_default_non_pii_schema_naming(check_id: str)
     assert str(module.generate_schema_name("custom_dev", None)).strip() == "dbt_local_custom_dev"
 
 
+@pytest.mark.parametrize("check_id", ["G3-DBT-MODEL-NAME-001"], ids=lambda value: value)
+def test_pii_safe_schema_patch_uses_filename_and_preserves_relation_alias(check_id: str) -> None:
+    model_path = Path("dbt/dataforge/models/pii/marts/dim_synthetic_customer_safe.sql")
+    schema_path = Path("dbt/dataforge/models/pii/marts/schema.yml")
+    schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
+    model = next(item for item in schema["models"] if item["name"] == model_path.stem)
+
+    assert model["config"]["contract"]["enforced"] is True
+    assert model["config"]["persist_docs"] == {"relation": True, "columns": True}
+    assert "alias='dim_customer_profile_safe'" in model_path.read_text(encoding="utf-8")
+
+
 @pytest.mark.parametrize("check_id", ["G3-POLICY-TAG-001"], ids=lambda value: value)
-def test_restricted_dbt_view_persists_policy_tags_on_direct_pii_columns(check_id: str) -> None:
+def test_restricted_dbt_view_keeps_tags_declared_but_does_not_persist_view_columns(
+    check_id: str,
+) -> None:
     schema_path = Path("dbt/dataforge/models/pii/restricted/schema.yml")
     schema = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
     model = next(
@@ -64,7 +87,7 @@ def test_restricted_dbt_view_persists_policy_tags_on_direct_pii_columns(check_id
         column["name"] for column in model["columns"] if column.get("policy_tags")
     }
 
-    assert model["config"]["persist_docs"]["columns"] is True
+    assert model["config"]["persist_docs"] == {"relation": True, "columns": False}
     assert tagged_columns == {"full_name", "cccd", "email", "phone", "birth_date"}
     tags_by_column = {
         column["name"]: column["policy_tags"][0]
@@ -163,10 +186,8 @@ def test_f13_manifest_is_rejected_and_safe_masked_manifest_passes(check_id: str)
 
 @pytest.mark.parametrize("check_id", ["G5-INDIRECT-CUSTOMER-001"], ids=lambda value: value)
 def test_confidential_customer_id_is_allowed_but_public_customer_id_is_blocked(check_id: str) -> None:
-    import json
-
     manifest = json.loads((GOVERNANCE_FIXTURES / "safe_masked_manifest.json").read_text(encoding="utf-8"))
-    model_id = "model.dataforge.dim_customer_profile_safe"
+    model_id = "model.dataforge.dim_synthetic_customer_safe"
     manifest["nodes"][model_id]["schema"] = "gold"
     manifest["nodes"][model_id]["columns"]["customer_id"] = {
         "name": "customer_id",
@@ -191,4 +212,95 @@ def test_access_plan_names_only_synthetic_privacy_checks(check_id: str) -> None:
 
     assert script.is_file()
     assert "restricted_pii.customer_profile" in script.read_text(encoding="utf-8")
-    assert "pii_safe.dim_customer_profile_safe" in script.read_text(encoding="utf-8")
+
+
+def test_access_queries_have_per_job_bigquery_cap() -> None:
+    script = Path("scripts/week9_verify_access.py").read_text(encoding="utf-8")
+    assert "MAXIMUM_BYTES_BILLED = 1024**3" in script
+    assert "MAXIMUM_BYTES_BILLED_PER_RUN = 5 * 1024**3" in script
+    assert "maximum_bytes_billed=MAXIMUM_BYTES_BILLED" in script
+    assert script.count("job_config=_bounded_query_config(") == 3
+    assert "_guard_access_run(usage_records)" in script
+    assert '"total_bytes_billed": total' in script
+
+
+def test_access_service_account_ids_match_addendum_f() -> None:
+    script = Path("scripts/week9_verify_access.py").read_text(encoding="utf-8")
+    policy_tags = Path("cloud/terraform/week9_dataops/policy_tags.tf").read_text(encoding="utf-8")
+    assert 'ANALYST_SA = "dataforge-w9-analyst-test"' in script
+    assert 'PRIVILEGED_SA = "dataforge-w9-privileged-test"' in script
+    assert 'account_id   = "dataforge-w9-analyst-test"' in policy_tags
+    assert 'account_id   = "dataforge-w9-privileged-test"' in policy_tags
+    assert "dataforge-w9-pii-analyst-test" not in script + policy_tags
+    assert "dataforge-w9-pii-privileged-test" not in script + policy_tags
+    assert "pii_safe.dim_customer_profile_safe" in script
+
+
+def _modelled_erasure_rows() -> tuple[str, dict[str, list[dict[str, object]]]]:
+    profile = generate_customer_profiles(count=1, seed=9, key=TEST_HMAC_KEY)[0]
+    raw = profile.as_load_row()
+    staging = raw.copy()
+    mart = {
+        "customer_token": profile.customer_token,
+        "age_band": profile.age_band,
+        "province_id": profile.province_id,
+        "email_masked": "c***@example.com",
+        "data_classification": "synthetic",
+    }
+    snapshot = [
+        {**raw, "dbt_scd_id": "synthetic-version-a", "dbt_valid_from": "2026-01-01"},
+        {
+            **raw,
+            "dbt_scd_id": "synthetic-version-b",
+            "dbt_valid_from": "2026-02-01",
+            "dbt_valid_to": "2026-03-01",
+        },
+    ]
+    return profile.customer_token, {
+        "raw": [raw],
+        "staging": [staging],
+        "mart": [mart],
+        "scd2_snapshot": snapshot,
+    }
+
+
+@pytest.mark.parametrize("check_id", ["G9-P2-ERASURE-PLAN-001"], ids=lambda value: value)
+def test_p2_erasure_dry_run_covers_all_synthetic_layers(check_id: str) -> None:
+    customer_token, rows = _modelled_erasure_rows()
+    plan = plan_erasure(rows, customer_token)
+    counts = {item["layer"]: item["matching_rows"] for item in plan["layers"]}
+
+    assert plan["status"] == "DRY_RUN_ONLY"
+    assert plan["cloud_mutations"] is False
+    assert plan["physical_erasure_claimed"] is False
+    assert counts == {"raw": 1, "staging": 1, "mart": 1, "scd2_snapshot": 2}
+    assert plan["time_travel"]["default_days"] == BIGQUERY_TIME_TRAVEL_DEFAULT_DAYS == 7
+    assert plan["time_travel"]["fail_safe_days_after_time_travel"] == BIGQUERY_FAIL_SAFE_DAYS == 7
+    assert set(ERASURE_RELATIONS) == set(rows)
+    assert plan["subject_token_emitted"] is False
+
+
+@pytest.mark.parametrize("check_id", ["G9-P2-ERASURE-SIM-001"], ids=lambda value: value)
+def test_p2_erasure_model_removes_all_synthetic_snapshot_versions(check_id: str) -> None:
+    customer_token, rows = _modelled_erasure_rows()
+    remaining, removed = simulate_local_erasure(rows, customer_token)
+
+    assert removed == {"raw": 1, "staging": 1, "mart": 1, "scd2_snapshot": 2}
+    assert all(not layer_rows for layer_rows in remaining.values())
+
+
+@pytest.mark.parametrize("check_id", ["G8-LEGAL-SOURCE-001"], ids=lambda value: value)
+def test_legal_mapping_tracks_current_decrees_and_unverified_text(check_id: str) -> None:
+    classification = yaml.safe_load(
+        Path("governance/classification.yml").read_text(encoding="utf-8")
+    )
+    legal = classification["legal_mapping"]
+
+    assert legal["reviewed_on"] == "2026-11-19"
+    assert legal["law_91_2025_QH15"]["article_20"]
+    assert "Article 39" in legal["decree_13_2023_ND_CP"]["current_status"]
+    assert legal["decree_330_2026_ND_CP"]["effective_date"] == "2026-08-19"
+    assert "LEGAL_UNVERIFIED" in legal["decree_330_2026_ND_CP"]["article_level_crosswalk"]
+    assert legal["decree_363_2026_ND_CP"]["effective_date"] == "2026-11-11"
+    assert "excluded" in legal["decree_363_2026_ND_CP"]["official_scope"]
+    assert "LEGAL_UNVERIFIED" in legal["decree_363_2026_ND_CP"]["article_level_crosswalk"]
