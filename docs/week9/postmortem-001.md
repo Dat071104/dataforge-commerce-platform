@@ -21,7 +21,7 @@ The injected fault was **F02**: an exact duplicate of the HN row for 2026-10-30.
 | 14:31:31 | Gate block mode exit 0, 9/9 checks PASS; monitor routes `RESOLVED=2`, `NO_ALERT=10`; 3 rows for the date, 21 in total |
 
 ## Metrics
-- **MTTD** (injection → alert sent): **2 min 18 s**. Most of it is monitor latency from one Cloud Logging write per event (~5 s × 12 events); see action A1.
+- **MTTD** (injection → alert sent): **2 min 18 s**. Most of it is monitor latency from one Cloud Logging write per event (~5 s × 12 events); see action PM1-A1.
 - **Time to acknowledge:** 33 s after the alert.
 - **MTTR** (injection → verified green and resolved): **6 min 56 s**. The Responder's own repair took 4 min 05 s (14:27:26 → 14:31:31).
 - **Diagnosis accuracy:** correct fault class (F02), correct row (HN duplicate, same `request_id`), correct date.
@@ -47,15 +47,15 @@ An exact duplicate of an already-landed record appeared in the landing table. In
 8. No guidance on downstream drill models.
 9. No guidance on tracing the origin of a duplicate.
 
-Gaps 1–3, 5–9 are addressed by the new [drill-restore-and-closeout.md](runbooks/drill-restore-and-closeout.md), linked from `VOLUME_ANOMALY.md` and `DQ_GATE_FAILED.md`. Gap 4 is action A2.
+Gaps 1–3, 6 and 7 are addressed by the new [drill-restore-and-closeout.md](runbooks/drill-restore-and-closeout.md), linked from `VOLUME_ANOMALY.md` and `DQ_GATE_FAILED.md`. Gaps 5, 8 and 9 are recorded there as known limits, not fixed. Gap 4 is action PM1-A2. These PM1-A* IDs are separate from the RFC action items A1–A8.
 
 ## Action items
 | # | Action | Owner | Status |
 |---|---|---|---|
-| A1 | Reuse one credential and batch `entries.write` in the monitor to cut MTTD by about 1 min | Q lane | Open |
-| A2 | `ROWS_PER_DATE` observed value should include the actual and expected counts | Q lane | Open |
-| A3 | Add a landing-level idempotency check on `request_id` before G1, so exact duplicates are rejected at ingest | Q lane | Open |
-| A4 | Runbook close-out and restore guide | integrator | Done (this PR) |
+| PM1-A1 | Reuse one credential and batch `entries.write` in the monitor to cut MTTD by about 1 min | Q lane | Open |
+| PM1-A2 | `ROWS_PER_DATE` observed value should include the actual and expected counts | Q lane | Open |
+| PM1-A3 | Add a landing-level idempotency check on `request_id` before G1, so exact duplicates are rejected at ingest | Q lane | Open |
+| PM1-A4 | Runbook close-out and restore guide | integrator | Done (this PR) |
 
 ## Evidence
 [Responder timeline](evidence/gameday-001-responder-timeline.md) · [alert lines](evidence/gameday-001-alert.jsonl) · sealed record `DataForge_D_Week7_Final/evidence/w9/gameday_sealed.json` (operator machine; it contains synthetic weather rows only).

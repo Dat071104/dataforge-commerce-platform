@@ -6,8 +6,8 @@ Currency: USD. This ledger tracks gross list-price estimates separately from set
 
 | Scope | Cap | Stop line | Current state |
 |---|---:|---:|---|
-| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01775 including 280 MiB billed on 2026-11-20 and 40 MiB on 2026-11-21; active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 8 remaining paid-run reserves USD 0.20; forecast ≈USD 0.35950 (2026-11-21 11:45); actual invoice/C10 storage unverified |
-| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled (LINEAGE_DAY 3/5); weather lineage captured; T2 view probe rejected because policyTags did not persist on the view; G3/G4 policy-tag lineage pending; hard off by 2026-11-21 12:00 +07; actual SKU unverified |
+| AF0 total Week 9 | $3.00 | $2.40 (80%) | Known gross ≈USD 0.01775 including 280 MiB billed on 2026-11-20 and 40 MiB on 2026-11-21; active HMAC version 1 reserve ≈USD 0.01381/168h; lineage estimate ≈USD 0.01794; Q8 reserve USD 0.11; 8 remaining paid-run reserves USD 0.20; forecast ≈USD 0.35950 (2026-11-21 11:45), superseded by the final block: known gross ≈USD 0.0457, forecast ≈USD 0.19, cumulative ≈USD 13.18 (2026-11-21 15:20); actual invoice/C10 storage unverified |
+| AF8 Data Lineage | $1.00 | $0.80 (80%) | API enabled (LINEAGE_DAY 3/5); weather lineage captured; T2 view probe rejected because policyTags did not persist on the view; G3/G4 policy-tag lineage pending; hard off by 2026-11-21 12:00 +07; actual SKU unverified. Final: PII lineage captured; API disabled 2026-11-21 11:54:50 +07 (LINEAGE_DAY 3/5) |
 
 ## Cumulative preflight
 
@@ -153,7 +153,7 @@ Run-level cost artifacts (`week9-run-cost-<run>-*`, sum of `total_bytes_billed`)
 
 | Run | PR / head | Bytes billed |
 |---|---|---:|
-| `44875222761` | #57 `7474357` (correction of the assumed value above) | 754,974,720 (+52,428,800 vs. assumed) |
+| `44875222761` | #57 `7474357` (actual 754,974,720; the block above assumed 702,545,920) | +52,428,800 (delta counted here) |
 | `44881425185` | #57 `00b2802` (synchronize) | 754,974,720 |
 | `44882469242` | #57 `00b2802` (`ready_for_review`, R-22) | 754,974,720 |
 | `44882607355` | #56 F15 rerun `f9ffba3` (run guard PASS) | 828,375,040 |

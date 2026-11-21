@@ -24,7 +24,7 @@
 
 ## Measurements
 - **Time to detect (gate):** 26.4 s. **Time to alert event:** 57.7 s. **MTTD Slack:** ≤ 98.4 s (sent before the monitor finished). **MTTD email:** delivered, not timed (the user did not record the receive time).
-- **MTTR (data restored and gate green):** 1 min 58 s from injection; Slack RESOLVED at 3 min 49 s.
+- **Time to restore data:** 1 min 58 s from injection. **MTTR (gate green and Slack RESOLVED):** 3 min 49 s.
 - Cost: four 10-MiB minimum queries for backup/inject/restore/counts plus gate/monitor reads (≈ 0.1 GiB in total); see the cost ledger.
 - `DRILL_EMAILS` 1/6 (AF7).
 

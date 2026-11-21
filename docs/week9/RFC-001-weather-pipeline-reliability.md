@@ -43,7 +43,7 @@ Chi tiết ở [fault_matrix.md](evidence/fault_matrix.md) và [failure_modes.md
 | F15 | PASS | data diff `prod_only=6`, `ci_only=6` (run `44882607355`, sau khi merge fix R-17/R-19/R-21 trong #57) |
 | F-A1 Slack outage | PASS | unit fixture |
 | F-N0 live (precision) | PASS | 13:20: 12 event đều PASS, 0 alert |
-| Live drill F06 (H-W9-3) | PASS | block 26 s, event 58 s, Slack ≤ 98 s, email nhận được (chưa đo giờ); MTTR 1 phút 58 giây ([drill](evidence/h-w9-3-f06-live-drill.md)) |
+| Live drill F06 (H-W9-3) | PASS | block 26 s, event 58 s, Slack ≤ 98 s, email nhận được (chưa đo giờ); khôi phục dữ liệu 1 phút 58 giây, MTTR (gate xanh + RESOLVED) 3 phút 49 giây ([drill](evidence/h-w9-3-f06-live-drill.md)) |
 
 Chưa có fixture (rủi ro được chấp nhận, xem §11): pipeline không chạy (dead-man switch đang tắt), upstream sửa giá trị lịch sử, trùng lặp xuyên request, giá trị "kẹt"/lặp lại.
 
@@ -64,7 +64,7 @@ Chỉ dùng PII synthetic. Raw nằm trong `restricted_pii` với 5 cột gắn 
 
 ## 9. Cost
 
-Cap W9 USD 3 (dừng ở 2.4), lineage USD 1. Gross ước tính tới 13:00 khoảng USD 0.026; forecast khoảng USD 0.37 ([ledger](cost_ledger.md); chưa có invoice). Ngưỡng dừng chung W7+W8+W9 là USD 16; forecast hiện tại khoảng USD 13.36, còn dư khoảng USD 2.6. Chi phí chạy: một PR build 40–700 MiB (≈ USD 0.0003–0.004); mỗi lần chạy monitor vài job 10 MiB; chi phí định kỳ gồm 2 version Secret Manager và ingest log metric.
+Cap W9 USD 3 (dừng ở 2.4), lineage USD 1. Gross đã biết khi đóng W9 (AF12) khoảng USD 0.0457; forecast cuối khoảng USD 0.19 ([ledger](cost_ledger.md); chưa có invoice). Ngưỡng dừng chung W7+W8+W9 là USD 16; tổng hiện tại khoảng USD 13.18, còn dư khoảng USD 2.8. Chi phí chạy: một PR build 40–700 MiB (≈ USD 0.0003–0.004); mỗi lần chạy monitor vài job 10 MiB; chi phí định kỳ gồm 2 version Secret Manager và ingest log metric.
 
 ## 10. Rollout and rollback
 
@@ -93,7 +93,7 @@ Rủi ro chấp nhận (có owner): dead-man switch đang tắt sau teardown VM;
 | F-A1 | Slack lỗi chặn luôn việc log, mất email → log trước, route sau |
 | T3 | Drift WIF (`38b08a9` chưa apply) → apply có duyệt (AF2-ext-2c) |
 
-R-1…R-15 (lỗi build/CI không đổi thiết kế) nằm trong `failure_modes.md` và PR log.
+R-1…R-15 (lỗi build/CI không đổi thiết kế) nằm trong mô tả các PR #46–#57 và W9 session log của operator; `failure_modes.md` chỉ chứa catalog fault F01–F15.
 
 ## Appendix B: action items
 
