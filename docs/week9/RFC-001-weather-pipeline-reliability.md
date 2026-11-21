@@ -1,120 +1,115 @@
 # RFC-001: Reliability layer for the DataForge weather pipeline
 
-**Status:** In review  ·  **Author:** Week 9 integrator  ·  **Reviewers:** mentor (H-W9-2), RFC reviewer persona  ·  **Date:** 2026-11-21  ·  **Version:** 0.2
+**Status:** In review  ·  **Author:** Week 9 integrator  ·  **Reviewers:** mentor (H-W9-2); RFC reviewer persona (pre-review, verdict Revise → addressed in v0.3)  ·  **Date:** 2026-11-21  ·  **Version:** 0.3
 
 ## 1. Context and problem
 
-Pipeline thời tiết Week 7 (Open-Meteo → BigQuery landing → dbt silver/gold → publish) đã chạy được, nhưng trước W9 chưa có lớp nào chứng minh dữ liệu đúng trước khi publish. Baseline trên manifest `6b256f2`: 16 models, 14 có uniqueness/grain check, 12/22 cột Gold có description, 7/7 sources có freshness, **0 fault fixture** ([baseline](baseline.md)). CI không chạy `dbt build` thật trên PR, không có data contract machine-readable, không có alert chất lượng dữ liệu, không có catalog/lineage.
+Pipeline thời tiết W7 (Open-Meteo → BigQuery landing → dbt silver/gold → publish) chạy được, nhưng trước W9 không có lớp nào chứng minh dữ liệu đúng trước khi publish. Baseline `6b256f2`: 12/22 cột Gold có description, 0 fault fixture, CI không `dbt build` trên PR, không có alert chất lượng dữ liệu ([baseline](baseline.md)).
 
-Một sự cố thật cho thấy cái giá của gate sai. Ngày 30/10 một test calendar-window chặn publish đúng thiết kế, nhưng do so sánh FLOAT64 bằng `=` nên đó là false positive ([postmortem-000](postmortem-000.md)). Gate đã làm đúng việc, còn test thì sai. RFC này đặt quy tắc tolerance chung và yêu cầu mỗi check phải có fixture chứng minh nó fail được.
+Sự cố thật: ngày 17/11, khi replay ngày quan sát 30/10, test calendar-window (P1) chặn publish. Gate làm đúng, nhưng test sai: nó so FLOAT64 bằng `=` (`30.2` khác `30.199999999999996`). Đã sửa ở PR #39 (`a160f8b`) ([postmortem-000](postmortem-000.md)). Bài học dẫn tới quy tắc so sánh số ở §5 và yêu cầu mỗi check phải có fixture chứng minh nó fail được.
 
 ## 2. Goals and non-goals
 
-**Goals:** kiểm tra dữ liệu ở boundary producer/consumer; chặn publish khi có P1 và giữ Gold last-good; đo SLO; alert có runbook; chứng minh mọi check bằng fault fixture cùng một negative control sạch; CI build thật trên dataset riêng của PR; enforce phân loại và che PII bằng code.
+**Goals:** chặn P1 trước khi publish và giữ Gold last-good; contract ở boundary; alert có runbook; mọi check có fault fixture cùng một negative control; CI build thật trên dataset riêng của PR; enforce phân loại/che PII bằng code.
+**Non-goals:** bật cho production trong W9 (gate chỉ chấp nhận `w9_drill`/`dbt_ci_pr_*`); dữ liệu cá nhân thật; orchestrator chạy thường trực.
 
-**Non-goals:** sửa vận hành Week 7; dùng dữ liệu cá nhân thật; dựng orchestrator chạy thường trực; Weeks 10–12.
+## 3. SLO (chỉ có hiệu lực khi đã có lịch chạy production)
 
-## 3. SLOs and error budget
+Một SLI hướng tới consumer: **Gold của ngày D-7 được publish, với mọi check blocking PASS, trước 09:30 ICT** — mục tiêu 95% số ngày/30 ngày (budget khoảng 1,5 ngày). Hết budget thì đóng băng PR tính năng. Cần thêm một check freshness lúc 10:00 ICT khớp SLO; alert freshness hiện tại (36 h P2 / 72 h P1) chậm hơn SLO 1,5–3 ngày. Latency p95 và alert precision chỉ được báo cáo dưới dạng chỉ số, chưa thành SLO cho tới khi có ≥ 20 mẫu.
 
-| SLI | SLO đề xuất (30 ngày) | Đo bằng |
+## 4. Design
+
+G0 (ingest contract, Python) → landing → **G1** (GX Core 1.25.0: schema, 3 tỉnh/ngày, null/duplicate/domain, range, ngày tương lai, °F) → dbt candidate → **G2** (grain, F10, model contract, source freshness) → publish (WAP). P1 thì chặn, đưa vào quarantine và giữ hash Gold; P2 vẫn publish kèm cảnh báo. Mọi gate ghi `dataforge_dq.dq_results`. Monitor chỉ đọc kết quả mới nhất cho mỗi (check, ngày) sau một watermark `--since`; nó không tự đánh giá lại check.
+
+**Alert:** monitor ghi **mọi** event vào Cloud Logging trước, rồi mới route Slack. Lỗi Slack sinh event P1 `ALERTING.DELIVERY_FAILED`, đi email (fixture F-A1). Email đi qua log metric → 3 policy P1 (gate, volume, schema): một incident cho mỗi policy, `auto_close` 1 h, nên lỗi P1 thứ hai cùng loại trong 1 giờ sẽ không ra email mới; nội dung chi tiết nằm ở Slack. Slack dedup theo (check, ngày) và gửi RESOLVED khi check PASS lại.
+
+**Phạm vi đã chứng minh:** chỉ trên dataset cô lập. Đưa vào production (allowlist dataset, adapter Airflow `quality_gate_landing`, lịch chạy monitor) là việc follow-up.
+
+## 5. Contracts and numeric rule
+
+ODCS v3.2.0 cho landing, mart và Open-Meteo; mỗi PR chạy `datacontract lint` và `breaking --perspective consumer` so với `main` (F14 chứng minh). SemVer: breaking cần major version và consumer ack; cột nullable mới là P2.
+**Quy tắc so sánh số:** không so FLOAT64 bằng `=`. Dùng macro `dq_float_equal` (dung sai tuyệt đối, mặc định 1e-6 cho giá trị đo; 1e-12 cho phép tính tái lập), giữ NULL parity. Data diff của CI phải theo cùng quy tắc (action item A3).
+
+## 6. Failure modes and evidence
+
+Chi tiết ở [fault_matrix.md](evidence/fault_matrix.md) và [failure_modes.md](failure_modes.md).
+
+| Nhóm | Kết quả | Mức evidence / ghi chú |
 |---|---|---|
-| Freshness | Gold có ngày D-7 trước 09:30 ICT trong 95% số ngày | `dq_results`, dbt source freshness |
-| Completeness | 100% ngày publish có đủ 3/3 province | `G1.LANDING.ROWS_PER_DATE` |
-| Validity | 100% Gold đã publish không có blocking failure | G2 dbt tests (`tier_blocking`) |
-| Latency | p95 pipeline < 20 phút | run receipts |
-| Alert precision | ≥ 95%; F-N0 phải ra 0 alert | fault matrix + drill |
+| F01–F06, F08, F11, F12, F05b, F09, F-T1, F-N0 | PASS | CI fixture (run `44867546904`); hash Gold không đổi |
+| F07, F10 | PASS | CI-live BigQuery (runs `44872770442`, `44873779562`); hash slice Gold rỗng nên chưa chứng minh "Gold không đổi" (A4) |
+| F13 | Bị chặn | CI chặn ở test registry (56≠55) trước bước guard; PII guard chỉ được chứng minh local (exit 1) |
+| F14 | PASS | `datacontract breaking` đỏ (job `136744399247`) |
+| F15 | PENDING | chạy lại sau khi merge fix R-17 |
+| F-A1 Slack outage | PASS | unit fixture |
+| F-N0 live (precision) | PASS | 13:20: 12 event đều PASS, 0 alert |
+| Live drill F06 | PENDING | H-W9-3, 14:00 |
 
-Đây là con số **dự kiến**; W9 không có 30 ngày quan sát. Hết error budget thì đóng băng PR tính năng, chỉ merge PR reliability.
-
-## 4. Proposed design
-
-```
-Open-Meteo ─► G0 ingest contract ─► landing ─► G1 boundary gate (GX Core) ─► dbt build (candidate)
-                                     │ fail                                    ─► G2 dbt tests + model contracts
-                                     ▼                                         ─► publish (WAP) ─► Gold ─► Power BI / W10
-                              quarantine/<run_id>/ (Gold giữ last-good, hash không đổi)
-mọi gate ─► dataforge_dq.dq_results ─► monitors ─► Cloud Logging (DQ_GATE_FAILED…) ─► log metric ─► alert policy ─► email
-                                                                                  └► Slack webhook (Secret Manager) + runbook link
-```
-
-- **G0** (Python ingest): field/type, đơn vị, đủ số ngày đã request, HTTP 200 nhưng rỗng (F05a, F11).
-- **G1** (GX Core 1.25.0, `python -m dataforge.dq gate`): schema, 3 province/ngày, null/duplicate/domain, range vật lý, ngày tương lai, đơn vị °F. Cờ `DQ_ENFORCE=warn|block`.
-- **G2** (dbt): PK/grain, expression test F10, model contract trên mart, source freshness F07 (36 h warn / 72 h error).
-- **WAP**: P1 → quarantine kèm lý do, Gold không đổi (assert hash). P2 vẫn publish và cảnh báo.
-- **Observability**: `dq_results` là nguồn sự thật duy nhất; monitor chỉ đọc kết quả mới nhất cho mỗi (check, ngày) (R-16) và metadata `INFORMATION_SCHEMA`, không chạy lại logic gate.
-- **Gate không phụ thuộc orchestrator**: CLI gọi được từ Airflow (`quality_gate_landing` trước `dbt_weather_build`), GitHub Actions hoặc tay.
-
-## 5. Data contracts and change policy
-
-ODCS v3.2.0 cho `weather_landing`, `mart_weather_province_daily` và các giả định về Open-Meteo ([`contracts/`](../../contracts/)). `datacontract lint` và `datacontract breaking --perspective consumer` (so với `origin/main`) chạy trên mỗi PR. SemVer: breaking change (xoá/đổi type cột, đổi grain, đổi ngữ nghĩa window) cần major version và consumer acknowledgement; thêm cột nullable là additive nhưng phải cảnh báo P2. Fixture F14 (#55) chứng minh CI chặn việc xoá cột `temp_max_c` khỏi contract.
-
-## 6. Failure modes and detection
-
-Catalog đầy đủ ở [failure_modes.md](failure_modes.md); evidence ở [fault_matrix.md](evidence/fault_matrix.md).
-
-- F01–F06, F08, F11, F12: block đúng `check_id`, Gold hash không đổi (CI fixture, run `44867546904`).
-- F05b: publish + P2 warn. F09: NO_OP, 0 alert. F-T1: retry thành công, 0 P1. F-N0: 0 alert.
-- F07/F10 chạy trên BigQuery cô lập (`w9_drill`); F13–F15 là PR fixture dùng một lần.
-- Live drill F06 (H-W9-3): alert thật tới email và Slack, MTTD đo được ([drill](evidence/h-w9-3-f06-live-drill.md)).
+Chưa có fixture (rủi ro được chấp nhận, xem §11): pipeline không chạy (dead-man switch đang tắt), upstream sửa giá trị lịch sử, trùng lặp xuyên request, giá trị "kẹt"/lặp lại.
 
 ## 7. Privacy and governance
 
-- Dữ liệu PII **chỉ là synthetic** (`data_classification=synthetic`); raw nằm trong `restricted_pii`, mart `pii_safe` chỉ có token HMAC-SHA256 (khoá trong Secret Manager), `age_band`, `province_id`, `email_masked`.
-- 5 cột raw có BigQuery policy tag (identity, email, phone, birth_date) và data-masking policy. Kiểm tra truy cập cả hai chiều PASS: analyst đọc mart, bị từ chối raw; privileged đọc raw; CI SA bị `DENIED_BY_POLICY_TAG` ([evidence](evidence/g3-g4-pii-proof-20261121.md)).
-- 351/351 cột (55/55 cột Gold) có `classification`, `pii_type`, `purpose`, `retention_days`; PII-leak guard đọc `manifest.json` chặn cột PII trực tiếp trong model public (F13).
-- Catalog: OpenMetadata 2.0.7 chạy ephemeral trong CI (dbt manifest ingest 11 records, 0 lỗi); lineage GCP-native qua Data Lineage API: weather 5 links, PII 2 links `customer_profile → customer_profile_restricted / dim_customer_profile_safe`. API đã tắt sau khi có evidence.
-- **Pháp lý:** NĐ 13/2023 trong syllabus đã hết hiệu lực từ 01/01/2026; khung hiện hành là Luật 91/2025/QH15 và NĐ 356/2025/NĐ-CP. Số điều cụ thể còn `LEGAL_UNVERIFIED` ([privacy_compliance.md](privacy_compliance.md)).
-- **Cross-border:** project ở `us-central1`. Với dữ liệu thật của người Việt, đây là chuyển dữ liệu ra nước ngoài và cần hồ sơ đánh giá tác động; thiết kế hiện tại chỉ chấp nhận được vì dữ liệu là synthetic.
+Chỉ dùng PII synthetic. Raw nằm trong `restricted_pii` với 5 cột gắn policy tag và masking; mart `pii_safe` chỉ có token HMAC, `age_band`, tỉnh, email đã mask. Kiểm tra truy cập 2 chiều PASS ([evidence](evidence/g3-g4-pii-proof-20261121.md): run `44866987378`). 351/351 cột có classification. Catalog: OpenMetadata ephemeral trong CI (run `44864861534`, dbt manifest 11 records/0 lỗi). Lineage GCP: weather 5 link; PII 2 link ([JSON](evidence/g7-pii-lineage-20261121.json)); API tắt lúc 11:54:50.
+**Pháp lý:** Luật 91/2025/QH15 (Điều 20: chuyển dữ liệu ra nước ngoài; Điều 39: chuyển tiếp) và NĐ 356/2025 (Điều 42 khoản 2: bãi bỏ NĐ 13/2023), trích từ văn bản chính thức ([map](privacy_compliance.md)). Project ở `us-central1` nên dữ liệu thật sẽ thuộc trường hợp Điều 20. Chưa làm: drill xoá dữ liệu (bị giới hạn bởi time travel + fail-safe 7 ngày; crypto-shredding mới đề xuất), retention tự động cho `restricted_pii`, bước thông báo cơ quan quản lý trong runbook vi phạm (hạn chót `LEGAL_UNVERIFIED`).
 
-## 8. Alternatives considered
+## 8. Alternatives
 
-| Quyết định | Đã chọn | Phương án còn lại và lý do không chọn |
+| Quyết định | Chọn | Không chọn, vì |
 |---|---|---|
-| Boundary gate | GX Core 1.25.0 (Apache-2.0) | Soda Core v4: license ELv2/proprietary, có lỗi với schema/group_by trong spike ([ADR](adr_quality_tooling.md)) |
-| Catalog | OpenMetadata trimmed profile, ephemeral trong CI + Dataplex lineage | DataHub: cần ~8 GB RAM và Kafka; Dataplex một mình không hiển thị dbt tests/descriptions |
-| Thiếu 1/3 province | Chặn cả ngày | Publish 2/3 kèm cờ: Power BI so sánh 3 tỉnh, publish thiếu dễ đọc sai |
-| Orchestrator sau teardown VM | Gate là CLI, drill chạy từ GitHub Actions / tay | Cloud Workflows: chỉ cần nếu mentor muốn chạy live hằng ngày |
-| Slack | Webhook từ runner (message có context, dedup theo (check, ngày)) | Monitoring native Slack channel: cần OAuth trên console, ít context |
+| Gate | GX Core (Apache-2.0) | Soda v4: ELv2, lỗi schema/group_by ([ADR](adr_quality_tooling.md)) |
+| Catalog | OpenMetadata trong CI + Dataplex lineage | DataHub: ~8 GB RAM + Kafka |
+| Thiếu 1/3 tỉnh | Chặn cả ngày | Publish 2/3: dashboard so sánh 3 tỉnh sẽ đọc sai |
+| Tin cậy CI cloud | `pull_request_target` + kiểm same-repo/head-SHA + `W9_WIF_PR_TARGET_ENABLED` | `pull_request`: code của PR head xin được token WIF |
+| Slack | Webhook từ runner | Kênh Slack của Monitoring: cần OAuth, ít context |
 
-## 9. Cost and operations
+## 9. Cost
 
-Cap W9 USD 3 (dừng ở 2.4), lineage USD 1 (dừng ở 0.8). Ước tính gross đã biết khoảng USD 0.018; forecast khoảng USD 0.36 ([cost ledger](cost_ledger.md)). Chưa có invoice/SKU nên con số thật được ghi `UNVERIFIED`. Vận hành: mỗi alert dẫn tới một runbook ([runbooks/](runbooks/)); dead-man's switch bị tắt ngoài drill vì VM W7 đã teardown, tránh alert fatigue.
+Cap W9 USD 3 (dừng ở 2.4), lineage USD 1. Gross ước tính tới 13:00 khoảng USD 0.026; forecast khoảng USD 0.37 ([ledger](cost_ledger.md); chưa có invoice). Ngưỡng dừng chung W7+W8+W9 là USD 16; forecast hiện tại khoảng USD 13.36, còn dư khoảng USD 2.6. Chi phí chạy: một PR build 40–700 MiB (≈ USD 0.0003–0.004); mỗi lần chạy monitor vài job 10 MiB; chi phí định kỳ gồm 2 version Secret Manager và ingest log metric.
 
 ## 10. Rollout and rollback
 
-Gate mới chạy `DQ_ENFORCE=warn` (shadow) ba ngày để đo false positive, sau đó chuyển `block` cho P1. Rollback là `DQ_ENFORCE=warn`; không bao giờ xoá assertion để làm CI xanh. Drill chỉ ghi vào `w9_drill` hoặc `dbt_ci_pr_<n>`; dataset PR tự xoá khi PR đóng và có TTL 24 h làm lưới an toàn.
+Shadow (`warn`) cho tới khi có ≥ 10 lần chạy sạch liên tiếp, gồm F-N0, với 0 false positive P1; sau đó `block`. CLI mặc định là `block` (fail-closed). **Rollback theo từng check, không bật/tắt toàn cục:** một override được review (check_id, hạ xuống P2, owner, hết hạn ≤ 7 ngày) và được ghi vào `dq_results` (A2). Hành động mặc định khi có sự cố là giữ không publish và giữ last-good. `DQ_ENFORCE=warn` không phải cách xử lý sự cố, như runbook đã ghi.
 
 ## 11. Risks and open questions
 
-1. Giữ SLO 30 ngày như đề xuất hay điều chỉnh sau khi có đủ dữ liệu quan sát?
-2. Dữ liệu thật: chuyển PII sang region Việt Nam, hay giữ `us-central1` kèm hồ sơ chuyển dữ liệu ra nước ngoài?
-3. Có cần rotate khoá HMAC theo lịch không, và khi rotate thì token cũ được xử lý thế nào?
-4. Ai được duyệt release quarantine (`quarantine-release.md`): data owner hay on-call?
-5. Mentor xác nhận cách trích dẫn Luật 91/2025 / NĐ 356/2025 (`LEGAL_UNVERIFIED`).
+Rủi ro chấp nhận (có owner): dead-man switch đang tắt sau teardown VM; chưa có fixture cho upstream revision, trùng lặp xuyên request, giá trị kẹt; email gộp theo policy. Câu hỏi cho mentor:
+1. SLO ở §3 có hợp lý không?
+2. Dữ liệu thật: chuyển sang region VN hay giữ `us-central1` kèm hồ sơ theo Điều 20?
+3. Chính sách rotate khoá HMAC?
+4. Ai được duyệt override/release quarantine?
+5. Hạn chót thông báo vi phạm theo Luật 91.
 
-## Appendix A: incidents found while building W9 (root cause → fix)
+## Appendix A: incidents that changed the design
 
-| # | Triệu chứng | Root cause | Fix |
-|---|---|---|---|
-| R-1…R-8 | xem `15_W9_SPEC_P2.md` | jq `-r`, `bq show --location`, pandas/BigQuery dtypes, Airflow wiring/race, slim-CI unit tests, billed-bytes JSON path, yamllint | `896f536` … `9f51074` |
-| R-9 | PII proof: `setCategory` denied | gắn policy tag cần thêm `datacatalog.taxonomies.get` + maskedReader cho mart | AF2-ext-2b IAM (đã gỡ sau G4) |
-| R-10 | OpenMetadata `no-auth` bị từ chối | OM 2.0.7 bỏ provider `no-auth` | basic auth + JWT bot (`5ab2f43`) |
-| R-11 | policy tag trên view | BigQuery không lưu policy tag trên cột view | `persist_docs.columns=false` cho view (`78e0025`) |
-| R-14 | PII proof `RunCostGuardError` | hook `on-run-end` nằm trong `run_results.json` mà không có job ID | bỏ qua hook không có job (`02812e6`) |
-| R-15 | Airflow harness `results=[]` (flaky) | đọc log trước khi supervisor flush | poll tối đa 60 s (`554c54f`) |
-| R-16 | (phát hiện trước drill) FAIL cũ bị gửi lại sau khi đã RESOLVED | monitor đọc mọi dòng trong ngày | chỉ giữ kết quả mới nhất cho mỗi (check, ngày) (`2fdf638`) |
-| R-17 | slim CI fail khi PR sửa mart | state manifest parse bằng target offline giả, nên `--defer` không bao giờ tới prod | target `prod_state` + `--favor-state` (`f2a11f2`) |
-| R-18 | F07/F10 live `UNVERIFIED` | parquet `timestamp[ns]` → INT64 trong BigQuery | đổi sang µs trước khi load (`fed8ea9`) |
-| T3 | Terraform plan 6/1/0 | drift: đổi event WIF sang `pull_request_target` đã merge nhưng chưa apply | apply có duyệt (AF2-ext-2c) |
+| # | Root cause → change |
+|---|---|
+| R-16 | Monitor gửi lại FAIL cũ sau khi đã RESOLVED → chỉ lấy kết quả mới nhất cho mỗi (check, ngày) |
+| R-17 | State manifest parse bằng target offline giả nên `--defer` không tới được prod → target `prod_state` + `--favor-state` |
+| R-18 | Parquet `timestamp[ns]` thành INT64 trong BigQuery → đổi sang µs trước khi load |
+| R-19 | Container không nhận `GITHUB_RUN_ID` → guard 5 GiB của run fail-closed → truyền biến vào |
+| R-20 | Gate-test ghi lỗi tiêm vào `dq_results` → tắt ghi kết quả + watermark `--since` |
+| F-A1 | Slack lỗi chặn luôn việc log, mất email → log trước, route sau |
+| T3 | Drift WIF (`38b08a9` chưa apply) → apply có duyệt (AF2-ext-2c) |
 
-## Appendix B: evidence index
+R-1…R-15 (lỗi build/CI không đổi thiết kế) nằm trong `failure_modes.md` và PR log.
 
-- [fault_matrix.md](evidence/fault_matrix.md) · [g3-g4-pii-proof-20261121.md](evidence/g3-g4-pii-proof-20261121.md) · [g7-lineage-w9-drill.md](evidence/g7-lineage-w9-drill.md) · [h-w9-3-f06-live-drill.md](evidence/h-w9-3-f06-live-drill.md)
-- [postmortem-000.md](postmortem-000.md) (Oct30 false positive) · [postmortem-001.md](postmortem-001.md) (game day)
-- [privacy_compliance.md](privacy_compliance.md) · [adr_quality_tooling.md](adr_quality_tooling.md) · [cost_ledger.md](cost_ledger.md) · contracts trong [`contracts/`](../../contracts/)
+## Appendix B: action items
 
-## Decision log
+A1 check freshness 10:00 ICT · A2 cơ chế override theo check · A3 data diff dùng dung sai và trở thành check bắt buộc có review · A4 hash Gold không rỗng cho F07/F10 · A5 đưa test đếm cột registry ra sau PII guard · A6 fixture cho stuck-value và upstream revision · A7 bước thông báo cơ quan quản lý trong runbook vi phạm.
 
-| # | Comment (nguồn) | Quyết định | Lý do |
-|---|---|---|---|
-| — | Chưa có comment của mentor | — | Trạng thái giữ ở In review; chỉ mentor được chuyển sang Accepted (H-W9-2). |
+## Decision log (pre-review, 2026-11-21)
+
+| # | Comment | Quyết định |
+|---|---|---|
+| 1 | Claim "đã xong" khi chưa có evidence | Accepted: drill và F15 ghi PENDING; thêm evidence lineage PII + bản ghi tắt API; commit postmortem-000; sửa ngày sự cố |
+| 2 | Fault matrix bị tóm thành PASS chung | Accepted: thêm cột mức evidence/ghi chú (§6); bổ sung R-19 |
+| 3 | Rollback `warn` mâu thuẫn runbook; mặc định fail-open | Accepted: rollback theo check (A2), CLI mặc định `block` (`ddc4078`), shadow kết thúc theo số lần chạy |
+| 4 | SLO không đo được | Accepted: một SLI consumer, chỉ hiệu lực khi có lịch chạy; A1 |
+| 5 | Lỗi Slack chặn email; dedup | Accepted: log trước, route sau, event DELIVERY_FAILED (`a1f224d`); ghi rõ cơ chế gộp email (§4) |
+| 6 | Thiếu failure mode | Partly: F-A1 thêm; các mục còn lại là rủi ro chấp nhận (§11, A6) |
+| 7 | Quy tắc dung sai, data diff dùng `=` | Accepted: §5; A3 |
+| 8 | Trích dẫn pháp lý không nhất quán | Accepted: dùng Điều 20/39 và NĐ 356 Điều 42(2) từ nguồn chính thức |
+| 9 | Sơ đồ ngầm hiểu đã chạy production | Accepted: thêm dòng phạm vi (§4) |
+| 10 | Chi phí | Accepted: cập nhật số, ngưỡng dừng chung, chi phí chạy (§9) |
+| 11 | Quyết định tin cậy CI | Accepted: thêm dòng `pull_request_target` (§8) |
+| 12 | Độ dài | Accepted: rút gọn Appendix A; phần thân khoảng 2 trang |
