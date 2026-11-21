@@ -40,3 +40,7 @@ LIMIT 20;
 Escalate unresolved P1 failures to the data owner and W9 integrator the same day; send P2 items to the owner within one business day. If PII or an out-of-scope dataset appears, stop the drill and involve the governance owner. If a false positive is traced to a code change, pause the affected schedule and revert that change after review. For local WAP, restore the saved `published/weather_landing.parquet` with the manifest's last-good SHA-256. No production rollback or write is authorized by this runbook.
 
 For any controlled alert drill, record injection time and delivered alert time separately to calculate MTTD. No live MTTD or notification delivery is claimed here.
+
+## Drill restore and close-out
+
+For the isolated `w9_drill` dataset, follow [drill-restore-and-closeout.md](drill-restore-and-closeout.md): it covers several alerts from one cause, missing vs. extra rows, restoring one date, and the required close-out (gate in block mode, then `monitor --since --send-alerts` to resolve).
