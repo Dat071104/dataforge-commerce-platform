@@ -2,15 +2,15 @@
 
 **Scope.** Week 9 processes only synthetic Vietnamese customer profiles (`data_classification=synthetic`, reserved CCCD prefix `999`, `example.com` e-mails, `+84-000-` phones). No real personal data is collected. This page maps the obligations a real deployment would face to the technical controls built in W9, so a mentor can judge the design. It is not legal advice.
 
-## 1. Which legal texts apply (checked 2026-11-21)
+## 1. Which legal texts apply (checked against official records on 2026-11-19 by the G lane, re-checked 2026-11-21)
 
-| Text | Status on 2026-11-21 | Source |
-|---|---|---|
-| Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 | In force from 01/01/2026 | [Công báo](https://congbao.chinhphu.vn/van-ban/luat-so-91-2025-qh15-45578.htm), [Bộ Công an](https://www.bocongan.gov.vn/bai-viet/luat-bao-ve-du-lieu-ca-nhan-chinh-thuc-co-hieu-luc-thi-hanh-tu-ngay-01-01-2026-1767186124) |
-| Nghị định 356/2025/NĐ-CP (detailing the Law) | In force from 01/01/2026 | [LuatVietnam summary](https://luatvietnam.vn/linh-vuc-khac/luat-bao-ve-du-lieu-ca-nhan-moi-nhat-va-van-ban-huong-dan-883-106497-article.html) |
-| Nghị định 13/2023/NĐ-CP (named in the syllabus) | **No longer in force** from 01/01/2026; replaced by NĐ 356/2025 | [LuatVietnam summary](https://luatvietnam.vn/linh-vuc-khac/luat-bao-ve-du-lieu-ca-nhan-moi-nhat-va-van-ban-huong-dan-883-106497-article.html) |
+| Text | Status on 2026-11-21 | Articles used here | Official source |
+|---|---|---|---|
+| Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 | In force from 01/01/2026 | Art. 20: cross-border transfer cases and an impact-assessment dossier within 60 days of the first transfer; Art. 39: limited transition for processing already consented/agreed under Decree 13 and already accepted dossiers | [vanban.chinhphu.vn record](https://vanban.chinhphu.vn/?docid=214590&pageid=27160), [Công báo PDF](https://congbao.chinhphu.vn/tai-ve-van-ban-so-91-2025-qh15-45578-57730?format=pdf) |
+| Nghị định 356/2025/NĐ-CP | In force from 01/01/2026 | Art. 42(2): Decree 13/2023 ceases to be effective on that date | [vanban.chinhphu.vn record](https://vanban.chinhphu.vn/?docid=216387&pageid=27160&typegroupid=4), [signed PDF](https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/01/356-nd.signed.pdf) |
+| Nghị định 13/2023/NĐ-CP (named in the syllabus) | **Not generally in force** from 01/01/2026; only the Law 91 Art. 39 transition applies | — | as above |
 
-The syllabus cites NĐ 13/2023. This RFC therefore maps controls to the Law 91/2025 and NĐ 356/2025 regime and mentions NĐ 13/2023 only as history. **Article numbers are `LEGAL_UNVERIFIED`:** the official text was not read article by article in this session, and secondary summaries disagree on details. Before the RFC is Accepted, the article references below must be checked against the Công báo text and quoted verbatim.
+The full register (including the later enforcement Decrees 330/2026 and 363/2026) is in `governance/classification.yml` (`legal_mapping`) and `docs/process/lanes/w9-g.md` §G8. Still **`LEGAL_UNVERIFIED`**: the breach-notification deadline and its exact article under the new regime, and any obligation not listed above. This page is a design map, not legal advice.
 
 ## 2. Obligation → control → evidence
 
