@@ -1,6 +1,6 @@
 # Week 9 failure modes
 
-Status: planned catalog, based on `11_WEEK9_PLAN.md` §§4.2 and 5. The check IDs below are stable identifiers for implementation; they are not evidence that a gate is already implemented. Each check has one owning layer. Where two layers appear, they guard different boundaries or are the explicitly planned second-line defense.
+Status (2026-11-21): implemented catalog. Every row below has a fixture; results and evidence levels are in [evidence/fault_matrix.md](evidence/fault_matrix.md) (F15 still pending at the time of writing). Added after the RFC pre-review: **F-A1** (Slack/webhook unavailable → events still logged, P1 `ALERTING.DELIVERY_FAILED` reaches email; unit fixture in `tests/week9/test_observability.py`). Known gaps (RFC §11): pipeline not running at all while the dead-man policy is disabled, upstream revision of archive values, cross-request duplicates, stuck/repeated values. Each check has one owning layer. Where two layers appear, they guard different boundaries or are the explicitly planned second-line defense.
 
 | ID | Type | Injected fault | Layer / location | Expected detector check_id | Severity | Expected action |
 |---|---|---|---|---|---|---|
