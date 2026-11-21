@@ -48,11 +48,6 @@ schema:
         physicalType: FLOAT64
         required: false
         description: Daily precipitation sum in millimetres; null remains unknown.
-      - name: temp_max_c
-        logicalType: number
-        physicalType: FLOAT64
-        required: false
-        description: Daily maximum two-metre air temperature in Celsius; null remains unknown.
       - name: rain_day
         logicalType: boolean
         physicalType: BOOL
