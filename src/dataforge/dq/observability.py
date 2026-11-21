@@ -577,18 +577,16 @@ def run_monitors(
     require_isolated_dataset(dataset)
     expected = contract_columns or load_weather_contract()
     rows = source.read_dq_results(run_date)
-    events = [
-        event
-        for row in rows
-        if (
-            event := event_from_result(
-                row,
-                dataset=dataset,
-                fallback_date=run_date,
-            )
-        )
-        is not None
-    ]
+    # Rows arrive ordered by ts. Keep only the newest result per (check_id, event date):
+    # a FAIL that a later run already fixed must not be re-sent as a new alert after
+    # the incident was resolved (R-16).
+    latest: dict[tuple[str, str], DQEvent] = {}
+    for row in rows:
+        event = event_from_result(row, dataset=dataset, fallback_date=run_date)
+        if event is not None:
+            latest.pop((event.check_id, event.event_date), None)
+            latest[(event.check_id, event.event_date)] = event
+    events = list(latest.values())
     monitor_run_id = f"monitor-{uuid4().hex}"
     actual_columns = source.read_columns(dataset)
     if actual_columns:

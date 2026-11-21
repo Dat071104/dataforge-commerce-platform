@@ -167,6 +167,44 @@ def test_monitor_reads_existing_results_and_emits_a_heartbeat_only_after_g2_succ
     assert any(event.status == "PASS" and event.event_type == "SCHEMA_DRIFT" for event in events)
 
 
+def test_monitor_keeps_only_the_newest_result_per_check_and_date():
+    # R-16: a FAIL fixed by a later PASS on the same day must not be re-sent as an alert.
+    class FakeSource:
+        def read_dq_results(self, run_date):
+            return [
+                result_row("G1.LANDING.ROW_COUNT", status="FAIL"),
+                result_row("G1.LANDING.ROW_COUNT", status="PASS"),
+                result_row(
+                    "G1.LANDING.ROW_COUNT",
+                    status="FAIL",
+                    observed={"dataset": "w9_drill", "date": "2026-11-17"},
+                ),
+            ]
+
+        def read_columns(self, dataset):
+            return []
+
+        def read_latest_landed_at(self, dataset):
+            return None
+
+        def read_temperature_distribution(self, dataset, as_of_date):
+            return []
+
+    events = run_monitors(
+        FakeSource(),
+        dataset="w9_drill",
+        run_date=AS_OF,
+        contract_columns={"province_id": "STRING"},
+    )
+    row_count = {
+        event.event_date: event.status
+        for event in events
+        if event.check_id == "G1.LANDING.ROW_COUNT"
+    }
+    assert row_count == {AS_OF.isoformat(): "PASS", "2026-11-17": "FAIL"}
+    assert sum(event.check_id == "G1.LANDING.ROW_COUNT" for event in events) == 2
+
+
 def test_jsonl_sink_writes_one_structured_event_line(tmp_path):
     event = DQEvent(
         event_type="DQ_GATE_FAILED",
