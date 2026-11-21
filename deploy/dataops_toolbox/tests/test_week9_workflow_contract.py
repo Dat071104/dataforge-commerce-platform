@@ -473,3 +473,17 @@ def test_stale_sweep_requires_closed_pr_and_old_dataset_creation_time() -> None:
     assert "timedelta(days=2)" in pr_query
     assert ".creationTime" in delete_script
     assert "now_ms - created_ms >= stale_after_ms" in delete_script
+
+
+def test_slim_ci_defers_unbuilt_parents_to_real_production_relations() -> None:
+    # R-17: the state manifest named a fake offline project, so --defer could never reach
+    # production, and unit-test fixtures looked for parents in the PR dataset.
+    dataops = Path(".github/workflows/week9-dataops.yml").read_text(encoding="utf-8")
+    cd = Path(".github/workflows/week9-cd.yml").read_text(encoding="utf-8")
+    profile = yaml.safe_load(Path("dbt/dataforge/profiles.example.yml").read_text(encoding="utf-8"))
+    prod_state = profile["dataforge"]["outputs"]["prod_state"]
+
+    assert dataops.count("--defer --favor-state --state /prod-manifest") == 2
+    assert "--target prod_state" in cd
+    assert (prod_state["project"], prod_state["dataset"]) == ("dataforge-p7-lab-d0f725", "dbt_weather_mini3")
+    assert profile["dataforge"]["target"] == "offline"
