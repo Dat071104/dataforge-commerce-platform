@@ -52,6 +52,66 @@ def test_pii_cost_receipt_requires_successful_safe_mart_and_mask_probe() -> None
     assert artifact["guarded_bytes_upper_bound"] == 192
 
 
+def test_pii_cost_receipt_ignores_jobless_dbt_project_hooks() -> None:
+    # Regression for run 44865173398 (R-14): dbt-core writes on-run-end hooks into
+    # run_results.json with an empty adapter_response, so the job count must skip them.
+    dbt_results, mask_receipt = _valid_receipts()
+    dbt_results["results"].extend(
+        [
+            {
+                "unique_id": "model.dataforge.stg_customer_profile_restricted",
+                "status": "success",
+                "adapter_response": {"job_id": "dbt_view_job_1", "bytes_billed": 0},
+            },
+            {
+                "unique_id": "operation.dataforge.dataforge-on-run-end-0",
+                "status": "success",
+                "adapter_response": {},
+            },
+        ]
+    )
+
+    artifact = build_cost_receipt(
+        run_id="987654321",
+        dbt_results=dbt_results,
+        mask_receipt=mask_receipt,
+        load_job_id="load_job_1",
+    )
+
+    assert artifact["dbt_jobs_seen"] == 2
+    assert artifact["total_bytes_billed"] == 192
+
+
+def test_pii_cost_receipt_fails_on_failed_jobless_hook() -> None:
+    dbt_results, mask_receipt = _valid_receipts()
+    dbt_results["results"].append(
+        {"unique_id": "operation.dataforge.dataforge-on-run-end-0", "status": "error", "adapter_response": {}}
+    )
+
+    with pytest.raises(RunCostGuardError, match="hook did not finish"):
+        build_cost_receipt(
+            run_id="987654321",
+            dbt_results=dbt_results,
+            mask_receipt=mask_receipt,
+            load_job_id="load_job_1",
+        )
+
+
+def test_pii_cost_receipt_still_fails_when_a_model_has_no_job_id() -> None:
+    dbt_results, mask_receipt = _valid_receipts()
+    dbt_results["results"].append(
+        {"unique_id": "model.dataforge.stg_customer_profile_restricted", "status": "success", "adapter_response": {}}
+    )
+
+    with pytest.raises(RunCostGuardError, match="billed-byte metadata is incomplete"):
+        build_cost_receipt(
+            run_id="987654321",
+            dbt_results=dbt_results,
+            mask_receipt=mask_receipt,
+            load_job_id="load_job_1",
+        )
+
+
 def test_pii_cost_receipt_fails_when_safe_mart_is_not_built() -> None:
     dbt_results, mask_receipt = _valid_receipts()
     dbt_results["results"][0]["unique_id"] = "test.dataforge.some_other_check"

@@ -1,1 +1,1 @@
-"""Synthetic-only personal-data generation and pseudonymization helpers."""
+"""Synthetic-only personal-data governance, pseudonymization, and erasure helpers."""

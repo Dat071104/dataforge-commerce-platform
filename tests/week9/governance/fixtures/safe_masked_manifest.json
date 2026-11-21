@@ -5,10 +5,10 @@
     "adapter_type": "bigquery"
   },
   "nodes": {
-    "model.dataforge.dim_customer_profile_safe": {
-      "unique_id": "model.dataforge.dim_customer_profile_safe",
+    "model.dataforge.dim_synthetic_customer_safe": {
+      "unique_id": "model.dataforge.dim_synthetic_customer_safe",
       "resource_type": "model",
-      "name": "dim_customer_profile_safe",
+      "name": "dim_synthetic_customer_safe",
       "schema": "pii_safe",
       "config": {"materialized": "table", "schema": "pii_safe"},
       "depends_on": {"nodes": ["source.dataforge.restricted_pii.customer_profile"]},
@@ -82,6 +82,6 @@
     }
   },
   "parent_map": {
-    "model.dataforge.dim_customer_profile_safe": ["source.dataforge.restricted_pii.customer_profile"]
+    "model.dataforge.dim_synthetic_customer_safe": ["source.dataforge.restricted_pii.customer_profile"]
   }
 }
